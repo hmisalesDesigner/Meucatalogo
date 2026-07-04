@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- saved from url=(0056)file:///C:/Users/Pedro%20Henrique/Downloads/index_3.html -->
-<html lang="pt-BR" data-theme="dark"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MeuCatálogo</title>
 <style>
@@ -472,78 +472,40 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 
   <div class="nav-section">
     <div class="nav-label">Principal</div>
-    <div class="nav-item active" onclick="goTo(&#39;dashboard&#39;)"><span class="icon">🏠</span>Dashboard</div>
-    <div class="nav-item" onclick="goTo(&#39;stats-view&#39;)"><span class="icon">📊</span>Estatísticas</div>
-    <div class="nav-item" onclick="goTo(&#39;search-view&#39;)"><span class="icon">🔍</span>Pesquisa</div>
+    <div class="nav-item active" onclick="goTo('dashboard')"><span class="icon">🏠</span>Dashboard</div>
+    <div class="nav-item" onclick="goTo('stats-view')"><span class="icon">📊</span>Estatísticas</div>
+    <div class="nav-item" onclick="goTo('search-view')"><span class="icon">🔍</span>Pesquisa</div>
     <div class="nav-item" onclick="openAddModal()" style="color:var(--accent);font-weight:700;margin-top:2px"><span class="icon">➕</span>Adicionar Série</div>
   </div>
 
   <div class="nav-section">
     <div class="nav-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:12px;">
       Categorias
-      <span onclick="openCatModal()" title="Gerenciar categorias" style="cursor:pointer;font-size:14px;color:var(--text2);padding:2px 4px;border-radius:4px;transition:color 0.2s" onmouseover="this.style.color=&#39;var(--accent)&#39;" onmouseout="this.style.color=&#39;var(--text2)&#39;">⚙</span>
+      <span onclick="openCatModal()" title="Gerenciar categorias"
+        style="cursor:pointer;font-size:14px;color:var(--text2);padding:2px 4px;border-radius:4px;transition:color 0.2s"
+        onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⚙</span>
     </div>
-    <div id="sidebar-cats">
-    <div class="nav-item" onclick="filterCat(&#39;Photoshop&#39;)">
-      <span class="icon">🖼️</span>Photoshop
-      <span style="font-size:10px;color:var(--text2);margin-left:auto"></span>
-    </div>
-    <div class="nav-item" onclick="filterCat(&#39;Premiere Pro&#39;)">
-      <span class="icon">🎞️</span>Premiere Pro
-      <span style="font-size:10px;color:var(--text2);margin-left:auto"></span>
-    </div>
-    <div class="nav-item" onclick="filterCat(&#39;After Effects&#39;)">
-      <span class="icon">✨</span>After Effects
-      <span style="font-size:10px;color:var(--text2);margin-left:auto"></span>
-    </div>
-    <div class="nav-item" onclick="filterCat(&#39;Illustrator&#39;)">
-      <span class="icon">🖊️</span>Illustrator
-      <span style="font-size:10px;color:var(--text2);margin-left:auto"></span>
-    </div>
-    <div class="nav-item" onclick="filterCat(&#39;IA&#39;)">
-      <span class="icon">🤖</span>IA
-      <span style="font-size:10px;color:var(--text2);margin-left:auto"></span>
-    </div>
-    <div class="nav-item" onclick="filterCat(&#39;Marketing&#39;)">
-      <span class="icon">📢</span>Marketing
-      <span style="font-size:10px;color:var(--text2);margin-left:auto"></span>
-    </div>
-    <div class="nav-item" onclick="filterCat(&#39;Investimentos&#39;)">
-      <span class="icon">💹</span>Investimentos
-      <span style="font-size:10px;color:var(--text2);margin-left:auto"></span>
-    </div>
-    <div class="nav-item" onclick="filterCat(&#39;Modelagem 3D&#39;)">
-      <span class="icon">🧊</span>Modelagem 3D
-      <span style="font-size:10px;color:var(--text2);margin-left:auto"></span>
-    </div>
-    <div class="nav-item" onclick="filterCat(&#39;Som&#39;)">
-      <span class="icon">🎵</span>Som
-      <span style="font-size:10px;color:var(--text2);margin-left:auto"></span>
-    </div>
-    <div class="nav-item" onclick="filterCat(&#39;Programação&#39;)">
-      <span class="icon">💻</span>Programação
-      <span style="font-size:10px;color:var(--text2);margin-left:auto"></span>
-    </div></div>
+    <div id="sidebar-cats"></div>
   </div>
 
   <div class="nav-section">
     <div class="nav-label">Biblioteca</div>
-    <div class="nav-item" onclick="goTo(&#39;library&#39;)"><span class="icon">📚</span>Todos os Cursos</div>
-    <div class="nav-item" onclick="goTo(&#39;watching&#39;)"><span class="icon">▶️</span>Assistindo <span class="nav-badge" id="badge-watching" style="display: none;"></span></div>
-    <div class="nav-item" onclick="goTo(&#39;completed&#39;)"><span class="icon">✅</span>Concluídos</div>
-    <div class="nav-item" onclick="goTo(&#39;favorites&#39;)"><span class="icon">⭐</span>Favoritos</div>
+    <div class="nav-item" onclick="goTo('library')"><span class="icon">📚</span>Todos os Cursos</div>
+    <div class="nav-item" onclick="goTo('watching')"><span class="icon">▶️</span>Assistindo <span class="nav-badge" id="badge-watching">0</span></div>
+    <div class="nav-item" onclick="goTo('completed')"><span class="icon">✅</span>Concluídos</div>
+    <div class="nav-item" onclick="goTo('favorites')"><span class="icon">⭐</span>Favoritos</div>
   </div>
 
   <div class="nav-section">
     <div class="nav-label">Acompanhamento</div>
-    <div class="nav-item" onclick="goTo(&#39;progress-view&#39;)"><span class="icon">📈</span>Progresso</div>
-    <div class="nav-item" onclick="goTo(&#39;history-view&#39;)"><span class="icon">🕐</span>Histórico</div>
-    <div class="nav-item" onclick="goTo(&#39;notes-view&#39;)"><span class="icon">📝</span>Notas</div>
+    <div class="nav-item" onclick="goTo('progress-view')"><span class="icon">📈</span>Progresso</div>
+    <div class="nav-item" onclick="goTo('history-view')"><span class="icon">🕐</span>Histórico</div>
+    <div class="nav-item" onclick="goTo('notes-view')"><span class="icon">📝</span>Notas</div>
   </div>
 
   <div class="nav-section">
     <div class="nav-label">Sistema</div>
-    <div class="nav-item" onclick="goTo(&#39;settings&#39;)"><span class="icon">⚙️</span>Configurações</div>
+    <div class="nav-item" onclick="goTo('settings')"><span class="icon">⚙️</span>Configurações</div>
   </div>
 </nav>
 
@@ -553,7 +515,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
   <div id="topbar">
     <div class="topbar-title" id="topbar-title">Dashboard</div>
     <div class="topbar-right">
-      <div class="search-box" onclick="goTo(&#39;search-view&#39;)">🔍 Pesquisar...</div>
+      <div class="search-box" onclick="goTo('search-view')">🔍 Pesquisar...</div>
       <button id="theme-toggle" onclick="toggleTheme()" title="Alternar tema">🌙</button>
     </div>
   </div>
@@ -562,7 +524,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
   <div class="content-area active" id="dashboard">
     <!-- HERO BANNER -->
     <div id="hero-banner" style="display:none;">
-      <img id="hero-img" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_3.html" alt="">
+      <img id="hero-img" src="" alt="">
       <div class="banner-overlay"></div>
       <div class="banner-info">
         <h1 id="hero-title"></h1>
@@ -586,7 +548,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
     </div>
 
     <!-- CATEGORY ROWS -->
-    <div id="dashboard-cats"><div class="empty-state"><div class="ei">🎬</div><p>Nenhuma série cadastrada ainda.<br>Clique em <strong>+ Adicionar Série</strong> no menu.</p></div></div>
+    <div id="dashboard-cats"></div>
   </div>
 
   <!-- ======= LIBRARY ======= -->
@@ -663,11 +625,11 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
         </div>
       </div>
       <div class="filter-chips" id="search-filters">
-        <div class="chip active" onclick="setSearchFilter(&#39;all&#39;,this)">Todos</div>
-        <div class="chip" onclick="setSearchFilter(&#39;name&#39;,this)">Nome</div>
-        <div class="chip" onclick="setSearchFilter(&#39;cat&#39;,this)">Categoria</div>
-        <div class="chip" onclick="setSearchFilter(&#39;director&#39;,this)">Diretor</div>
-        <div class="chip" onclick="setSearchFilter(&#39;year&#39;,this)">Ano</div>
+        <div class="chip active" onclick="setSearchFilter('all',this)">Todos</div>
+        <div class="chip" onclick="setSearchFilter('name',this)">Nome</div>
+        <div class="chip" onclick="setSearchFilter('cat',this)">Categoria</div>
+        <div class="chip" onclick="setSearchFilter('director',this)">Diretor</div>
+        <div class="chip" onclick="setSearchFilter('year',this)">Ano</div>
       </div>
       <div class="library-grid" id="search-results"></div>
     </div>
@@ -681,22 +643,23 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
       <div class="config-block">
         <div class="config-block-title">🎨 Tema</div>
         <div style="display:flex;gap:10px;margin-bottom:16px;">
-          <button class="btn btn-secondary" onclick="setTheme(&#39;dark&#39;)">🌙 Escuro</button>
-          <button class="btn btn-secondary" onclick="setTheme(&#39;light&#39;)">☀️ Claro</button>
+          <button class="btn btn-secondary" onclick="setTheme('dark')">🌙 Escuro</button>
+          <button class="btn btn-secondary" onclick="setTheme('light')">☀️ Claro</button>
         </div>
         <div class="config-block-title" style="margin-bottom:10px;">🎨 Cor de Destaque</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <div class="color-swatch" style="background:#e50914" onclick="setAccent(&#39;#e50914&#39;,&#39;#b20710&#39;)" title="Vermelho Netflix"></div>
-          <div class="color-swatch" style="background:#4a90e2" onclick="setAccent(&#39;#4a90e2&#39;,&#39;#2e6db5&#39;)" title="Azul"></div>
-          <div class="color-swatch" style="background:#9b59b6" onclick="setAccent(&#39;#9b59b6&#39;,&#39;#7d3c98&#39;)" title="Roxo"></div>
-          <div class="color-swatch" style="background:#27ae60" onclick="setAccent(&#39;#27ae60&#39;,&#39;#1e8449&#39;)" title="Verde"></div>
-          <div class="color-swatch" style="background:#e67e22" onclick="setAccent(&#39;#e67e22&#39;,&#39;#ca6f1e&#39;)" title="Laranja"></div>
-          <div class="color-swatch" style="background:#f39c12" onclick="setAccent(&#39;#f39c12&#39;,&#39;#d68910&#39;)" title="Amarelo"></div>
-          <div class="color-swatch" style="background:#1abc9c" onclick="setAccent(&#39;#1abc9c&#39;,&#39;#148f77&#39;)" title="Teal"></div>
-          <div class="color-swatch" style="background:#e91e8c" onclick="setAccent(&#39;#e91e8c&#39;,&#39;#c21674&#39;)" title="Rosa"></div>
+          <div class="color-swatch" style="background:#e50914" onclick="setAccent('#e50914','#b20710')" title="Vermelho Netflix"></div>
+          <div class="color-swatch" style="background:#4a90e2" onclick="setAccent('#4a90e2','#2e6db5')" title="Azul"></div>
+          <div class="color-swatch" style="background:#9b59b6" onclick="setAccent('#9b59b6','#7d3c98')" title="Roxo"></div>
+          <div class="color-swatch" style="background:#27ae60" onclick="setAccent('#27ae60','#1e8449')" title="Verde"></div>
+          <div class="color-swatch" style="background:#e67e22" onclick="setAccent('#e67e22','#ca6f1e')" title="Laranja"></div>
+          <div class="color-swatch" style="background:#f39c12" onclick="setAccent('#f39c12','#d68910')" title="Amarelo"></div>
+          <div class="color-swatch" style="background:#1abc9c" onclick="setAccent('#1abc9c','#148f77')" title="Teal"></div>
+          <div class="color-swatch" style="background:#e91e8c" onclick="setAccent('#e91e8c','#c21674')" title="Rosa"></div>
           <div style="display:flex;align-items:center;gap:6px;margin-left:4px;">
             <label style="font-size:11px;color:var(--text2)">Personalizar:</label>
-            <input type="color" id="custom-accent" value="#e50914" onchange="setAccentCustom(this.value)" style="width:34px;height:34px;border:none;border-radius:6px;cursor:pointer;background:none;padding:2px;">
+            <input type="color" id="custom-accent" value="#e50914" onchange="setAccentCustom(this.value)"
+              style="width:34px;height:34px;border:none;border-radius:6px;cursor:pointer;background:none;padding:2px;">
           </div>
         </div>
       </div>
@@ -705,7 +668,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
         <div class="config-block-title">💾 Backup e Dados</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn btn-secondary" onclick="exportData()">⬇ Exportar JSON</button>
-          <button class="btn btn-secondary" onclick="document.getElementById(&#39;import-file&#39;).click()">⬆ Importar JSON</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">⬆ Importar JSON</button>
           <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
           <button class="btn btn-danger" onclick="confirmClearData()">🗑 Limpar Tudo</button>
         </div>
@@ -717,7 +680,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
         <div id="jsonbin-status-bar" style="display:none;padding:8px 12px;border-radius:6px;font-size:12px;margin-bottom:12px;"></div>
         <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
           Salva seus dados online. Acesse de qualquer navegador sem perder nada.<br>
-          <strong>1.</strong> Crie conta grátis em <a href="https://jsonbin.io/" target="_blank" style="color:var(--accent)">jsonbin.io</a>
+          <strong>1.</strong> Crie conta grátis em <a href="https://jsonbin.io" target="_blank" style="color:var(--accent)">jsonbin.io</a>
           &nbsp;<strong>2.</strong> Copie sua <em>Master Key</em> em Account → API Keys
           &nbsp;<strong>3.</strong> Cole abaixo e clique em Conectar
         </p>
@@ -727,7 +690,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
         </div>
         <div class="form-group" style="display:none" id="jb-bin-group">
           <label class="form-label">Bin ID (gerado automaticamente)</label>
-          <input class="form-input" id="jb-bin" readonly="" placeholder="Será gerado ao conectar">
+          <input class="form-input" id="jb-bin" readonly placeholder="Será gerado ao conectar">
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-primary" onclick="connectJSONBin()">🔗 Conectar</button>
@@ -811,9 +774,9 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
       <div class="form-row">
         <div class="form-group" style="flex:0 0 110px;">
           <label class="form-label">Capa (2:3)</label>
-          <div class="img-upload-area" id="cover-upload-area" onclick="document.getElementById(&#39;cover-input&#39;).click()">
+          <div class="img-upload-area" id="cover-upload-area" onclick="document.getElementById('cover-input').click()">
             <input type="file" id="cover-input" accept="image/png,image/jpeg" onchange="handleCoverUpload(event)" style="display:none">
-            <img id="cover-preview" class="img-preview" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_3.html" style="display:none">
+            <img id="cover-preview" class="img-preview" src="" style="display:none">
             <div id="cover-placeholder">
               <div style="font-size:28px">🖼️</div>
               <div>Capa 2:3</div>
@@ -828,12 +791,14 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
           </div>
           <div class="form-group">
             <label class="form-label">Categoria *</label>
-            <select class="form-select" id="f-cat"><option value="">Selecionar...</option><option value="Photoshop">🖼️ Photoshop</option><option value="Premiere Pro">🎞️ Premiere Pro</option><option value="After Effects">✨ After Effects</option><option value="Illustrator">🖊️ Illustrator</option><option value="IA">🤖 IA</option><option value="Marketing">📢 Marketing</option><option value="Investimentos">💹 Investimentos</option><option value="Modelagem 3D">🧊 Modelagem 3D</option><option value="Som">🎵 Som</option><option value="Programação">💻 Programação</option><option value="__new__">➕ Nova categoria...</option></select>
+            <select class="form-select" id="f-cat">
+              <option value="">Selecionar...</option>
+            </select>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Ano</label>
-              <select class="form-select" id="f-year"><option value="">Ano</option><option>2026</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option><option>2020</option><option>2019</option><option>2018</option><option>2017</option><option>2016</option><option>2015</option><option>2014</option><option>2013</option><option>2012</option><option>2011</option><option>2010</option><option>2009</option><option>2008</option><option>2007</option><option>2006</option><option>2005</option><option>2004</option><option>2003</option><option>2002</option><option>2001</option><option>2000</option><option>1999</option><option>1998</option><option>1997</option><option>1996</option><option>1995</option><option>1994</option><option>1993</option><option>1992</option><option>1991</option><option>1990</option></select>
+              <select class="form-select" id="f-year"></select>
             </div>
             <div class="form-group">
               <label class="form-label">Diretor/Criador</label>
@@ -851,14 +816,14 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
           </div>
           <div style="font-size:12px;color:var(--text2);padding-top:0">temporada(s)</div>
         </div>
-        <div id="seasons-inputs"><div class="season-block"><div class="season-label">Temporada 1</div><input class="form-input" id="eps-0" type="number" min="1" max="500" value="8" placeholder="Nº de episódios"></div></div>
+        <div id="seasons-inputs"></div>
       </div>
 
       <div class="form-group">
         <label class="form-label">Banner Horizontal (21:9) <span style="font-size:10px;color:var(--text2)">— exibido ao clicar na série</span></label>
-        <div class="img-upload-area" onclick="document.getElementById(&#39;banner-input&#39;).click()" style="padding:12px">
+        <div class="img-upload-area" onclick="document.getElementById('banner-input').click()" style="padding:12px">
           <input type="file" id="banner-input" accept="image/png,image/jpeg" onchange="handleBannerUpload(event)" style="display:none">
-          <img id="banner-preview" class="banner-preview" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_3.html" style="display:none">
+          <img id="banner-preview" class="banner-preview" src="" style="display:none">
           <div id="banner-placeholder" style="display:flex;align-items:center;gap:8px;justify-content:center;">
             <span style="font-size:22px">🖼️</span>
             <span>Banner 21:9 — PNG ou JPG</span>
@@ -891,7 +856,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
       <button class="modal-close" onclick="closeDetailModal()" style="margin-left:10px;">✕</button>
     </div>
     <div id="detail-banner-wrap">
-      <img id="detail-banner-img" class="detail-banner" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_3.html" alt="" style="display:none">
+      <img id="detail-banner-img" class="detail-banner" src="" alt="" style="display:none">
     </div>
     <div class="detail-header">
       <div class="detail-meta" id="detail-meta"></div>
@@ -1947,6 +1912,5 @@ window.addEventListener('beforeunload', ()=>{ saveDB(); if(jbKey()&&jbBin()) pus
 // Salva quando minimiza ou muda de aba
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveDB(); });
 </script>
-
-
-</body></html>
+</body>
+</html>
