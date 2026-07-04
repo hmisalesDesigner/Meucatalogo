@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<!-- saved from url=(0056)file:///C:/Users/Pedro%20Henrique/Downloads/index_1.html -->
+<!-- saved from url=(0056)file:///C:/Users/Pedro%20Henrique/Downloads/index_3.html -->
 <html lang="pt-BR" data-theme="dark"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MeuCatalog</title>
+<title>MeuCatálogo</title>
 <style>
 :root {
   --bg: #141414;
@@ -562,7 +562,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
   <div class="content-area active" id="dashboard">
     <!-- HERO BANNER -->
     <div id="hero-banner" style="display:none;">
-      <img id="hero-img" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_1.html" alt="">
+      <img id="hero-img" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_3.html" alt="">
       <div class="banner-overlay"></div>
       <div class="banner-info">
         <h1 id="hero-title"></h1>
@@ -770,9 +770,9 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 <div id="toast"></div>
 
 <!-- BACKUP REMINDER BANNER -->
-<div id="backup-banner" style="position: fixed; bottom: 0px; left: 0px; right: 0px; z-index: 800; background: linear-gradient(90deg, rgb(184, 134, 11), rgb(230, 168, 23)); color: rgb(0, 0, 0); padding: 10px 20px; display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 600; box-shadow: rgba(0, 0, 0, 0.3) 0px -4px 16px;">
+<div id="backup-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:800;background:linear-gradient(90deg,#b8860b,#e6a817);color:#000;padding:10px 20px;display:none;align-items:center;gap:12px;font-size:13px;font-weight:600;box-shadow:0 -4px 16px rgba(0,0,0,0.3);">
   <span style="font-size:18px">💾</span>
-  <span id="backup-banner-msg">Você ainda não fez nenhum backup. Exporte agora para proteger seus dados!</span>
+  <span id="backup-banner-msg">Você tem alterações não exportadas. Faça um backup para não perder seus dados!</span>
   <button onclick="exportDataAndDismiss()" style="margin-left:auto;background:#000;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:700;font-size:12px;white-space:nowrap;">⬇ Exportar agora</button>
   <button onclick="dismissBackupBanner()" style="background:rgba(0,0,0,0.2);color:#000;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;white-space:nowrap;">Lembrar depois</button>
 </div>
@@ -813,7 +813,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
           <label class="form-label">Capa (2:3)</label>
           <div class="img-upload-area" id="cover-upload-area" onclick="document.getElementById(&#39;cover-input&#39;).click()">
             <input type="file" id="cover-input" accept="image/png,image/jpeg" onchange="handleCoverUpload(event)" style="display:none">
-            <img id="cover-preview" class="img-preview" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_1.html" style="display:none">
+            <img id="cover-preview" class="img-preview" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_3.html" style="display:none">
             <div id="cover-placeholder">
               <div style="font-size:28px">🖼️</div>
               <div>Capa 2:3</div>
@@ -858,7 +858,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
         <label class="form-label">Banner Horizontal (21:9) <span style="font-size:10px;color:var(--text2)">— exibido ao clicar na série</span></label>
         <div class="img-upload-area" onclick="document.getElementById(&#39;banner-input&#39;).click()" style="padding:12px">
           <input type="file" id="banner-input" accept="image/png,image/jpeg" onchange="handleBannerUpload(event)" style="display:none">
-          <img id="banner-preview" class="banner-preview" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_1.html" style="display:none">
+          <img id="banner-preview" class="banner-preview" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_3.html" style="display:none">
           <div id="banner-placeholder" style="display:flex;align-items:center;gap:8px;justify-content:center;">
             <span style="font-size:22px">🖼️</span>
             <span>Banner 21:9 — PNG ou JPG</span>
@@ -891,7 +891,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
       <button class="modal-close" onclick="closeDetailModal()" style="margin-left:10px;">✕</button>
     </div>
     <div id="detail-banner-wrap">
-      <img id="detail-banner-img" class="detail-banner" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_1.html" alt="" style="display:none">
+      <img id="detail-banner-img" class="detail-banner" src="file:///C:/Users/Pedro%20Henrique/Downloads/index_3.html" alt="" style="display:none">
     </div>
     <div class="detail-header">
       <div class="detail-meta" id="detail-meta"></div>
