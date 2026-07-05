@@ -959,6 +959,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 let DB = { series:[], history:[], cats:[] };
 let editingId = null;
 let detailId = null;
+let detailActiveSeason = 0;
 let searchFilter = 'all';
 let tempCoverData = null;
 let tempBannerData = null;
@@ -1808,7 +1809,8 @@ function openDetail(id){
   const fill=document.getElementById('detail-prog-fill');
   fill.style.width=p+'%'; fill.style.background=pc;
 
-  renderDetailSeasons(s, 0);
+  if(id !== detailId) detailActiveSeason = 0;
+  renderDetailSeasons(s, detailActiveSeason);
   document.getElementById('detail-modal').classList.add('open');
 }
 
@@ -1888,6 +1890,7 @@ function epStarsHTML(idx, rating){
 }
 
 function switchSeason(i){
+  detailActiveSeason=i;
   const s=DB.series.find(x=>x.id===detailId);
   if(s) renderDetailSeasons(s,i);
 }
