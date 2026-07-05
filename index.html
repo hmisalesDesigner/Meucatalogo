@@ -2084,11 +2084,21 @@ function forcePushCloud(){
 function pushToCloud(cb){
   const key=jbKey(), bin=jbBin();
   if(!key||!bin) return;
+  const controller = new AbortController();
+  const timeout = setTimeout(()=>{ controller.abort(); setJBStatus('❌ Timeout — verifique sua conexão.','#e74c3c'); }, 10000);
   fetch(`${JB_API}/b/${bin}`,{
     method:'PUT',
     headers:{'Content-Type':'application/json','X-Master-Key':key},
-    body:JSON.stringify(DB)
-  }).then(r=>{ if(r.ok && cb) cb(); }).catch(()=>{});
+    body:JSON.stringify(DB),
+    signal: controller.signal
+  }).then(r=>{
+    clearTimeout(timeout);
+    if(r.ok){ if(cb) cb(); }
+    else{ setJBStatus(`❌ Erro ${r.status} — tente novamente.`,'#e74c3c'); }
+  }).catch(err=>{
+    clearTimeout(timeout);
+    if(err.name!=='AbortError') setJBStatus('❌ Falha de conexão.','#e74c3c');
+  });
 }
 
 function disconnectJSONBin(){
