@@ -340,8 +340,8 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 .contrib-wrap { padding:16px 28px 8px; }
 .contrib-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:10px; }
 .contrib-title { font-size:13px;font-weight:700;color:var(--text2); }
-.contrib-stats { display:flex;gap:16px;font-size:12px;color:var(--text2); }
-.contrib-stats strong { color:var(--text); }
+.contrib-stats { display:flex;gap:16px;font-size:14px;color:var(--text2); }
+.contrib-stats strong { color:var(--text);font-size:16px; }
 .contrib-grid { display:flex;gap:3px;align-items:flex-start;overflow-x:auto;padding-bottom:4px; }
 .contrib-week { display:flex;flex-direction:column;gap:3px; }
 .contrib-cell { width:13px;height:13px;border-radius:3px;flex-shrink:0;cursor:default;transition:opacity 0.1s; }
@@ -1806,10 +1806,7 @@ function openDetail(id){
   const fill=document.getElementById('detail-prog-fill');
   fill.style.width=p+'%'; fill.style.background=pc;
 
-  if(id !== detailId){
-    const saved = localStorage.getItem('mc_season_'+id);
-    detailActiveSeason = saved !== null ? parseInt(saved) : 0;
-  }
+  detailActiveSeason = (s.lastSeason !== undefined) ? s.lastSeason : 0;
   renderDetailSeasons(s, detailActiveSeason);
   document.getElementById('detail-modal').classList.add('open');
 }
@@ -1897,9 +1894,8 @@ function epStarsHTML(idx, rating){
 
 function switchSeason(i){
   detailActiveSeason=i;
-  if(detailId) localStorage.setItem('mc_season_'+detailId, i);
   const s=DB.series.find(x=>x.id===detailId);
-  if(s) renderDetailSeasons(s,i);
+  if(s){ s.lastSeason=i; saveDB(); renderDetailSeasons(s,i); }
 }
 
 function toggleEp(sid, idx){
