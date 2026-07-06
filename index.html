@@ -2031,7 +2031,7 @@ function connectGist(){
   } else {
     fetch(GIST_API, {
       method:'POST',
-      headers:{'Authorization':'token '+token,'Content-Type':'application/json'},
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
       body: JSON.stringify({
         description:'MeuCatalogo Data',
         public: false,
@@ -2057,7 +2057,7 @@ function syncFromGist(silent){
   const token=gistToken(), id=gistId();
   if(!token||!id){ if(!silent) showToast('Configure o Gist primeiro.','error'); return; }
   if(!silent) setGistStatus('Baixando da nuvem...','#f39c12');
-  fetch(`${GIST_API}/${id}`,{headers:{'Authorization':'token '+token}})
+  fetch(`${GIST_API}/${id}`,{headers:{'Authorization':'Bearer '+token}})
     .then(r=>r.json()).then(data=>{
       if(data.files && data.files['meucatalogo.json']){
         const raw = data.files['meucatalogo.json'].content;
@@ -2089,7 +2089,7 @@ function pushToGist(cb){
   const timeout = setTimeout(()=>{ controller.abort(); setGistStatus('❌ Timeout.','#e74c3c'); }, 10000);
   fetch(`${GIST_API}/${id}`,{
     method:'PATCH',
-    headers:{'Authorization':'token '+token,'Content-Type':'application/json'},
+    headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
     body: JSON.stringify({files:{'meucatalogo.json':{content:JSON.stringify(DB)}}}),
     signal: controller.signal
   }).then(r=>{
