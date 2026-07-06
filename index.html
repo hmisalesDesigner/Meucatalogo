@@ -1,0 +1,2234 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeuCatálogo</title>
+<style>
+:root {
+  --bg: #141414;
+  --bg2: #1a1a2e;
+  --sidebar: #0d0d1a;
+  --card: #1e1e2f;
+  --border: #2a2a3d;
+  --text: #e5e5e5;
+  --text2: #a0a0b0;
+  --accent: #e50914;
+  --accent2: #b20710;
+  --gold: #f5c518;
+  --blue: #4a90e2;
+  --green: #27ae60;
+  --yellow: #f39c12;
+  --hover: #252538;
+  --modal-bg: rgba(0,0,0,0.85);
+  --shadow: 0 8px 32px rgba(0,0,0,0.5);
+  --radius: 8px;
+  --sidebar-width: 260px;
+  --transition: 0.3s ease;
+}
+[data-theme="light"] {
+  --bg: #f0f0f5;
+  --bg2: #e8e8f0;
+  --sidebar: #ffffff;
+  --card: #ffffff;
+  --border: #d0d0e0;
+  --text: #1a1a2e;
+  --text2: #555570;
+  --hover: #f5f5ff;
+  --shadow: 0 8px 32px rgba(0,0,0,0.12);
+  --modal-bg: rgba(255,255,255,0.92);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; overflow-x:hidden; }
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* SIDEBAR */
+#sidebar {
+  width:var(--sidebar-width); min-width:var(--sidebar-width);
+  background:var(--sidebar); border-right:1px solid var(--border);
+  height:100vh; overflow-y:auto; position:fixed; left:0; top:0; z-index:100;
+  display:flex; flex-direction:column;
+  transition:transform 0.3s ease, width 0.3s ease;
+}
+#sidebar.collapsed { transform:translateX(-100%); }
+#main { transition:margin-left 0.3s ease; }
+#main.expanded { margin-left:0; }
+
+.sidebar-logo {
+  padding:20px 18px 12px;
+  font-size:22px; font-weight:800;
+  color:var(--accent); letter-spacing:1px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:8px;
+}
+.sidebar-logo span { color:var(--text); font-weight:300; }
+.nav-section { padding:10px 0; }
+.nav-label {
+  font-size:10px; font-weight:700; color:var(--text2);
+  text-transform:uppercase; letter-spacing:1.5px;
+  padding:8px 18px 4px;
+}
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 18px; cursor:pointer; border-radius:0;
+  color:var(--text2); font-size:13.5px;
+  transition:var(--transition); border-left:3px solid transparent;
+  user-select:none;
+}
+.nav-item:hover { background:var(--hover); color:var(--text); border-left-color:var(--accent); }
+.nav-item.active { background:var(--hover); color:var(--accent); border-left-color:var(--accent); font-weight:600; }
+.nav-item .icon { width:18px; text-align:center; font-size:15px; flex-shrink:0; }
+.nav-badge {
+  margin-left:auto; background:var(--accent); color:#fff;
+  font-size:10px; font-weight:700; border-radius:10px;
+  padding:1px 6px; min-width:18px; text-align:center;
+}
+
+/* MAIN */
+#main { margin-left:var(--sidebar-width); flex:1; min-height:100vh; background:var(--bg); transition:margin-left 0.3s ease; }
+
+/* TOP BAR */
+#topbar {
+  position:sticky; top:0; z-index:50;
+  background:linear-gradient(to bottom,var(--bg) 70%,transparent);
+  padding:12px 28px; display:flex; align-items:center; justify-content:space-between;
+}
+.topbar-title { font-size:20px; font-weight:700; }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+#theme-toggle {
+  width:34px; height:34px; border-radius:50%;
+  background:var(--card); border:1px solid var(--border);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-size:16px; transition:var(--transition); color:var(--text);
+}
+#theme-toggle:hover { background:var(--accent); border-color:var(--accent); }
+.search-box {
+  display:flex; align-items:center; gap:8px;
+  background:var(--card); border:1px solid var(--border); border-radius:20px;
+  padding:6px 14px; font-size:13px; color:var(--text2);
+  cursor:pointer; transition:var(--transition);
+}
+.search-box:hover { border-color:var(--accent); }
+
+/* CONTENT AREAS */
+.content-area { display:none; padding:0 0 40px; }
+.content-area.active { display:block; }
+
+/* BANNER */
+#hero-banner {
+  width:100%; aspect-ratio:21/9; position:relative;
+  overflow:hidden; background:#000;
+  max-height:420px;
+}
+#hero-banner img { width:100%; height:100%; object-fit:cover; opacity:0.7; }
+#hero-banner .banner-overlay {
+  position:absolute; inset:0;
+  background:linear-gradient(to right,rgba(0,0,0,0.8) 30%,transparent 70%),
+              linear-gradient(to top,rgba(0,0,0,0.9) 0%,transparent 40%);
+}
+#hero-banner .banner-info {
+  position:absolute; bottom:28px; left:32px;
+  max-width:420px;
+}
+#hero-banner .banner-info h1 { font-size:32px; font-weight:800; line-height:1.1; margin-bottom:8px; }
+#hero-banner .banner-info p { font-size:13px; color:#ccc; margin-bottom:14px; line-height:1.5; }
+.banner-meta { display:flex; gap:12px; align-items:center; font-size:12px; color:#aaa; margin-bottom:12px; }
+.banner-btns { display:flex; gap:10px; }
+.btn-play, .btn-info {
+  padding:8px 22px; border-radius:4px; font-weight:700;
+  font-size:13px; cursor:pointer; border:none; transition:var(--transition);
+  display:flex; align-items:center; gap:6px;
+}
+.btn-play { background:#fff; color:#000; }
+.btn-play:hover { background:#ddd; }
+.btn-info { background:rgba(109,109,110,0.7); color:#fff; }
+.btn-info:hover { background:rgba(109,109,110,0.9); }
+
+/* CATEGORY ROW */
+.cat-section { padding:16px 0 8px; }
+.cat-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px 10px;
+}
+.cat-title { font-size:16px; font-weight:700; color:var(--text); }
+.cat-count { font-size:11px; color:var(--text2); margin-left:8px; }
+.cat-row-wrap { position:relative; padding:0 28px; }
+.cat-row {
+  display:flex; gap:10px; overflow:hidden;
+  transition:transform 0.4s ease;
+  padding:4px 0 12px;
+}
+.cat-row::-webkit-scrollbar { display:none; }
+.arrow-btn {
+  position:absolute; top:50%; transform:translateY(-50%);
+  width:36px; height:60px; background:rgba(0,0,0,0.7);
+  border:none; cursor:pointer; color:#fff; font-size:18px;
+  border-radius:4px; z-index:10; opacity:0;
+  transition:opacity 0.2s; display:flex; align-items:center; justify-content:center;
+}
+.cat-row-wrap:hover .arrow-btn { opacity:1; }
+.arrow-left { left:0; border-radius:0 4px 4px 0; }
+.arrow-right { right:0; border-radius:4px 0 0 4px; }
+
+/* CARD */
+.series-card {
+  flex:0 0 calc((100% - 90px)/6);
+  min-width:120px; max-width:180px;
+  border-radius:var(--radius); overflow:hidden;
+  cursor:pointer; transition:transform 0.3s, box-shadow 0.3s;
+  position:relative; background:var(--card); border:1px solid var(--border);
+}
+.series-card:hover { transform:scale(1.06) translateY(-4px); box-shadow:0 12px 40px rgba(0,0,0,0.6); z-index:5; }
+.series-card img { width:100%; aspect-ratio:2/3; object-fit:cover; display:block; }
+.card-overlay {
+  position:absolute; inset:0;
+  background:linear-gradient(to top,rgba(0,0,0,0.9) 0%,transparent 50%);
+  opacity:0; transition:opacity 0.3s;
+  display:flex; flex-direction:column; justify-content:flex-end; padding:10px;
+}
+.series-card:hover .card-overlay { opacity:1; }
+.card-name { font-size:11px; font-weight:700; line-height:1.2; }
+.card-meta { font-size:10px; color:#aaa; margin-top:2px; }
+.card-progress-bar {
+  position:absolute; bottom:0; left:0; right:0; height:3px; background:rgba(255,255,255,0.15);
+}
+.card-progress-fill { height:100%; transition:width 0.4s, background 0.4s; }
+.card-badge {
+  position:absolute; top:8px; left:8px; font-size:10px; font-weight:700;
+  padding:3px 7px; border-radius:4px; text-transform:uppercase; letter-spacing:0.5px;
+}
+.card-badge.novo { background:#e50914; color:#fff; }
+.card-badge.continuar { background:#f39c12; color:#000; }
+.card-badge.concluido { background:#27ae60; color:#fff; }
+
+/* PLACEHOLDER CARD */
+.placeholder-card {
+  flex:0 0 calc((100% - 90px)/6); min-width:120px; max-width:180px;
+  aspect-ratio:2/3; border-radius:var(--radius);
+  background:var(--card); border:2px dashed var(--border);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  cursor:pointer; color:var(--text2); font-size:12px; gap:6px;
+  transition:var(--transition);
+}
+.placeholder-card:hover { border-color:var(--accent); color:var(--accent); background:var(--hover); }
+.placeholder-card .plus { font-size:28px; }
+
+/* STATS GRID */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; padding:16px 28px; }
+.stat-card {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px; text-align:center;
+}
+.stat-num { font-size:28px; font-weight:800; color:var(--accent); }
+.stat-label { font-size:12px; color:var(--text2); margin-top:4px; }
+
+/* PROGRESS SECTION */
+.progress-section { padding:0 28px; }
+.progress-item {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px 16px; margin-bottom:10px; cursor:pointer; transition:var(--transition);
+  display:flex; align-items:center; gap:14px;
+}
+.progress-item:hover { border-color:var(--accent); background:var(--hover); }
+.progress-thumb { width:50px; height:75px; border-radius:4px; object-fit:cover; flex-shrink:0; background:var(--border); }
+.progress-info { flex:1; }
+.progress-name { font-size:14px; font-weight:700; margin-bottom:4px; }
+.progress-meta { font-size:11px; color:var(--text2); margin-bottom:8px; }
+.prog-bar-bg { height:5px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; }
+.prog-bar-fill { height:100%; border-radius:3px; transition:width 0.5s, background 0.5s; }
+.progress-pct { font-size:12px; font-weight:700; margin-top:4px; }
+
+/* TABLE */
+.data-table { width:100%; border-collapse:collapse; font-size:13px; }
+.data-table th { padding:10px 14px; text-align:left; color:var(--text2); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); }
+.data-table td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.data-table tr:hover td { background:var(--hover); }
+.star { color:var(--gold); font-size:13px; }
+.star.empty { color:var(--border); }
+
+/* MODAL */
+.modal-overlay {
+  position:fixed; inset:0; background:var(--modal-bg);
+  z-index:1000; display:none; align-items:flex-start;
+  justify-content:center; padding:20px; overflow-y:auto;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:12px; width:100%; max-width:600px;
+  box-shadow:var(--shadow); margin:auto;
+  animation:slideUp 0.3s ease;
+}
+@keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal-header {
+  padding:18px 22px 14px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.modal-title { font-size:16px; font-weight:700; }
+.modal-close { cursor:pointer; font-size:20px; color:var(--text2); background:none; border:none; color:var(--text); line-height:1; }
+.modal-body { padding:20px 22px; }
+.form-group { margin-bottom:16px; }
+.form-label { font-size:12px; color:var(--text2); font-weight:600; margin-bottom:6px; display:block; text-transform:uppercase; letter-spacing:0.5px; }
+.form-input, .form-select, .form-textarea {
+  width:100%; padding:10px 12px; border-radius:6px;
+  background:var(--bg); border:1px solid var(--border);
+  color:var(--text); font-size:13px; outline:none;
+  transition:border-color 0.2s; font-family:inherit;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color:var(--accent); }
+.form-textarea { resize:vertical; min-height:80px; }
+.form-row { display:flex; gap:12px; }
+.form-row .form-group { flex:1; }
+.season-block {
+  background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:8px;
+}
+.season-label { font-size:12px; color:var(--text2); margin-bottom:6px; font-weight:600; }
+.modal-footer {
+  padding:14px 22px; border-top:1px solid var(--border);
+  display:flex; justify-content:flex-end; gap:10px;
+}
+.btn { padding:9px 20px; border-radius:6px; border:none; cursor:pointer; font-size:13px; font-weight:600; transition:var(--transition); }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:var(--accent2); }
+.btn-secondary { background:var(--border); color:var(--text); }
+.btn-secondary:hover { background:var(--hover); }
+.btn-danger { background:transparent; color:#e74c3c; border:1px solid #e74c3c; }
+.btn-danger:hover { background:#e74c3c; color:#fff; }
+.btn-sm { padding:5px 12px; font-size:11px; }
+
+/* IMAGE UPLOAD */
+.img-upload-area {
+  border:2px dashed var(--border); border-radius:8px;
+  padding:20px; text-align:center; cursor:pointer;
+  color:var(--text2); font-size:12px; transition:var(--transition);
+  position:relative; overflow:hidden;
+}
+.img-upload-area:hover { border-color:var(--accent); color:var(--accent); }
+.img-upload-area input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.img-preview { width:80px; height:120px; object-fit:cover; border-radius:4px; margin:0 auto 8px; display:block; }
+.banner-preview { width:100%; max-height:100px; object-fit:cover; border-radius:4px; margin-bottom:8px; display:block; }
+
+/* SERIES DETAIL MODAL */
+.series-detail { display:none; }
+.series-detail.open { display:flex; }
+.detail-banner { width:100%; aspect-ratio:21/9; object-fit:cover; border-radius:8px 8px 0 0; }
+.detail-header { padding:20px 24px 0; }
+.detail-title { font-size:24px; font-weight:800; }
+.detail-meta { display:flex; gap:14px; font-size:12px; color:var(--text2); margin-top:6px; flex-wrap:wrap; }
+.detail-body { padding:16px 24px; }
+.seasons-tabs { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+.season-tab {
+  padding:6px 14px; border-radius:20px; border:1px solid var(--border);
+  font-size:12px; cursor:pointer; transition:var(--transition); background:var(--bg);
+}
+.season-tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.ep-list { max-height:300px; overflow-y:auto; }
+.ep-row {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 0; border-bottom:1px solid var(--border);
+}
+.ep-num { font-size:12px; color:var(--text2); width:28px; flex-shrink:0; text-align:right; }
+.ep-name { flex:1; font-size:13px; }
+.ep-name-input { flex:1; font-size:13px; background:transparent; border:none; border-bottom:1px solid transparent; color:var(--text); outline:none; padding:2px 4px; border-radius:3px; transition:border-color 0.2s,background 0.2s; }
+.ep-name-input:hover { border-bottom-color:var(--border); }
+.ep-name-input:focus { border-bottom-color:var(--accent); background:var(--hover); }
+/* Contribution graph */
+.contrib-wrap { padding:16px 28px 8px; }
+.contrib-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:10px; }
+.contrib-title { font-size:13px;font-weight:700;color:var(--text2); }
+.contrib-stats { display:flex;gap:16px;font-size:12px;color:var(--text2); }
+.contrib-stats strong { color:var(--text); }
+.contrib-grid { display:flex;gap:3px;align-items:flex-start;overflow-x:auto;padding-bottom:4px; }
+.contrib-week { display:flex;flex-direction:column;gap:3px; }
+.contrib-cell { width:13px;height:13px;border-radius:3px;flex-shrink:0;cursor:default;transition:opacity 0.1s; }
+.contrib-cell:hover { opacity:0.8; }
+.contrib-legend { display:flex;align-items:center;gap:5px;margin-top:8px;justify-content:flex-end;font-size:11px;color:var(--text2); }
+.contrib-legend-cell { width:12px;height:12px;border-radius:2px; }
+/* Meta notification */
+.meta-toast { position:fixed;top:70px;right:20px;z-index:900;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;box-shadow:var(--shadow);max-width:280px;transform:translateX(320px);transition:transform 0.4s ease;font-size:13px; }
+.meta-toast.show { transform:translateX(0); }
+.meta-toast-title { font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px; }
+.meta-toast-close { margin-left:auto;cursor:pointer;color:var(--text2);font-size:16px;line-height:1; }
+/* Meta config block */
+.meta-inputs { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.ep-check { width:20px; height:20px; border-radius:4px; border:2px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:11px; transition:var(--transition); flex-shrink:0; }
+.ep-check.watched { background:var(--accent); border-color:var(--accent); color:#fff; }
+.ep-link-input { flex:1; min-width:0; max-width:180px; padding:4px 8px; border-radius:5px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:11px; outline:none; transition:border-color 0.2s; }
+.ep-link-input:focus { border-color:var(--accent); }
+.ep-link-btn { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:4px; background:var(--accent); color:#fff; font-size:11px; text-decoration:none; flex-shrink:0; transition:opacity 0.2s; }
+.ep-link-btn:hover { opacity:0.8; }
+.ep-link-btn-empty { display:inline-block; width:24px; height:24px; flex-shrink:0; }
+.ep-stars { display:flex; gap:2px; }
+.ep-star { font-size:14px; color:var(--border); cursor:pointer; transition:color 0.15s; }
+.ep-star.lit { color:var(--gold); }
+.ep-star:hover { color:var(--gold); }
+
+/* SEARCH */
+.search-area { padding:16px 28px; }
+.search-bar {
+  display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap;
+}
+.search-input-wrap { flex:1; position:relative; min-width:200px; }
+.search-input-wrap .si { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text2); }
+.search-main {
+  width:100%; padding:10px 12px 10px 36px;
+  border-radius:8px; background:var(--card); border:1px solid var(--border);
+  color:var(--text); font-size:14px; outline:none;
+}
+.search-main:focus { border-color:var(--accent); }
+.filter-chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.chip {
+  padding:5px 12px; border-radius:16px; border:1px solid var(--border);
+  font-size:11px; cursor:pointer; transition:var(--transition); color:var(--text2);
+}
+.chip.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.chip:hover { border-color:var(--accent); color:var(--text); }
+
+/* NOTES */
+.note-card {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px 16px; margin-bottom:10px;
+}
+.note-title { font-size:14px; font-weight:700; margin-bottom:6px; }
+.note-text { font-size:12px; color:var(--text2); line-height:1.6; }
+.note-stars { margin-top:8px; }
+
+/* HISTORY */
+.history-item {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 0; border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.history-date { font-size:11px; color:var(--text2); min-width:80px; }
+
+/* BACKUP/CONFIG */
+.config-block { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:14px; }
+.config-block-title { font-size:13px; font-weight:700; margin-bottom:12px; color:var(--text); }
+
+/* DRIVE MODAL */
+#drive-modal { display:none; }
+#drive-modal.open { display:flex; }
+.drive-modal-inner {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:12px; width:100%; max-width:460px; margin:auto;
+  padding:32px; text-align:center; box-shadow:var(--shadow);
+}
+.drive-icon { font-size:48px; margin-bottom:16px; }
+.drive-title { font-size:20px; font-weight:800; margin-bottom:8px; }
+.drive-sub { font-size:13px; color:var(--text2); margin-bottom:24px; line-height:1.6; }
+
+/* COLOR SWATCHES */
+.color-swatch {
+  width:34px; height:34px; border-radius:50%; cursor:pointer;
+  border:3px solid transparent; transition:transform 0.2s, border-color 0.2s;
+  flex-shrink:0;
+}
+.color-swatch:hover { transform:scale(1.15); border-color:rgba(255,255,255,0.4); }
+.color-swatch.active { border-color:#fff; transform:scale(1.1); }
+
+/* CATEGORY FILTER TAGS */
+.cat-filter-tags { display:flex; gap:8px; flex-wrap:wrap; padding:8px 28px 0; }
+.cat-tag { padding:5px 14px; border-radius:16px; border:1px solid var(--border); font-size:12px; cursor:pointer; transition:var(--transition); color:var(--text2); }
+.cat-tag.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.cat-tag:hover { border-color:var(--accent); }
+
+/* FAVORITE STAR */
+.fav-btn { background:none; border:none; cursor:pointer; font-size:16px; color:var(--border); transition:color 0.2s; }
+.fav-btn.active { color:var(--gold); }
+
+/* EMPTY STATE */
+.empty-state { text-align:center; padding:60px 20px; color:var(--text2); }
+.empty-state .ei { font-size:48px; margin-bottom:12px; }
+.empty-state p { font-size:14px; }
+
+/* TOAST */
+#toast {
+  position:fixed; bottom:24px; right:24px; z-index:9999;
+  background:var(--card); border:1px solid var(--border); border-radius:8px;
+  padding:12px 18px; font-size:13px; box-shadow:var(--shadow);
+  transform:translateY(80px); opacity:0; transition:all 0.3s;
+  max-width:300px;
+}
+#toast.show { transform:translateY(0); opacity:1; }
+#toast.success { border-color:var(--green); }
+#toast.error { border-color:#e74c3c; }
+
+/* SECTION TITLE */
+.section-title { font-size:15px; font-weight:700; padding:0 28px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* GRID VIEW */
+.library-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:14px; padding:0 28px; }
+
+/* TOOLTIP */
+.tooltip-wrap { position:relative; }
+.tooltip { position:absolute; bottom:calc(100%+6px); left:50%; transform:translateX(-50%); background:#000; color:#fff; font-size:11px; padding:4px 8px; border-radius:4px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity 0.2s; z-index:200; }
+.tooltip-wrap:hover .tooltip { opacity:1; }
+
+@media(max-width:768px){
+  #sidebar { transform:translateX(-100%); }
+  #sidebar.open { transform:translateX(0); }
+  #main { margin-left:0; }
+  .series-card { flex:0 0 calc(33% - 8px); }
+}
+</style>
+</head>
+<body>
+
+<!-- DRIVE MODAL -->
+<div class="modal-overlay" id="drive-modal">
+  <div class="drive-modal-inner">
+    <div class="drive-icon">☁️</div>
+    <div class="drive-title">Conectar ao Google Drive</div>
+    <div class="drive-sub">
+      Insira o link público da pasta no Google Drive que contém as imagens e dados do seu catálogo.<br><br>
+      <strong>Dica:</strong> Os dados também podem ser importados via <em>Configurações → Importar</em>.
+    </div>
+    <div class="form-group" style="text-align:left">
+      <label class="form-label">URL da pasta do Google Drive (opcional)</label>
+      <input class="form-input" id="drive-url" placeholder="https://drive.google.com/drive/folders/...">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:8px;">
+      <button class="btn btn-secondary" onclick="closeDriveModal()">Pular por agora</button>
+      <button class="btn btn-primary" onclick="connectDrive()">Conectar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">🎬 <span>Meu</span>Catálogo</div>
+
+  <div class="nav-section">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item active" onclick="goTo('dashboard')"><span class="icon">🏠</span>Dashboard</div>
+    <div class="nav-item" onclick="goTo('stats-view')"><span class="icon">📊</span>Estatísticas</div>
+    <div class="nav-item" onclick="goTo('search-view')"><span class="icon">🔍</span>Pesquisa</div>
+    <div class="nav-item" onclick="openAddModal()" style="color:var(--accent);font-weight:700;margin-top:2px"><span class="icon">➕</span>Adicionar Série</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:12px;">
+      Categorias
+      <span onclick="openCatModal()" title="Gerenciar categorias"
+        style="cursor:pointer;font-size:14px;color:var(--text2);padding:2px 4px;border-radius:4px;transition:color 0.2s"
+        onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">⚙</span>
+    </div>
+    <div id="sidebar-cats"></div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Biblioteca</div>
+    <div class="nav-item" onclick="goTo('library')"><span class="icon">📚</span>Todos os Cursos</div>
+    <div class="nav-item" onclick="goTo('watching')"><span class="icon">▶️</span>Assistindo <span class="nav-badge" id="badge-watching">0</span></div>
+    <div class="nav-item" onclick="goTo('completed')"><span class="icon">✅</span>Concluídos</div>
+    <div class="nav-item" onclick="goTo('favorites')"><span class="icon">⭐</span>Favoritos</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Acompanhamento</div>
+    <div class="nav-item" onclick="goTo('progress-view')"><span class="icon">📈</span>Progresso</div>
+    <div class="nav-item" onclick="goTo('history-view')"><span class="icon">🕐</span>Histórico</div>
+    <div class="nav-item" onclick="goTo('notes-view')"><span class="icon">📝</span>Notas</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Sistema</div>
+    <div class="nav-item" onclick="goTo('settings')"><span class="icon">⚙️</span>Configurações</div>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div id="main">
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <button id="sidebar-toggle" onclick="toggleSidebar()" title="Mostrar/ocultar menu" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text);padding:4px 8px 4px 0;line-height:1;flex-shrink:0">☰</button>
+    <div class="topbar-title" id="topbar-title">Dashboard</div>
+    <div class="topbar-right">
+      <div class="search-box" onclick="goTo('search-view')">🔍 Pesquisar...</div>
+      <button id="theme-toggle" onclick="toggleTheme()" title="Alternar tema">🌙</button>
+    </div>
+  </div>
+
+  <!-- ======= DASHBOARD ======= -->
+  <div class="content-area active" id="dashboard">
+    <!-- HERO BANNER -->
+    <div id="hero-banner" style="display:none;cursor:pointer;" onclick="heroClick()">
+      <img id="hero-img" src="" alt="">
+      <div class="banner-overlay"></div>
+      <div class="banner-info">
+        <h1 id="hero-title"></h1>
+        <div class="banner-meta" id="hero-meta"></div>
+        <p id="hero-desc"></p>
+        <div class="banner-btns">
+          <button class="btn-play" id="hero-play-btn">▶ Assistir</button>
+          <button class="btn-info" id="hero-info-btn">ℹ Mais Infos</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EM ANDAMENTO -->
+    <div id="dash-watching-section"></div>
+
+    <!-- PRÓXIMOS EPISÓDIOS -->
+    <div id="dash-next-section"></div>
+
+    <!-- CATEGORY ROWS -->
+    <div id="dashboard-cats"></div>
+  </div>
+
+  <!-- ======= LIBRARY ======= -->
+  <div class="content-area" id="library">
+    <div style="padding:16px 28px 12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div style="font-size:15px;font-weight:700">Todos os Cursos</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select class="form-select" style="width:auto;padding:6px 10px;font-size:12px" id="lib-sort" onchange="renderLibrary()">
+          <option value="name">Nome A-Z</option>
+          <option value="year">Ano</option>
+          <option value="cat">Categoria</option>
+          <option value="progress">Progresso</option>
+        </select>
+        <select class="form-select" style="width:auto;padding:6px 10px;font-size:12px" id="lib-cat-filter" onchange="renderLibrary()">
+          <option value="">Todas Categorias</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ Adicionar</button>
+      </div>
+    </div>
+    <div class="library-grid" id="library-grid"></div>
+  </div>
+
+  <!-- ======= WATCHING ======= -->
+  <div class="content-area" id="watching">
+    <div class="section-title" style="padding-top:16px;">Séries em Andamento</div>
+    <div class="progress-section" id="watching-list"></div>
+  </div>
+
+  <!-- ======= COMPLETED ======= -->
+  <div class="content-area" id="completed">
+    <div class="section-title" style="padding-top:16px;">Cursos Concluídos</div>
+    <div class="library-grid" id="completed-grid"></div>
+  </div>
+
+  <!-- ======= FAVORITES ======= -->
+  <div class="content-area" id="favorites">
+    <div class="section-title" style="padding-top:16px;">Favoritos</div>
+    <div class="library-grid" id="favorites-grid"></div>
+  </div>
+
+  <!-- ======= PROGRESS ======= -->
+  <div class="content-area" id="progress-view">
+    <div class="section-title" style="padding-top:16px;">Progresso por Série</div>
+    <div class="progress-section" id="progress-list"></div>
+  </div>
+
+  <!-- ======= HISTORY ======= -->
+  <div class="content-area" id="history-view">
+    <div class="section-title" style="padding-top:16px;">Histórico de Episódios</div>
+    <div style="padding:0 28px;" id="history-list"></div>
+  </div>
+
+  <!-- ======= NOTES ======= -->
+  <div class="content-area" id="notes-view">
+    <div class="section-title" style="padding-top:16px;">Notas e Avaliações</div>
+    <div style="padding:0 28px;" id="notes-list"></div>
+  </div>
+
+  <!-- ======= STATS ======= -->
+  <div class="content-area" id="stats-view">
+    <div class="section-title" style="padding-top:16px;">Estatísticas Gerais</div>
+    <div class="stats-grid" style="padding:16px 28px 0">
+      <div class="stat-card"><div class="stat-num" id="qs-total">0</div><div class="stat-label">Total Cadastrados</div></div>
+      <div class="stat-card"><div class="stat-num" id="qs-watch">0</div><div class="stat-label">Assistindo</div></div>
+      <div class="stat-card"><div class="stat-num" id="qs-done">0</div><div class="stat-label">Concluídos</div></div>
+      <div class="stat-card"><div class="stat-num" id="qs-eps">0</div><div class="stat-label">Eps Assistidos</div></div>
+    </div>
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="section-title">Episódios no Último Ano</div>
+    <div class="contrib-wrap" id="contrib-section">
+      <div class="contrib-header">
+        <span class="contrib-title">Episódios assistidos no último ano</span>
+        <div class="contrib-stats">
+          <span>🔥 Sequência: <strong id="cg-streak">0</strong> dias</span>
+          <span>🏆 Recorde: <strong id="cg-best">0</strong> dias</span>
+          <span>📅 Média: <strong id="cg-avg">0</strong>/sem</span>
+        </div>
+      </div>
+      <div class="contrib-grid" id="contrib-grid"></div>
+      <div class="contrib-legend">
+        <span>Menos</span>
+        <div class="contrib-legend-cell" style="background:var(--border)"></div>
+        <div class="contrib-legend-cell" style="background:#c6efb3"></div>
+        <div class="contrib-legend-cell" style="background:#57bb6a"></div>
+        <div class="contrib-legend-cell" style="background:#2d9e4a"></div>
+        <div class="contrib-legend-cell" style="background:#1a6e30"></div>
+        <span>Mais</span>
+      </div>
+    </div>
+    <div class="section-title">Categorias</div>
+    <div style="padding:0 28px;" id="cat-stats"></div>
+  </div>
+
+  <!-- ======= SEARCH ======= -->
+  <div class="content-area" id="search-view">
+    <div class="search-area">
+      <div class="search-bar">
+        <div class="search-input-wrap">
+          <span class="si">🔍</span>
+          <input class="search-main" id="search-input" placeholder="Buscar por nome, categoria, diretor, ano..." oninput="doSearch()">
+        </div>
+      </div>
+      <div class="filter-chips" id="search-filters">
+        <div class="chip active" onclick="setSearchFilter('all',this)">Todos</div>
+        <div class="chip" onclick="setSearchFilter('name',this)">Nome</div>
+        <div class="chip" onclick="setSearchFilter('cat',this)">Categoria</div>
+        <div class="chip" onclick="setSearchFilter('director',this)">Diretor</div>
+        <div class="chip" onclick="setSearchFilter('year',this)">Ano</div>
+      </div>
+      <div class="library-grid" id="search-results"></div>
+    </div>
+  </div>
+
+  <!-- ======= SETTINGS ======= -->
+  <div class="content-area" id="settings">
+    <div style="padding:0 28px;max-width:600px;">
+      <div class="section-title" style="padding:16px 0 8px;padding-left:0">Configurações</div>
+
+      <div class="config-block">
+        <div class="config-block-title">🎨 Tema</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px;">
+          <button class="btn btn-secondary" onclick="setTheme('dark')">🌙 Escuro</button>
+          <button class="btn btn-secondary" onclick="setTheme('light')">☀️ Claro</button>
+        </div>
+        <div class="config-block-title" style="margin-bottom:10px;">🎨 Cor de Destaque</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <div class="color-swatch" style="background:#e50914" onclick="setAccent('#e50914','#b20710')" title="Vermelho Netflix"></div>
+          <div class="color-swatch" style="background:#4a90e2" onclick="setAccent('#4a90e2','#2e6db5')" title="Azul"></div>
+          <div class="color-swatch" style="background:#9b59b6" onclick="setAccent('#9b59b6','#7d3c98')" title="Roxo"></div>
+          <div class="color-swatch" style="background:#27ae60" onclick="setAccent('#27ae60','#1e8449')" title="Verde"></div>
+          <div class="color-swatch" style="background:#e67e22" onclick="setAccent('#e67e22','#ca6f1e')" title="Laranja"></div>
+          <div class="color-swatch" style="background:#f39c12" onclick="setAccent('#f39c12','#d68910')" title="Amarelo"></div>
+          <div class="color-swatch" style="background:#1abc9c" onclick="setAccent('#1abc9c','#148f77')" title="Teal"></div>
+          <div class="color-swatch" style="background:#e91e8c" onclick="setAccent('#e91e8c','#c21674')" title="Rosa"></div>
+          <div style="display:flex;align-items:center;gap:6px;margin-left:4px;">
+            <label style="font-size:11px;color:var(--text2)">Personalizar:</label>
+            <input type="color" id="custom-accent" value="#e50914" onchange="setAccentCustom(this.value)"
+              style="width:34px;height:34px;border:none;border-radius:6px;cursor:pointer;background:none;padding:2px;">
+          </div>
+        </div>
+      </div>
+
+      <div class="config-block">
+        <div class="config-block-title">💾 Backup e Dados</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="exportData()">⬇ Exportar JSON</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">⬆ Importar JSON</button>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+          <button class="btn btn-danger" onclick="confirmClearData()">🗑 Limpar Tudo</button>
+        </div>
+        <p style="font-size:11px;color:var(--text2);margin-top:10px;">Exporte seus dados regularmente para fazer backup. Importe para restaurar.</p>
+      </div>
+
+      <div class="config-block" id="gist-block">
+        <div class="config-block-title">☁️ Sincronização Online (GitHub Gist)</div>
+        <div id="gist-status-bar" style="display:none;padding:8px 12px;border-radius:6px;font-size:12px;margin-bottom:12px;"></div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+          Salva seus dados online via GitHub Gist. Acesse de qualquer navegador.<br>
+          <strong>1.</strong> Gere um token em GitHub → Settings → Developer settings → Personal access tokens → marque <em>gist</em><br>
+          <strong>2.</strong> Cole o token abaixo e clique em Conectar
+        </p>
+        <div class="form-group">
+          <label class="form-label">GitHub Token (ghp_...)</label>
+          <input class="form-input" id="gist-token" type="password" placeholder="ghp_...">
+        </div>
+        <div class="form-group" style="display:none" id="gist-id-group">
+          <label class="form-label">Gist ID (gerado automaticamente)</label>
+          <input class="form-input" id="gist-id" readonly placeholder="Será gerado ao conectar">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="connectGist()">🔗 Conectar</button>
+          <button class="btn btn-secondary" onclick="syncFromGist(false)" id="gist-sync-btn" style="display:none">⬇ Baixar da Nuvem</button>
+          <button class="btn btn-secondary" onclick="forcePushGist()" id="gist-push-btn" style="display:none">⬆ Enviar para Nuvem</button>
+          <button class="btn btn-danger btn-sm" onclick="disconnectGist()" id="gist-disconnect-btn" style="display:none">Desconectar</button>
+        </div>
+      </div>
+
+        <button class="btn btn-primary btn-sm" onclick="saveDriveUrl()">Salvar URL</button>
+      </div>
+
+      <div class="config-block">
+        <div class="config-block-title">🎯 Metas de Estudo</div>
+        <div class="meta-inputs">
+          <div class="form-group">
+            <label class="form-label">Meta diária (episódios)</label>
+            <input class="form-input" id="meta-daily" type="number" min="0" max="50" placeholder="Ex: 2" oninput="saveMetas()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Meta semanal (episódios)</label>
+            <input class="form-input" id="meta-weekly" type="number" min="0" max="200" placeholder="Ex: 10" oninput="saveMetas()">
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--text2)">Você receberá notificações ao atingir suas metas.</p>
+      </div>
+
+      <div class="config-block">
+        <div class="config-block-title">ℹ️ Sobre</div>
+        <p style="font-size:12px;color:var(--text2);line-height:1.7">
+          <strong>MeuCatálogo v1.0</strong><br>
+          Plataforma pessoal de acompanhamento de cursos e séries.<br>
+          Dados armazenados localmente no navegador (localStorage).<br>
+          Use Exportar/Importar para backup e migração.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= CAT FILTER VIEW ======= -->
+  <div class="content-area" id="cat-filter-view">
+    <div class="section-title" style="padding-top:16px;" id="cat-filter-title">Categoria</div>
+    <div class="library-grid" id="cat-filter-grid"></div>
+  </div>
+
+</div><!-- end main -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+<div class="meta-toast" id="meta-toast"><div class="meta-toast-title"><span id="meta-toast-icon">🎯</span><span id="meta-toast-title">Meta atingida!</span><span class="meta-toast-close" onclick="document.getElementById('meta-toast').classList.remove('show')">✕</span></div><div id="meta-toast-body" style="color:var(--text2);font-size:12px;line-height:1.5"></div></div>
+
+<!-- BACKUP REMINDER BANNER -->
+<div id="backup-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:800;background:linear-gradient(90deg,#b8860b,#e6a817);color:#000;padding:10px 20px;display:none;align-items:center;gap:12px;font-size:13px;font-weight:600;box-shadow:0 -4px 16px rgba(0,0,0,0.3);">
+  <span style="font-size:18px">💾</span>
+  <span id="backup-banner-msg">Você tem alterações não exportadas. Faça um backup para não perder seus dados!</span>
+  <button onclick="exportDataAndDismiss()" style="margin-left:auto;background:#000;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:700;font-size:12px;white-space:nowrap;">⬇ Exportar agora</button>
+  <button onclick="dismissBackupBanner()" style="background:rgba(0,0,0,0.2);color:#000;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;white-space:nowrap;">Lembrar depois</button>
+</div>
+
+<!-- CATEGORIES MODAL -->
+<div class="modal-overlay" id="cat-modal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <div class="modal-title">Gerenciar Categorias</div>
+      <button class="modal-close" onclick="closeCatModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="cat-list-edit" style="margin-bottom:16px;max-height:300px;overflow-y:auto;"></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Nova Categoria</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="form-input" id="new-cat-icon" value="📁" style="width:52px;text-align:center;font-size:18px;padding:6px 4px;" maxlength="2">
+        <input class="form-input" id="new-cat-name" placeholder="Nome da categoria..." style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="addCategory()">+ Adicionar</button>
+      </div>
+      <p style="font-size:11px;color:var(--text2);margin-top:8px">Clique no emoji para trocar o ícone, no nome para renomear. 🗑 para excluir.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCatModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT SERIES MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="add-modal-title">Adicionar Série/Curso</div>
+      <button class="modal-close" onclick="closeAddModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 110px;">
+          <label class="form-label">Capa (2:3)</label>
+          <div class="img-upload-area" id="cover-upload-area" onclick="document.getElementById('cover-input').click()">
+            <input type="file" id="cover-input" accept="image/png,image/jpeg" onchange="handleCoverUpload(event)" style="display:none">
+            <img id="cover-preview" class="img-preview" src="" style="display:none">
+            <div id="cover-placeholder">
+              <div style="font-size:28px">🖼️</div>
+              <div>Capa 2:3</div>
+              <div style="font-size:10px;margin-top:2px">PNG ou JPG</div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1">
+          <div class="form-group">
+            <label class="form-label">Nome da Série/Curso *</label>
+            <input class="form-input" id="f-name" placeholder="Nome do curso...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Categoria *</label>
+            <select class="form-select" id="f-cat">
+              <option value="">Selecionar...</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Ano</label>
+              <select class="form-select" id="f-year"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Diretor/Criador</label>
+              <input class="form-input" id="f-director" placeholder="Nome do criador...">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Temporadas e Episódios</label>
+        <div class="form-row" style="align-items:center;margin-bottom:8px;">
+          <div class="form-group" style="flex:0 0 160px;margin-bottom:0">
+            <input class="form-input" id="f-seasons" type="number" min="1" max="50" value="1" placeholder="Nº de temporadas" oninput="buildSeasonInputs()">
+          </div>
+          <div style="font-size:12px;color:var(--text2);padding-top:0">temporada(s)</div>
+        </div>
+        <div id="seasons-inputs"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Banner Horizontal (21:9) <span style="font-size:10px;color:var(--text2)">— exibido ao clicar na série</span></label>
+        <div class="img-upload-area" onclick="document.getElementById('banner-input').click()" style="padding:12px">
+          <input type="file" id="banner-input" accept="image/png,image/jpeg" onchange="handleBannerUpload(event)" style="display:none">
+          <img id="banner-preview" class="banner-preview" src="" style="display:none">
+          <div id="banner-placeholder" style="display:flex;align-items:center;gap:8px;justify-content:center;">
+            <span style="font-size:22px">🖼️</span>
+            <span>Banner 21:9 — PNG ou JPG</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Descrição / Anotação</label>
+        <textarea class="form-textarea" id="f-desc" placeholder="Breve descrição do curso..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="delete-btn" onclick="deleteCurrentSeries()" style="display:none;margin-right:auto">🗑 Excluir</button>
+      <button class="btn btn-secondary" onclick="closeAddModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveSeries()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SERIES DETAIL MODAL -->
+<div class="modal-overlay series-detail" id="detail-modal">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-header" style="padding:12px 16px 12px;">
+      <div style="display:flex;align-items:center;gap:10px;flex:1">
+        <div class="modal-title" id="detail-title">—</div>
+        <button class="fav-btn" id="detail-fav-btn" onclick="toggleFav()" title="Favoritar">☆</button>
+        <button class="btn btn-secondary btn-sm" onclick="openEditFromDetail()" style="margin-left:auto">✏ Editar</button>
+      </div>
+      <button class="modal-close" onclick="closeDetailModal()" style="margin-left:10px;">✕</button>
+    </div>
+    <div id="detail-banner-wrap">
+      <img id="detail-banner-img" class="detail-banner" src="" alt="" style="display:none">
+    </div>
+    <div class="detail-header">
+      <div class="detail-meta" id="detail-meta"></div>
+    </div>
+    <div class="detail-body">
+      <div id="detail-desc" style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;"></div>
+      <!-- PROGRESS -->
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+          <span style="color:var(--text2)">Progresso Geral</span>
+          <span id="detail-pct" style="font-weight:700"></span>
+        </div>
+        <div class="prog-bar-bg">
+          <div class="prog-bar-fill" id="detail-prog-fill"></div>
+        </div>
+      </div>
+      <!-- SEASONS TABS -->
+      <div class="seasons-tabs" id="detail-season-tabs"></div>
+      <!-- EPISODES -->
+      <div class="ep-list" id="detail-ep-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ====================== DATA ======================
+let DB = { series:[], history:[], cats:[] };
+let editingId = null;
+let detailId = null;
+let detailActiveSeason = 0;
+let searchFilter = 'all';
+let tempCoverData = null;
+let tempBannerData = null;
+let autoScrollTimers = {};
+let heroIndex = 0;
+let heroTimer = null;
+
+// ====================== INIT ======================
+function init(){
+  loadDB();
+  populateYears();
+  buildSeasonInputs();
+  renderAll();
+  updateBadges();
+  applyTheme(localStorage.getItem('mc_theme')||'dark');
+  applyStoredAccent();
+  // Gist: restaura token e sincroniza
+  if(gistToken()){
+    document.getElementById('gist-token').value = gistToken();
+    updateGistUI(true);
+    setGistStatus('Sincronizando...','#f39c12');
+    syncFromGist(true);
+    startGistAutoSync();
+  } else {
+    setTimeout(()=>{ if(DB.series.length > 0) showBackupBanner(); }, 2000);
+  }
+  // Drive URL
+  const drive = localStorage.getItem('mc_drive_url');
+  if(drive) document.getElementById('drive-url-settings').value = drive;
+  loadMetas();
+  // Restaura estado da sidebar
+  if(localStorage.getItem('mc_sidebar_collapsed')==='1'){
+    document.getElementById('sidebar').classList.add('collapsed');
+    document.getElementById('main').style.marginLeft='0';
+    document.getElementById('sidebar-toggle').textContent='☰';
+  }
+}
+
+const DEFAULT_CATS = [
+  {name:'Photoshop',icon:'🖼️'},{name:'Premiere Pro',icon:'🎞️'},
+  {name:'After Effects',icon:'✨'},{name:'Illustrator',icon:'🖊️'},
+  {name:'IA',icon:'🤖'},{name:'Marketing',icon:'📢'},
+  {name:'Investimentos',icon:'💹'},{name:'Modelagem 3D',icon:'🧊'},
+  {name:'Som',icon:'🎵'},{name:'Programação',icon:'💻'}
+];
+function loadDB(){
+  try{ const d = localStorage.getItem('mc_db'); if(d) DB=JSON.parse(d); } catch(e){}
+  if(!DB.cats || !DB.cats.length) DB.cats = [...DEFAULT_CATS];
+  if(!DB.history) DB.history = [];
+}
+function saveDB(){
+  localStorage.setItem('mc_db', JSON.stringify(DB));
+  localStorage.setItem('mc_unsaved', 'true');
+  localStorage.setItem('mc_last_save', Date.now());
+  // Se JSONBin configurado, envia para nuvem com debounce
+  if(gistToken() && gistId()){
+    clearTimeout(window._gistDebounce);
+    window._gistDebounce = setTimeout(()=>{
+      pushToGist(()=>setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60'));
+    }, 1500);
+  } else {
+    showBackupBanner();
+  }
+}
+
+// ====================== NAVIGATION ======================
+function goTo(view){
+  document.querySelectorAll('.content-area').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const el = document.getElementById(view);
+  if(el){ el.classList.add('active'); }
+  const titles = {
+    dashboard:'Dashboard', library:'Biblioteca', watching:'Assistindo',
+    completed:'Concluídos', favorites:'Favoritos', 'progress-view':'Progresso',
+    'history-view':'Histórico', 'notes-view':'Notas', 'stats-view':'Estatísticas',
+    'search-view':'Pesquisa', settings:'Configurações', 'cat-filter-view':'Categoria'
+  };
+  document.getElementById('topbar-title').textContent = titles[view]||view;
+
+  if(view==='dashboard') renderDashboard();
+  if(view==='library') renderLibrary();
+  if(view==='watching') renderWatching();
+  if(view==='completed') renderCompleted();
+  if(view==='favorites') renderFavorites();
+  if(view==='progress-view') renderProgress();
+  if(view==='history-view') renderHistory();
+  if(view==='notes-view') renderNotes();
+  if(view==='stats-view') renderStats();
+  if(view==='search-view'){ document.getElementById('search-input').focus(); doSearch(); }
+}
+
+function filterCat(cat){
+  goTo('cat-filter-view');
+  document.getElementById('cat-filter-title').textContent = cat;
+  const grid = document.getElementById('cat-filter-grid');
+  const items = DB.series.filter(s=>s.cat===cat);
+  if(!items.length){ grid.innerHTML='<div class="empty-state"><div class="ei">📂</div><p>Nenhuma série nesta categoria.</p></div>'; return; }
+  grid.innerHTML = items.map(s=>cardHTML(s)).join('');
+}
+
+// ====================== CONTRIBUTION GRAPH ======================
+function renderContribGraph(){
+  const grid = document.getElementById('contrib-grid');
+  if(!grid) return;
+  grid.innerHTML='';
+  // Remove linha de meses anterior se existir (evita duplicatas)
+  const existingMonths = grid.parentElement.querySelector('.contrib-months-row');
+  if(existingMonths) existingMonths.remove();
+  const COLORS = ['var(--border)','#c6efb3','#57bb6a','#2d9e4a','#1a6e30'];
+  const MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  // Contar eps por dia via history
+  const dayCounts = {};
+  (DB.history||[]).forEach(h=>{
+    if(h.action==='watched' && h.date){
+      // h.date está em dd/mm/yyyy
+      const parts = h.date.split('/');
+      if(parts.length===3){
+        const iso = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        dayCounts[iso] = (dayCounts[iso]||0) + 1;
+      }
+    }
+  });
+
+  function getColor(n){ if(!n) return COLORS[0]; if(n===1) return COLORS[1]; if(n<=3) return COLORS[2]; if(n<=6) return COLORS[3]; return COLORS[4]; }
+
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate()-364);
+  start.setDate(start.getDate()-start.getDay());
+
+  let curMonth=-1, weekEl=null;
+  const monthsRow = document.createElement('div');
+  monthsRow.className='contrib-months-row';
+  monthsRow.style.cssText='display:flex;gap:3px;margin-bottom:4px;';
+
+  for(let d=new Date(start); d<=today; d.setDate(d.getDate()+1)){
+    const dow = d.getDay();
+    if(dow===0){
+      weekEl = document.createElement('div');
+      weekEl.className='contrib-week';
+      const m = d.getMonth();
+      const mLabel = document.createElement('div');
+      mLabel.style.cssText='font-size:9px;color:var(--text2);height:14px;line-height:14px;white-space:nowrap;';
+      mLabel.textContent = m!==curMonth ? MONTHS[m] : '';
+      if(m!==curMonth) curMonth=m;
+      monthsRow.appendChild(mLabel);
+      grid.appendChild(weekEl);
+    }
+    const iso = d.toISOString().slice(0,10);
+    const count = dayCounts[iso]||0;
+    const cell = document.createElement('div');
+    cell.className='contrib-cell';
+    cell.style.background = getColor(count);
+    cell.title = `${d.toLocaleDateString('pt-BR')}: ${count} ep${count!==1?'s':''}`;
+    if(weekEl) weekEl.appendChild(cell);
+  }
+  grid.parentElement.insertBefore(monthsRow, grid);
+
+  // Stats
+  let streak=0,best=0,cur=0,total=0;
+  for(let i=0;i<365;i++){
+    const d2=new Date(today); d2.setDate(d2.getDate()-i);
+    const k=d2.toISOString().slice(0,10);
+    const c=dayCounts[k]||0; total+=c;
+    if(c>0){ cur++; if(i===0||streak>0) streak=cur; best=Math.max(best,cur); }
+    else { if(i===0) streak=0; cur=0; }
+  }
+  const el=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  el('cg-streak',streak);
+  el('cg-best',best);
+  el('cg-avg',(total/52).toFixed(1));
+}
+
+// ====================== METAS ======================
+function loadMetas(){
+  const d=document.getElementById('meta-daily');
+  const w=document.getElementById('meta-weekly');
+  if(d) d.value=localStorage.getItem('mc_meta_daily')||'';
+  if(w) w.value=localStorage.getItem('mc_meta_weekly')||'';
+}
+function saveMetas(){
+  const d=document.getElementById('meta-daily').value;
+  const w=document.getElementById('meta-weekly').value;
+  if(d) localStorage.setItem('mc_meta_daily',d);
+  if(w) localStorage.setItem('mc_meta_weekly',w);
+}
+function checkMetas(){
+  const metaDay=parseInt(localStorage.getItem('mc_meta_daily')||'0');
+  const metaWeek=parseInt(localStorage.getItem('mc_meta_weekly')||'0');
+  if(!metaDay&&!metaWeek) return;
+
+  const today=new Date();
+  const todayStr=today.toLocaleDateString('pt-BR');
+  const epsToday=(DB.history||[]).filter(h=>h.action==='watched'&&h.date===todayStr).length;
+
+  // Eps esta semana
+  let epsWeek=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(today); d.setDate(d.getDate()-i);
+    const ds=d.toLocaleDateString('pt-BR');
+    epsWeek+=(DB.history||[]).filter(h=>h.action==='watched'&&h.date===ds).length;
+  }
+
+  const lastNotif=localStorage.getItem('mc_last_notif_day');
+  if(metaDay && epsToday>=metaDay && lastNotif!==todayStr){
+    localStorage.setItem('mc_last_notif_day',todayStr);
+    showMetaToast('🎯','Meta diária atingida!',`Você assistiu ${epsToday} ep${epsToday!==1?'s':''} hoje. Continue assim! 💪`);
+    return;
+  }
+  const lastWeekNotif=localStorage.getItem('mc_last_notif_week');
+  const weekKey=`${today.getFullYear()}-W${Math.ceil(today.getDate()/7)}`;
+  if(metaWeek && epsWeek>=metaWeek && lastWeekNotif!==weekKey){
+    localStorage.setItem('mc_last_notif_week',weekKey);
+    showMetaToast('🏆','Meta semanal atingida!',`Você assistiu ${epsWeek} ep${epsWeek!==1?'s':''} esta semana. Incrível! 🚀`);
+  }
+}
+function showMetaToast(icon,title,body){
+  document.getElementById('meta-toast-icon').textContent=icon;
+  document.getElementById('meta-toast-title').textContent=title;
+  document.getElementById('meta-toast-body').textContent=body;
+  const t=document.getElementById('meta-toast');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),6000);
+}
+
+// ====================== CATEGORIES ======================
+function renderSidebarCats(){
+  const el = document.getElementById('sidebar-cats');
+  if(!el) return;
+  el.innerHTML = DB.cats.map(c=>`
+    <div class="nav-item" onclick="filterCat('${c.name.replace(/'/g,"\\'")}')">
+      <span class="icon">${c.icon}</span>${c.name}
+      <span style="font-size:10px;color:var(--text2);margin-left:auto">${DB.series.filter(s=>s.cat===c.name).length||''}</span>
+    </div>`).join('');
+}
+
+function renderCatSelect(){
+  const sel = document.getElementById('f-cat');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Selecionar...</option>' +
+    DB.cats.map(c=>`<option value="${c.name}">${c.icon} ${c.name}</option>`).join('') +
+    '<option value="__new__">➕ Nova categoria...</option>';
+  if(cur) sel.value = cur;
+  sel.onchange = function(){
+    if(this.value==='__new__'){ this.value=''; closeCatModal(); openCatModal(); }
+  };
+}
+
+function openCatModal(){
+  renderCatListEdit();
+  renderCatSelect();
+  document.getElementById('cat-modal').classList.add('open');
+}
+function closeCatModal(){
+  document.getElementById('cat-modal').classList.remove('open');
+  renderSidebarCats();
+  renderCatSelect();
+}
+
+function renderCatListEdit(){
+  const el = document.getElementById('cat-list-edit');
+  if(!el) return;
+  if(!DB.cats.length){ el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px 0">Nenhuma categoria.</div>'; return; }
+  el.innerHTML = DB.cats.map((c,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <input value="${c.icon}" maxlength="2"
+        style="width:38px;text-align:center;font-size:17px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:3px;"
+        onchange="updateCat(${i},'icon',this.value)">
+      <input value="${c.name}"
+        style="flex:1;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:5px 8px;font-size:13px;"
+        onchange="updateCat(${i},'name',this.value)">
+      <span style="font-size:11px;color:var(--text2);min-width:44px;text-align:center">${DB.series.filter(s=>s.cat===c.name).length} série(s)</span>
+      <button onclick="deleteCat(${i})" class="btn btn-danger btn-sm" style="padding:4px 8px;flex-shrink:0">🗑</button>
+    </div>`).join('');
+}
+
+function updateCat(i, field, val){
+  const old = DB.cats[i].name;
+  DB.cats[i][field] = val.trim() || DB.cats[i][field];
+  if(field==='name' && old !== DB.cats[i].name){
+    DB.series.forEach(s=>{ if(s.cat===old) s.cat=DB.cats[i].name; });
+  }
+  saveDB(); renderCatListEdit();
+}
+
+function deleteCat(i){
+  const cat = DB.cats[i];
+  const count = DB.series.filter(s=>s.cat===cat.name).length;
+  if(count && !confirm(`A categoria "${cat.name}" tem ${count} série(s). Excluir mesmo assim?`)) return;
+  DB.cats.splice(i,1);
+  saveDB(); renderCatListEdit(); renderSidebarCats(); renderCatSelect();
+}
+
+function addCategory(){
+  const icon = document.getElementById('new-cat-icon').value.trim()||'📁';
+  const name = document.getElementById('new-cat-name').value.trim();
+  if(!name){ showToast('Digite o nome da categoria.','error'); return; }
+  if(DB.cats.find(c=>c.name.toLowerCase()===name.toLowerCase())){ showToast('Categoria já existe.','error'); return; }
+  DB.cats.push({name, icon});
+  document.getElementById('new-cat-name').value='';
+  document.getElementById('new-cat-icon').value='📁';
+  saveDB(); renderCatListEdit(); renderSidebarCats(); renderCatSelect();
+  showToast('Categoria adicionada!','success');
+}
+
+// ====================== RENDER ALL ======================
+function renderAll(){
+  renderSidebarCats();
+  renderCatSelect();
+  renderDashboard();
+  updateBadges();
+}
+
+function updateBadges(){
+  const watching = DB.series.filter(s=>{ const p=getProgress(s); return p>0&&p<100; });
+  document.getElementById('badge-watching').textContent = watching.length||'';
+  document.getElementById('badge-watching').style.display = watching.length?'':'none';
+  document.getElementById('qs-total').textContent = DB.series.length;
+  document.getElementById('qs-watch').textContent = watching.length;
+  document.getElementById('qs-done').textContent = DB.series.filter(s=>getProgress(s)===100).length;
+  let eps=0; DB.series.forEach(s=>{ if(s.watched) s.watched.forEach(w=>{ if(w) eps++; }); });
+  document.getElementById('qs-eps').textContent = eps;
+}
+
+// ====================== DASHBOARD ======================
+function renderDashboard(){
+  updateBadges();
+  renderHero();
+  renderDashWatching();
+  renderDashNext();
+  renderCatRows();
+}
+
+function renderDashWatching(){
+  const el = document.getElementById('dash-watching-section');
+  if(!el) return;
+  const items = DB.series.filter(s=>{ const p=getProgress(s); return p>0&&p<100; });
+  if(!items.length){ el.innerHTML=''; return; }
+  el.innerHTML=`
+    <div class="cat-section">
+      <div class="cat-header"><div><span class="cat-title">▶ Em Andamento</span><span class="cat-count">${items.length} série${items.length!==1?'s':''}</span></div></div>
+      <div class="cat-row-wrap" id="wrap-cat-watching" onmouseenter="stopAutoScroll('cat-watching')" onmouseleave="startAutoScroll('cat-watching')">
+        <button class="arrow-btn arrow-left" onclick="scrollCat('cat-watching',-1)">‹</button>
+        <div class="cat-row" id="cat-watching">${items.map(s=>cardHTML(s)).join('')}</div>
+        <button class="arrow-btn arrow-right" onclick="scrollCat('cat-watching',1)">›</button>
+      </div>
+    </div>`;
+  startAutoScroll('cat-watching');
+}
+
+function renderDashNext(){
+  const el = document.getElementById('dash-next-section');
+  if(!el) return;
+  const items = DB.series.filter(s=>{ const p=getProgress(s); return p>0&&p<100; });
+  if(!items.length){ el.innerHTML=''; return; }
+  const nextEps = items.map(s=>{
+    let offset=0, nextIdx=-1, nextSeason=0, nextEp=0;
+    for(let si=0;si<s.seasons.length;si++){
+      const epCount=parseInt(s.seasons[si])||0;
+      for(let ei=0;ei<epCount;ei++){
+        const idx=offset+ei;
+        if(!s.watched||!s.watched[idx]){ nextIdx=idx; nextSeason=si+1; nextEp=ei+1; break; }
+      }
+      offset+=epCount;
+      if(nextIdx>=0) break;
+    }
+    if(nextIdx<0) return null;
+    const epName = s.epNames&&s.epNames[nextIdx] ? s.epNames[nextIdx] : `Episódio ${nextEp}`;
+    const epLink = s.links&&s.links[nextIdx] ? s.links[nextIdx] : '';
+    return {s, nextSeason, nextEp, epName, epLink};
+  }).filter(Boolean).slice(0,8);
+
+  if(!nextEps.length){ el.innerHTML=''; return; }
+  el.innerHTML=`
+    <div class="cat-section">
+      <div class="cat-header"><div><span class="cat-title">🎯 Próximos Episódios</span></div></div>
+      <div style="padding:0 28px;display:flex;flex-direction:column;gap:8px;margin-bottom:8px;">
+        ${nextEps.map(({s,nextSeason,nextEp,epName,epLink})=>`
+          <div style="display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer;transition:border-color 0.2s;" onclick="openDetail('${s.id}')" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            ${s.cover?`<img src="${s.cover}" style="width:36px;height:54px;border-radius:4px;object-fit:cover;flex-shrink:0" alt="">`:`<div style="width:36px;height:54px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🎬</div>`}
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px">T${nextSeason} · E${nextEp} · ${epName}</div>
+              <div style="margin-top:6px;height:3px;background:rgba(255,255,255,0.1);border-radius:2px"><div style="height:100%;width:${getProgress(s)}%;background:${progressColor(getProgress(s))};border-radius:2px"></div></div>
+            </div>
+            ${epLink?`<a href="${epLink}" target="_blank" onclick="event.stopPropagation()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0">▶ Assistir</a>`:''}
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+let currentHeroId = null;
+function heroClick(){ if(currentHeroId) openDetail(currentHeroId); }
+function renderHero(){
+  const lid = localStorage.getItem('mc_last_accessed');
+  let hero = lid ? DB.series.find(s=>s.id===lid) : null;
+  // Se o último acessado foi deletado ou não tem banner, pega outro aleatório com banner
+  if(!hero || !hero.banner){
+    const withBanner = DB.series.filter(s=>s.banner);
+    hero = withBanner.length ? withBanner[Math.floor(Math.random()*withBanner.length)] : null;
+  }
+  if(!hero || !hero.banner){ document.getElementById('hero-banner').style.display='none'; currentHeroId=null; return; }
+  currentHeroId = hero.id;
+  const h = document.getElementById('hero-banner');
+  h.style.display='';
+  document.getElementById('hero-img').src = hero.banner;
+  document.getElementById('hero-title').textContent = hero.name;
+  const p = getProgress(hero);
+  document.getElementById('hero-meta').innerHTML =
+    `<span>${hero.cat}</span><span>${hero.year||''}</span><span>${hero.director||''}</span><span>${p}% concluído</span>`;
+  document.getElementById('hero-desc').textContent = hero.desc||'';
+  document.getElementById('hero-play-btn').onclick=(e)=>{ e.stopPropagation(); openDetail(hero.id); };
+  document.getElementById('hero-info-btn').onclick=(e)=>{ e.stopPropagation(); openDetail(hero.id); };
+}
+
+function renderCatRows(){
+  const cats = {};
+  DB.series.forEach(s=>{ if(!cats[s.cat]) cats[s.cat]=[]; cats[s.cat].push(s); });
+  const cont = document.getElementById('dashboard-cats');
+  cont.innerHTML='';
+
+  if(!DB.series.length){
+    cont.innerHTML='<div class="empty-state"><div class="ei">🎬</div><p>Nenhuma série cadastrada ainda.<br>Clique em <strong>+ Adicionar Série</strong> no menu.</p></div>';
+    return;
+  }
+
+  // Stop all timers
+  Object.values(autoScrollTimers).forEach(t=>clearInterval(t));
+  autoScrollTimers={};
+
+  Object.keys(cats).forEach(cat=>{
+    const items = cats[cat];
+    const catId = 'cat-'+cat.replace(/\s+/g,'_');
+    const div = document.createElement('div');
+    div.className='cat-section';
+    div.innerHTML=`
+      <div class="cat-header">
+        <div><span class="cat-title">${cat}</span><span class="cat-count">${items.length} ${items.length===1?'curso':'cursos'}</span></div>
+      </div>
+      <div class="cat-row-wrap" id="wrap-${catId}"
+        onmouseenter="stopAutoScroll('${catId}')" onmouseleave="startAutoScroll('${catId}')">
+        <button class="arrow-btn arrow-left" onclick="scrollCat('${catId}',-1)">‹</button>
+        <div class="cat-row" id="${catId}">
+          ${items.map(s=>cardHTML(s)).join('')}
+          <div class="placeholder-card" onclick="openAddModal()" style="aspect-ratio:2/3">
+            <div class="plus">＋</div>
+            <div>Adicionar</div>
+          </div>
+        </div>
+        <button class="arrow-btn arrow-right" onclick="scrollCat('${catId}',1)">›</button>
+      </div>`;
+    cont.appendChild(div);
+    startAutoScroll(catId);
+  });
+}
+
+function cardHTML(s){
+  const p = getProgress(s);
+  const pc = progressColor(p);
+  let badge = '';
+  if(p===0) badge = '<span class="card-badge novo">Novo</span>';
+  else if(p===100) badge = '<span class="card-badge concluido">✓ Concluído</span>';
+  else badge = '<span class="card-badge continuar">▶ Continuar</span>';
+  return `<div class="series-card" onclick="openDetail('${s.id}')">
+    ${s.cover ? `<img src="${s.cover}" alt="${s.name}" loading="lazy">` : `<div style="width:100%;aspect-ratio:2/3;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:32px;">🎬</div>`}
+    ${badge}
+    <div class="card-overlay">
+      <div class="card-name">${s.name}</div>
+      <div class="card-meta">${s.cat} • ${s.year||''}</div>
+    </div>
+    ${p>0?`<div class="card-progress-bar"><div class="card-progress-fill" style="width:${p}%;background:${pc}"></div></div>`:''}
+  </div>`;
+}
+
+function progressColor(p){
+  if(p>=100) return '#27ae60';
+  if(p>=60) return '#4a90e2';
+  return '#f39c12';
+}
+
+// ====================== AUTO SCROLL ======================
+function startAutoScroll(catId){
+  const row = document.getElementById(catId);
+  if(!row) return;
+  autoScrollTimers[catId] = setInterval(()=>{
+    if(!row) return;
+    const maxScroll = row.scrollWidth - row.clientWidth;
+    if(row.scrollLeft >= maxScroll-2){
+      row.scrollTo({left:0, behavior:'smooth'});
+    } else {
+      row.scrollBy({left:1.2, behavior:'auto'});
+    }
+  }, 30);
+}
+
+function stopAutoScroll(catId){
+  clearInterval(autoScrollTimers[catId]);
+  delete autoScrollTimers[catId];
+}
+
+function scrollCat(catId, dir){
+  const row = document.getElementById(catId);
+  if(!row) return;
+  const cardW = row.querySelector('.series-card,placeholder-card');
+  const amount = cardW ? cardW.offsetWidth + 10 : 160;
+  row.scrollBy({ left: dir * amount, behavior:'smooth' });
+}
+
+// ====================== LIBRARY ======================
+function renderLibrary(){
+  const sort = document.getElementById('lib-sort').value;
+  const catF = document.getElementById('lib-cat-filter').value;
+  const selEl = document.getElementById('lib-cat-filter');
+  if(selEl.options.length<=1){
+    const cats=[...new Set(DB.series.map(s=>s.cat))];
+    cats.forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; selEl.appendChild(o); });
+  }
+  let items=[...DB.series];
+  if(catF) items=items.filter(s=>s.cat===catF);
+  if(sort==='name') items.sort((a,b)=>a.name.localeCompare(b.name));
+  if(sort==='year') items.sort((a,b)=>(b.year||0)-(a.year||0));
+  if(sort==='cat') items.sort((a,b)=>a.cat.localeCompare(b.cat));
+  if(sort==='progress') items.sort((a,b)=>getProgress(b)-getProgress(a));
+
+  const grid = document.getElementById('library-grid');
+  grid.innerHTML = items.map(s=>cardHTML(s)).join('') + `<div class="placeholder-card" onclick="openAddModal()"><div class="plus">＋</div><div>Adicionar</div></div>`;
+  if(!items.length) grid.innerHTML='<div class="empty-state"><div class="ei">📚</div><p>Nenhuma série cadastrada.</p></div>';
+}
+
+function renderWatching(){
+  const items = DB.series.filter(s=>{ const p=getProgress(s); return p>0&&p<100; });
+  const cont = document.getElementById('watching-list');
+  if(!items.length){ cont.innerHTML='<div class="empty-state"><div class="ei">▶️</div><p>Nenhuma série em andamento.</p></div>'; return; }
+  cont.innerHTML = items.map(s=>progressItemHTML(s)).join('');
+}
+function renderCompleted(){
+  const items = DB.series.filter(s=>getProgress(s)===100);
+  const grid = document.getElementById('completed-grid');
+  grid.innerHTML = items.map(s=>cardHTML(s)).join('');
+  if(!items.length) grid.innerHTML='<div class="empty-state"><div class="ei">✅</div><p>Nenhum curso concluído ainda.</p></div>';
+}
+function renderFavorites(){
+  const items = DB.series.filter(s=>s.fav);
+  const grid = document.getElementById('favorites-grid');
+  grid.innerHTML = items.map(s=>cardHTML(s)).join('');
+  if(!items.length) grid.innerHTML='<div class="empty-state"><div class="ei">⭐</div><p>Nenhum favorito ainda.</p></div>';
+}
+function renderProgress(){
+  const items = [...DB.series].sort((a,b)=>getProgress(b)-getProgress(a));
+  const cont = document.getElementById('progress-list');
+  cont.innerHTML = items.map(s=>progressItemHTML(s)).join('');
+  if(!items.length) cont.innerHTML='<div class="empty-state"><div class="ei">📈</div><p>Nenhuma série cadastrada.</p></div>';
+}
+function progressItemHTML(s){
+  const p = getProgress(s);
+  const pc = progressColor(p);
+  const total = getTotalEps(s);
+  const watched = getWatchedCount(s);
+  return `<div class="progress-item" onclick="openDetail('${s.id}')">
+    ${s.cover?`<img src="${s.cover}" class="progress-thumb" alt="">`:`<div class="progress-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px">🎬</div>`}
+    <div class="progress-info">
+      <div class="progress-name">${s.name}</div>
+      <div class="progress-meta">${s.cat} • ${s.year||''} • ${watched}/${total} eps</div>
+      <div class="prog-bar-bg"><div class="prog-bar-fill" style="width:${p}%;background:${pc}"></div></div>
+      <div class="progress-pct" style="color:${pc}">${p}%</div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;">
+      <button class="fav-btn ${s.fav?'active':''}" onclick="event.stopPropagation();toggleFavById('${s.id}')">${s.fav?'★':'☆'}</button>
+    </div>
+  </div>`;
+}
+
+function renderHistory(){
+  const cont = document.getElementById('history-list');
+  const hist = [...(DB.history||[])].reverse().slice(0,50);
+  if(!hist.length){ cont.innerHTML='<div class="empty-state"><div class="ei">🕐</div><p>Nenhum episódio assistido.</p></div>'; return; }
+  cont.innerHTML = hist.map(h=>`
+    <div class="history-item">
+      <span class="history-date">${h.date}</span>
+      <span style="flex:1">${h.seriesName} — T${h.season}E${String(h.ep+1).padStart(2,'0')}</span>
+      <span style="font-size:11px;color:var(--text2)">${h.action==='watched'?'✅ Assistido':'❌ Desmarcado'}</span>
+    </div>`).join('');
+}
+
+function renderNotes(){
+  const cont = document.getElementById('notes-list');
+  const hasnotes = DB.series.filter(s=>s.desc||(s.ratings&&s.ratings.some(r=>r)));
+  if(!hasnotes.length){ cont.innerHTML='<div class="empty-state"><div class="ei">📝</div><p>Nenhuma nota registrada.</p></div>'; return; }
+  cont.innerHTML = hasnotes.map(s=>{
+    const avg = getAvgRating(s);
+    return `<div class="note-card" onclick="openDetail('${s.id}')">
+      <div class="note-title">${s.name} <span style="font-size:11px;color:var(--text2)">${s.cat}</span></div>
+      ${avg?`<div class="note-stars">${starsHTML(avg)} <span style="font-size:11px;color:var(--text2)">${avg.toFixed(1)}/5</span></div>`:''}
+      ${s.desc?`<div class="note-text">${s.desc}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderStats(){
+  renderContribGraph();
+  const total = DB.series.length;
+  const done = DB.series.filter(s=>getProgress(s)===100).length;
+  let eps=0; DB.series.forEach(s=>{ if(s.watched) s.watched.forEach(w=>{ if(w) eps++; }); });
+  let totalRating=0, rCount=0;
+  DB.series.forEach(s=>{ if(s.ratings) s.ratings.forEach(r=>{ if(r){ totalRating+=r; rCount++; } }); });
+  const avg = rCount?(totalRating/rCount).toFixed(1):'-';
+
+  const cats={};
+  DB.series.forEach(s=>{ if(!cats[s.cat]) cats[s.cat]=0; cats[s.cat]+=getWatchedCount(s); });
+  const topCat = Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${avg}</div><div class="stat-label">Nota Média</div></div>
+    <div class="stat-card"><div class="stat-num" style="font-size:clamp(13px,2.5vw,22px);word-break:break-word;line-height:1.2">${topCat?topCat[0]:'-'}</div><div class="stat-label">Cat. Mais Assistida</div></div>`;
+
+  const catEl = document.getElementById('cat-stats');
+  catEl.innerHTML = Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat,count])=>`
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span>${cat}</span><span style="color:var(--text2)">${count} eps</span>
+      </div>
+      <div class="prog-bar-bg">
+        <div class="prog-bar-fill" style="width:${Math.min(100,(count/(eps||1))*100)}%;background:var(--accent)"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ====================== SEARCH ======================
+function setSearchFilter(f, el){
+  searchFilter=f;
+  document.querySelectorAll('#search-filters .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  doSearch();
+}
+function doSearch(){
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  let items = DB.series;
+  if(q){
+    items = items.filter(s=>{
+      if(searchFilter==='all') return s.name.toLowerCase().includes(q)||s.cat.toLowerCase().includes(q)||(s.director||'').toLowerCase().includes(q)||(s.year||'').toString().includes(q);
+      if(searchFilter==='name') return s.name.toLowerCase().includes(q);
+      if(searchFilter==='cat') return s.cat.toLowerCase().includes(q);
+      if(searchFilter==='director') return (s.director||'').toLowerCase().includes(q);
+      if(searchFilter==='year') return (s.year||'').toString().includes(q);
+      return true;
+    });
+  }
+  const grid = document.getElementById('search-results');
+  grid.innerHTML = items.map(s=>cardHTML(s)).join('');
+  if(!items.length && q) grid.innerHTML='<div class="empty-state"><div class="ei">🔍</div><p>Nenhum resultado encontrado.</p></div>';
+}
+
+// ====================== PROGRESS HELPERS ======================
+function getTotalEps(s){
+  if(!s.seasons) return 0;
+  return s.seasons.reduce((a,b)=>a+(parseInt(b)||0),0);
+}
+function getWatchedCount(s){
+  if(!s.watched) return 0;
+  return s.watched.filter(Boolean).length;
+}
+function getProgress(s){
+  const total = getTotalEps(s);
+  if(!total) return 0;
+  return Math.round((getWatchedCount(s)/total)*100);
+}
+function getAvgRating(s){
+  if(!s.ratings) return 0;
+  const r = s.ratings.filter(Boolean);
+  if(!r.length) return 0;
+  return r.reduce((a,b)=>a+b,0)/r.length;
+}
+function starsHTML(rating, size=13){
+  let h='';
+  for(let i=1;i<=5;i++){
+    h+=`<span style="font-size:${size}px;color:${i<=Math.round(rating)?'var(--gold)':'var(--border)'}">${i<=Math.round(rating)?'★':'☆'}</span>`;
+  }
+  return h;
+}
+
+// ====================== ADD/EDIT MODAL ======================
+function openAddModal(id){
+  editingId = id||null;
+  tempCoverData=null; tempBannerData=null;
+  document.getElementById('add-modal-title').textContent = id?'Editar Série/Curso':'Adicionar Série/Curso';
+  document.getElementById('delete-btn').style.display = id?'':'none';
+  clearForm();
+  if(id){
+    const s = DB.series.find(x=>x.id===id);
+    if(s) fillForm(s);
+  }
+  document.getElementById('add-modal').classList.add('open');
+}
+function closeAddModal(){
+  document.getElementById('add-modal').classList.remove('open');
+  editingId=null; tempCoverData=null; tempBannerData=null;
+}
+function clearForm(){
+  ['f-name','f-director','f-desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-cat').value='';
+  document.getElementById('f-seasons').value=1;
+  document.getElementById('cover-preview').style.display='none';
+  document.getElementById('cover-placeholder').style.display='';
+  document.getElementById('banner-preview').style.display='none';
+  document.getElementById('banner-placeholder').style.display='flex';
+  buildSeasonInputs();
+}
+function fillForm(s){
+  document.getElementById('f-name').value=s.name||'';
+  document.getElementById('f-cat').value=s.cat||'';
+  document.getElementById('f-director').value=s.director||'';
+  document.getElementById('f-desc').value=s.desc||'';
+  document.getElementById('f-year').value=s.year||'';
+  document.getElementById('f-seasons').value=s.seasons?s.seasons.length:1;
+  if(s.cover){ document.getElementById('cover-preview').src=s.cover; document.getElementById('cover-preview').style.display='block'; document.getElementById('cover-placeholder').style.display='none'; tempCoverData=s.cover; }
+  if(s.banner){ document.getElementById('banner-preview').src=s.banner; document.getElementById('banner-preview').style.display='block'; document.getElementById('banner-placeholder').style.display='none'; tempBannerData=s.banner; }
+  buildSeasonInputs(s.seasons);
+}
+function buildSeasonInputs(existing){
+  const n = parseInt(document.getElementById('f-seasons').value)||1;
+  const cont = document.getElementById('seasons-inputs');
+  // Salva valores já digitados antes de reconstruir
+  const current = [];
+  cont.querySelectorAll('input').forEach((el,i)=>current[i]=el.value);
+  cont.innerHTML='';
+  for(let i=0;i<n;i++){
+    const val = existing&&existing[i]!==undefined ? existing[i] : (current[i]!==undefined ? current[i] : '');
+    cont.innerHTML+=`<div class="season-block"><div class="season-label">Temporada ${i+1}</div><input class="form-input" id="eps-${i}" type="number" min="1" max="500" value="${val}" placeholder="Nº de episódios"></div>`;
+  }
+}
+function populateYears(){
+  const sel = document.getElementById('f-year');
+  const cur = new Date().getFullYear();
+  sel.innerHTML='<option value="">Ano</option>';
+  for(let y=cur;y>=1990;y--) sel.innerHTML+=`<option>${y}</option>`;
+}
+
+function handleCoverUpload(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    tempCoverData=ev.target.result;
+    document.getElementById('cover-preview').src=tempCoverData;
+    document.getElementById('cover-preview').style.display='block';
+    document.getElementById('cover-placeholder').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+function handleBannerUpload(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    tempBannerData=ev.target.result;
+    document.getElementById('banner-preview').src=tempBannerData;
+    document.getElementById('banner-preview').style.display='block';
+    document.getElementById('banner-placeholder').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveSeries(){
+  const name=document.getElementById('f-name').value.trim();
+  const cat=document.getElementById('f-cat').value;
+  if(!name){ showToast('Digite o nome da série.','error'); return; }
+  if(!cat){ showToast('Selecione uma categoria.','error'); return; }
+  const nSeas=parseInt(document.getElementById('f-seasons').value)||1;
+  const seasons=[];
+  for(let i=0;i<nSeas;i++) seasons.push(parseInt(document.getElementById('eps-'+i).value)||1);
+
+  const totalEps = seasons.reduce((a,b)=>a+b,0);
+
+  if(editingId){
+    const s=DB.series.find(x=>x.id===editingId);
+    const oldTotal = getTotalEps(s);
+    s.name=name; s.cat=cat;
+    s.director=document.getElementById('f-director').value.trim();
+    s.year=document.getElementById('f-year').value;
+    s.desc=document.getElementById('f-desc').value.trim();
+    s.seasons=seasons;
+    if(tempCoverData) s.cover=tempCoverData;
+    if(tempBannerData) s.banner=tempBannerData;
+    // Resize watched/ratings arrays if needed
+    if(!s.watched) s.watched=[];
+    while(s.watched.length<totalEps) s.watched.push(false);
+    if(!s.ratings) s.ratings=[];
+    while(s.ratings.length<totalEps) s.ratings.push(0);
+    showToast('Série atualizada!','success');
+  } else {
+    const s={
+      id:'s'+Date.now(), name, cat,
+      director:document.getElementById('f-director').value.trim(),
+      year:document.getElementById('f-year').value,
+      desc:document.getElementById('f-desc').value.trim(),
+      seasons, cover:tempCoverData||'', banner:tempBannerData||'',
+      watched:new Array(totalEps).fill(false),
+      ratings:new Array(totalEps).fill(0),
+      fav:false, addedAt:Date.now()
+    };
+    DB.series.push(s);
+    localStorage.setItem('mc_last_accessed', s.id);
+    showToast('Série adicionada!','success');
+  }
+  saveDB(); closeAddModal(); renderAll();
+}
+
+function deleteCurrentSeries(){
+  if(!editingId) return;
+  if(!confirm('Tem certeza que deseja excluir esta série?')) return;
+  const lid = localStorage.getItem('mc_last_accessed');
+  if(lid===editingId) localStorage.removeItem('mc_last_accessed');
+  DB.series=DB.series.filter(s=>s.id!==editingId);
+  saveDB(); closeAddModal(); renderAll(); showToast('Série excluída.','success');
+}
+
+// ====================== DETAIL MODAL ======================
+function openDetail(id){
+  detailId=id;
+  localStorage.setItem('mc_last_accessed', id);
+  const s=DB.series.find(x=>x.id===id);
+  if(!s) return;
+  document.getElementById('detail-title').textContent=s.name;
+  document.getElementById('detail-fav-btn').textContent=s.fav?'★':'☆';
+  document.getElementById('detail-fav-btn').className='fav-btn'+(s.fav?' active':'');
+
+  const bannerImg=document.getElementById('detail-banner-img');
+  if(s.banner){ bannerImg.src=s.banner; bannerImg.style.display='block'; }
+  else bannerImg.style.display='none';
+
+  const meta=[];
+  if(s.cat) meta.push(`<span>📂 ${s.cat}</span>`);
+  if(s.year) meta.push(`<span>📅 ${s.year}</span>`);
+  if(s.director) meta.push(`<span>🎬 ${s.director}</span>`);
+  if(s.seasons) meta.push(`<span>📺 ${s.seasons.length} temporada${s.seasons.length>1?'s':''}</span>`);
+  const avg=getAvgRating(s);
+  if(avg) meta.push(`<span>${starsHTML(avg,12)} ${avg.toFixed(1)}</span>`);
+  document.getElementById('detail-meta').innerHTML=meta.join('');
+  document.getElementById('detail-desc').textContent=s.desc||'';
+
+  const p=getProgress(s);
+  const pc=progressColor(p);
+  document.getElementById('detail-pct').textContent=p+'%';
+  document.getElementById('detail-pct').style.color=pc;
+  const fill=document.getElementById('detail-prog-fill');
+  fill.style.width=p+'%'; fill.style.background=pc;
+
+  if(id !== detailId) detailActiveSeason = 0;
+  renderDetailSeasons(s, detailActiveSeason);
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function renderDetailSeasons(s, activeSeason){
+  const tabsEl=document.getElementById('detail-season-tabs');
+  const epsEl=document.getElementById('detail-ep-list');
+  if(!s.seasons||!s.seasons.length){ tabsEl.innerHTML=''; epsEl.innerHTML='<div style="color:var(--text2);font-size:13px;padding:10px 0">Sem temporadas cadastradas.</div>'; return; }
+
+  tabsEl.innerHTML=s.seasons.map((eps,i)=>`
+    <div class="season-tab ${i===activeSeason?'active':''}" onclick="switchSeason(${i})">${i+1}ª Temp. (${eps} eps)</div>`).join('');
+
+  // Calculate offset
+  let offset=0;
+  for(let i=0;i<activeSeason;i++) offset+=parseInt(s.seasons[i])||0;
+  const epCount=parseInt(s.seasons[activeSeason])||0;
+
+  epsEl.innerHTML='';
+  for(let ep=0;ep<epCount;ep++){
+    const idx=offset+ep;
+    const watched=s.watched&&s.watched[idx];
+    const rating=s.ratings&&s.ratings[idx]?s.ratings[idx]:0;
+    const row=document.createElement('div');
+    row.className='ep-row';
+    const epLink = s.links && s.links[idx] ? s.links[idx] : '';
+    const epName = s.epNames && s.epNames[idx] ? s.epNames[idx] : '';
+    row.innerHTML=`
+      <span class="ep-num">${ep+1}</span>
+      <input class="ep-name-input" id="epname-${idx}" value="${epName.replace(/"/g,'&quot;')}"
+        placeholder="Aula ${ep+1}..."
+        onchange="saveEpName('${s.id}',${idx},this.value)"
+        onclick="event.stopPropagation()" title="Clique para renomear">
+      <div class="ep-stars" id="epstars-${idx}">${epStarsHTML(idx,rating)}</div>
+      <input class="ep-link-input" id="eplink-${idx}" type="url" value="${epLink}"
+        placeholder="🔗 Link (opcional)"
+        onchange="saveEpLink('${s.id}',${idx},this.value)"
+        onclick="event.stopPropagation()"
+        title="Link do episódio">
+      ${epLink ? `<a href="${epLink}" target="_blank" class="ep-link-btn" onclick="event.stopPropagation()" title="Abrir vídeo">▶</a>` : `<span class="ep-link-btn-empty"></span>`}
+      <div class="ep-check ${watched?'watched':''}" onclick="toggleEp('${s.id}',${idx})" title="${watched?'Marcar como não assistido':'Marcar como assistido'}">
+        ${watched?'✓':''}
+      </div>`;
+    epsEl.appendChild(row);
+  }
+}
+
+function saveEpLink(sid, idx, url){
+  const s=DB.series.find(x=>x.id===sid); if(!s) return;
+  if(!s.links) s.links=[];
+  while(s.links.length<=idx) s.links.push('');
+  s.links[idx]=url.trim();
+  saveDB();
+  // atualiza o botão de play inline
+  const btn = document.getElementById('eplink-'+idx);
+  const parent = btn ? btn.parentElement : null;
+  if(parent){
+    let playBtn = parent.querySelector('.ep-link-btn');
+    if(playBtn && !(playBtn.classList.contains('ep-link-btn-empty'))){
+      playBtn.href = url.trim();
+    } else if(playBtn && url.trim()){
+      playBtn.outerHTML = `<a href="${url.trim()}" target="_blank" class="ep-link-btn" onclick="event.stopPropagation()" title="Abrir vídeo">▶</a>`;
+    }
+  }
+}
+
+function saveEpName(sid, idx, name){
+  const s=DB.series.find(x=>x.id===sid); if(!s) return;
+  if(!s.epNames) s.epNames=[];
+  while(s.epNames.length<=idx) s.epNames.push('');
+  s.epNames[idx]=name.trim();
+  saveDB();
+}
+
+function epStarsHTML(idx, rating){
+  let h='';
+  for(let i=1;i<=5;i++) h+=`<span class="ep-star ${i<=rating?'lit':''}" onclick="rateEp('${detailId}',${idx},${i})">${i<=rating?'★':'☆'}</span>`;
+  return h;
+}
+
+function switchSeason(i){
+  detailActiveSeason=i;
+  const s=DB.series.find(x=>x.id===detailId);
+  if(s) renderDetailSeasons(s,i);
+}
+
+function toggleEp(sid, idx){
+  const s=DB.series.find(x=>x.id===sid);
+  if(!s) return;
+  if(!s.watched) s.watched=new Array(getTotalEps(s)).fill(false);
+  s.watched[idx]=!s.watched[idx];
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('pt-BR');
+
+  // Find season and ep number for history
+  let sIdx=0, offset=0;
+  for(let i=0;i<s.seasons.length;i++){
+    offset+=(parseInt(s.seasons[i])||0);
+    if(idx<offset){ sIdx=i; break; }
+  }
+  let epOffset=0; for(let i=0;i<sIdx;i++) epOffset+=(parseInt(s.seasons[i])||0);
+
+  DB.history=DB.history||[];
+  DB.history.push({ seriesName:s.name, season:sIdx+1, ep:idx-epOffset, date:dateStr, action:s.watched[idx]?'watched':'unwatched' });
+  if(DB.history.length>200) DB.history=DB.history.slice(-200);
+
+  saveDB();
+  openDetail(sid);
+  updateBadges();
+  if(s.watched[idx]) checkMetas();
+}
+
+function rateEp(sid, idx, stars){
+  const s=DB.series.find(x=>x.id===sid);
+  if(!s) return;
+  if(!s.ratings) s.ratings=new Array(getTotalEps(s)).fill(0);
+  s.ratings[idx]=stars;
+  saveDB();
+  const starEl=document.getElementById('epstars-'+idx);
+  if(starEl) starEl.innerHTML=epStarsHTML(idx,stars);
+  // Update progress bar
+  const p=getProgress(s);
+  const pc=progressColor(p);
+  document.getElementById('detail-pct').textContent=p+'%';
+  document.getElementById('detail-pct').style.color=pc;
+  document.getElementById('detail-prog-fill').style.width=p+'%';
+  document.getElementById('detail-prog-fill').style.background=pc;
+}
+
+function toggleFav(){
+  const s=DB.series.find(x=>x.id===detailId); if(!s) return;
+  s.fav=!s.fav; saveDB();
+  document.getElementById('detail-fav-btn').textContent=s.fav?'★':'☆';
+  document.getElementById('detail-fav-btn').className='fav-btn'+(s.fav?' active':'');
+  showToast(s.fav?'Adicionado aos favoritos!':'Removido dos favoritos.');
+}
+function toggleFavById(id){
+  const s=DB.series.find(x=>x.id===id); if(!s) return;
+  s.fav=!s.fav; saveDB(); renderProgress();
+}
+function openEditFromDetail(){
+  const idToEdit = detailId;   // salva antes de fechar
+  closeDetailModal();
+  setTimeout(()=>openAddModal(idToEdit),100);
+}
+function closeDetailModal(){
+  document.getElementById('detail-modal').classList.remove('open');
+  detailId=null;
+}
+
+// ====================== THEME ======================
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme');
+  setTheme(cur==='dark'?'light':'dark');
+}
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem('mc_theme',t);
+  document.getElementById('theme-toggle').textContent=t==='dark'?'🌙':'☀️';
+}
+function applyTheme(t){ setTheme(t||'dark'); }
+
+function setAccent(color, color2){
+  document.documentElement.style.setProperty('--accent', color);
+  document.documentElement.style.setProperty('--accent2', color2||color);
+  localStorage.setItem('mc_accent', color);
+  localStorage.setItem('mc_accent2', color2||color);
+  document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));
+  const match = [...document.querySelectorAll('.color-swatch')].find(s=>s.style.background===color||s.style.background===hexToRgb(color));
+  if(match) match.classList.add('active');
+  const ci = document.getElementById('custom-accent');
+  if(ci) ci.value = color;
+}
+function setAccentCustom(color){
+  const darker = shadeColor(color, -20);
+  setAccent(color, darker);
+}
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+function shadeColor(color, percent){
+  let R=parseInt(color.slice(1,3),16), G=parseInt(color.slice(3,5),16), B=parseInt(color.slice(5,7),16);
+  R=Math.min(255,Math.max(0,R+Math.round(R*percent/100)));
+  G=Math.min(255,Math.max(0,G+Math.round(G*percent/100)));
+  B=Math.min(255,Math.max(0,B+Math.round(B*percent/100)));
+  return `#${R.toString(16).padStart(2,'0')}${G.toString(16).padStart(2,'0')}${B.toString(16).padStart(2,'0')}`;
+}
+function applyStoredAccent(){
+  const a=localStorage.getItem('mc_accent');
+  const a2=localStorage.getItem('mc_accent2');
+  if(a){ setAccent(a,a2||a); }
+}
+
+// ====================== DRIVE ======================
+function closeDriveModal(){ document.getElementById('drive-modal').classList.remove('open'); }
+function connectDrive(){
+  const url=document.getElementById('drive-url').value.trim();
+  if(url){ localStorage.setItem('mc_drive_url',url); document.getElementById('drive-url-settings').value=url; showToast('URL do Drive salva!','success'); }
+  closeDriveModal();
+}
+function saveDriveUrl(){
+  const url=document.getElementById('drive-url-settings').value.trim();
+  localStorage.setItem('mc_drive_url',url);
+  showToast('URL salva!','success');
+}
+
+// ====================== GITHUB GIST SYNC ======================
+const GIST_API = 'https://api.github.com/gists';
+let gistSyncTimer = null;
+
+function gistToken(){ return localStorage.getItem('mc_gist_token')||''; }
+function gistId(){ return localStorage.getItem('mc_gist_id')||''; }
+
+function connectGist(){
+  const token = document.getElementById('gist-token').value.trim();
+  if(!token){ showToast('Cole seu GitHub Token primeiro.','error'); return; }
+  setGistStatus('Conectando...','#f39c12');
+  const existingId = gistId();
+  if(existingId){
+    localStorage.setItem('mc_gist_token', token);
+    syncFromGist(false);
+  } else {
+    fetch(GIST_API, {
+      method:'POST',
+      headers:{'Authorization':'token '+token,'Content-Type':'application/json'},
+      body: JSON.stringify({
+        description:'MeuCatalogo Data',
+        public: false,
+        files:{'meucatalogo.json':{content: JSON.stringify(DB)}}
+      })
+    }).then(r=>r.json()).then(data=>{
+      if(data.id){
+        localStorage.setItem('mc_gist_token', token);
+        localStorage.setItem('mc_gist_id', data.id);
+        setGistStatus('✅ Conectado! Gist criado.','#27ae60');
+        updateGistUI(true);
+        showToast('GitHub Gist conectado!','success');
+        startGistAutoSync();
+      } else {
+        setGistStatus('❌ Erro: verifique seu token.','#e74c3c');
+        showToast('Token inválido.','error');
+      }
+    }).catch(()=>{ setGistStatus('❌ Erro de conexão.','#e74c3c'); });
+  }
+}
+
+function syncFromGist(silent){
+  const token=gistToken(), id=gistId();
+  if(!token||!id){ if(!silent) showToast('Configure o Gist primeiro.','error'); return; }
+  if(!silent) setGistStatus('Baixando da nuvem...','#f39c12');
+  fetch(`${GIST_API}/${id}`,{headers:{'Authorization':'token '+token}})
+    .then(r=>r.json()).then(data=>{
+      if(data.files && data.files['meucatalogo.json']){
+        const raw = data.files['meucatalogo.json'].content;
+        const parsed = JSON.parse(raw);
+        DB = parsed;
+        if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
+        if(!DB.history) DB.history=[];
+        localStorage.setItem('mc_db', JSON.stringify(DB));
+        renderAll();
+        setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60');
+        if(!silent) showToast('Dados carregados!','success');
+        updateGistUI(true);
+      }
+    }).catch(()=>{ if(!silent) showToast('Erro ao sincronizar.','error'); });
+}
+
+function forcePushGist(){
+  setGistStatus('Enviando...','#f39c12');
+  pushToGist(()=>{
+    setGistStatus('✅ Enviado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60');
+    showToast('Dados enviados!','success');
+  });
+}
+
+function pushToGist(cb){
+  const token=gistToken(), id=gistId();
+  if(!token||!id) return;
+  const controller = new AbortController();
+  const timeout = setTimeout(()=>{ controller.abort(); setGistStatus('❌ Timeout.','#e74c3c'); }, 10000);
+  fetch(`${GIST_API}/${id}`,{
+    method:'PATCH',
+    headers:{'Authorization':'token '+token,'Content-Type':'application/json'},
+    body: JSON.stringify({files:{'meucatalogo.json':{content:JSON.stringify(DB)}}}),
+    signal: controller.signal
+  }).then(r=>{
+    clearTimeout(timeout);
+    if(r.ok){ if(cb) cb(); }
+    else setGistStatus(`❌ Erro ${r.status}.`,'#e74c3c');
+  }).catch(err=>{
+    clearTimeout(timeout);
+    if(err.name!=='AbortError') setGistStatus('❌ Falha de conexão.','#e74c3c');
+  });
+}
+
+function disconnectGist(){
+  if(!confirm('Desconectar? Dados locais permanecem.')) return;
+  localStorage.removeItem('mc_gist_token');
+  localStorage.removeItem('mc_gist_id');
+  clearInterval(gistSyncTimer);
+  updateGistUI(false);
+  setGistStatus('','');
+  document.getElementById('gist-token').value='';
+  document.getElementById('gist-id').value='';
+  showToast('Desconectado.','success');
+}
+
+function setGistStatus(msg, color){
+  const el=document.getElementById('gist-status-bar');
+  if(!el) return;
+  if(!msg){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.style.background=color==='#27ae60'?'rgba(39,174,96,0.15)':color==='#e74c3c'?'rgba(231,76,60,0.15)':'rgba(243,156,18,0.15)';
+  el.style.border=`1px solid ${color}`;
+  el.style.color=color;
+  el.textContent=msg;
+}
+
+function updateGistUI(connected){
+  const idGroup=document.getElementById('gist-id-group');
+  if(idGroup) idGroup.style.display=connected?'':'none';
+  ['gist-sync-btn','gist-push-btn','gist-disconnect-btn'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.style.display=connected?'':'none';
+  });
+  if(connected && document.getElementById('gist-id')) document.getElementById('gist-id').value=gistId();
+}
+
+function startGistAutoSync(){
+  clearInterval(gistSyncTimer);
+  if(!gistToken()||!gistId()) return;
+  gistSyncTimer=setInterval(()=>{
+    pushToGist(()=>setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60'));
+  }, 2*60*1000);
+}
+
+// ====================== BACKUP ======================
+function exportData(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='meucatalogo-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  localStorage.setItem('mc_unsaved','false');
+  localStorage.setItem('mc_last_export', Date.now());
+  dismissBackupBanner();
+  showToast('Backup exportado!','success');
+}
+function exportDataAndDismiss(){ exportData(); }
+function showBackupBanner(){
+  const b = document.getElementById('backup-banner');
+  if(!b) return;
+  const lastExport = parseInt(localStorage.getItem('mc_last_export')||'0');
+  const lastSave   = parseInt(localStorage.getItem('mc_last_save')||'0');
+  const dismissed  = parseInt(localStorage.getItem('mc_banner_dismissed')||'0');
+  const now = Date.now();
+  // Mostra se: nunca exportou OU exportou há mais de 1h E não dispensou nos últimos 30min
+  const needsExport = !lastExport || (lastSave > lastExport);
+  const notDismissedRecently = (now - dismissed) > 30 * 60 * 1000;
+  if(needsExport && notDismissedRecently){
+    const mins = lastExport ? Math.round((now-lastExport)/60000) : null;
+    const msg = lastExport
+      ? `Último backup há ${mins < 60 ? mins+'min' : Math.round(mins/60)+'h'}. Exporte para não perder seus dados!`
+      : 'Você ainda não fez nenhum backup. Exporte agora para proteger seus dados!';
+    document.getElementById('backup-banner-msg').textContent = msg;
+    b.style.display='flex';
+  }
+}
+function dismissBackupBanner(){
+  localStorage.setItem('mc_banner_dismissed', Date.now());
+  document.getElementById('backup-banner').style.display='none';
+}
+function importData(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!data.series) throw new Error('Formato inválido');
+      DB=data;
+      if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
+      if(!DB.history) DB.history=[];
+      saveDB(); renderAll();
+      showToast('Dados importados!','success');
+    } catch(err){ showToast('Erro ao importar: '+err.message,'error'); }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+function confirmClearData(){
+  if(confirm('Tem certeza? Todos os dados serão apagados permanentemente.')){
+    DB={series:[],history:[]}; saveDB(); renderAll(); showToast('Dados apagados.','success');
+  }
+}
+
+// ====================== TOAST ======================
+function showToast(msg, type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=''; t.classList.add('show',type);
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>{ t.classList.remove('show'); },2800);
+}
+
+// ====================== CLOSE ON OUTSIDE CLICK ======================
+document.getElementById('add-modal').addEventListener('mousedown',e=>{
+  if(e.target===document.getElementById('add-modal')) closeAddModal();
+});
+document.getElementById('detail-modal').addEventListener('mousedown',e=>{
+  if(e.target===document.getElementById('detail-modal')) closeDetailModal();
+});
+document.getElementById('cat-modal').addEventListener('mousedown',e=>{
+  if(e.target===document.getElementById('cat-modal')) closeCatModal();
+});
+
+// ====================== START ======================
+function toggleSidebar(){
+  const sb = document.getElementById('sidebar');
+  const main = document.getElementById('main');
+  const btn = document.getElementById('sidebar-toggle');
+  const collapsed = sb.classList.toggle('collapsed');
+  main.style.marginLeft = collapsed ? '0' : 'var(--sidebar-width)';
+  btn.textContent = collapsed ? '☰' : '✕';
+  localStorage.setItem('mc_sidebar_collapsed', collapsed ? '1' : '0');
+}
+
+init();
+
+// Salva ao fechar/sair da aba
+window.addEventListener('beforeunload', ()=>{ saveDB(); if(gistToken()&&gistId()) pushToGist(); });
+// Salva quando minimiza ou muda de aba
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveDB(); });
+</script>
+</body>
+</html>
