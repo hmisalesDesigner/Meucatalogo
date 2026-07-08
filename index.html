@@ -968,26 +968,8 @@ let heroTimer = null;
 
 // ====================== INIT ======================
 function init(){
-  loadDB();
-  populateYears();
-  buildSeasonInputs();
-  renderAll();
-  updateBadges();
   applyTheme(localStorage.getItem('mc_theme')||'dark');
   applyStoredAccent();
-  // Gist: restaura token e sincroniza
-  if(gistToken()){
-    document.getElementById('gist-token').value = gistToken();
-    updateGistUI(true);
-    setGistStatus('Sincronizando...','#f39c12');
-    syncFromGist(true);
-    startGistAutoSync();
-  } else {
-    setTimeout(()=>{ if(DB.series.length > 0) showBackupBanner(); }, 2000);
-  }
-  // Drive URL
-  const drive = localStorage.getItem('mc_drive_url');
-  if(drive) document.getElementById('drive-url-settings').value = drive;
   loadMetas();
   // Restaura estado da sidebar
   if(localStorage.getItem('mc_sidebar_collapsed')==='1'){
@@ -995,6 +977,91 @@ function init(){
     document.getElementById('main').style.marginLeft='0';
     document.getElementById('sidebar-toggle').textContent='☰';
   }
+  // Drive URL
+  const drive = localStorage.getItem('mc_drive_url');
+  if(drive) document.getElementById('drive-url-settings').value = drive;
+  populateYears();
+  buildSeasonInputs();
+
+  if(gistToken() && gistId()){
+    // Gist como fonte principal — carrega da nuvem primeiro
+    document.getElementById('gist-token').value = gistToken();
+    updateGistUI(true);
+    setGistStatus('Carregando dados da nuvem...','#f39c12');
+    showLoadingOverlay(true);
+    fetchGistPrimary();
+  } else {
+    // Sem Gist — usa localStorage
+    loadDB();
+    renderAll();
+    updateBadges();
+    setTimeout(()=>{ if(DB.series.length > 0) showBackupBanner(); }, 2000);
+  }
+}
+
+function fetchGistPrimary(){
+  const token=gistToken(), id=gistId();
+  const controller = new AbortController();
+  const timeout = setTimeout(()=>{
+    controller.abort();
+    // Timeout: usa localStorage como fallback
+    showLoadingOverlay(false);
+    loadDB(); renderAll(); updateBadges();
+    setGistStatus('⚠️ Sem conexão — usando dados locais','#f39c12');
+    startGistAutoSync();
+  }, 8000);
+
+  fetch(`${GIST_API}/${id}`,{
+    headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},
+    signal: controller.signal
+  }).then(r=>{
+    clearTimeout(timeout);
+    if(r.status===401||r.status===403){
+      showLoadingOverlay(false);
+      loadDB(); renderAll(); updateBadges();
+      setGistStatus('❌ Token inválido — reconecte em Configurações','#e74c3c');
+      return;
+    }
+    return r.json();
+  }).then(data=>{
+    if(!data) return;
+    showLoadingOverlay(false);
+    if(data.files && data.files['meucatalogo.json']){
+      const parsed = JSON.parse(data.files['meucatalogo.json'].content);
+      DB = parsed;
+      if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
+      if(!DB.history) DB.history=[];
+      localStorage.setItem('mc_db', JSON.stringify(DB));
+      renderAll(); updateBadges();
+      setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60');
+      startGistAutoSync();
+    }
+  }).catch(err=>{
+    clearTimeout(timeout);
+    if(err.name==='AbortError') return;
+    showLoadingOverlay(false);
+    loadDB(); renderAll(); updateBadges();
+    setGistStatus('⚠️ Sem conexão — usando dados locais','#f39c12');
+    startGistAutoSync();
+  });
+}
+
+function showLoadingOverlay(show){
+  let el = document.getElementById('loading-overlay');
+  if(!el){
+    el = document.createElement('div');
+    el.id='loading-overlay';
+    el.style.cssText='position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-size:14px;color:var(--text2)';
+    el.innerHTML='<div style="font-size:32px">☁️</div><div>Carregando dados da nuvem...</div><div style="width:200px;height:3px;background:var(--border);border-radius:2px;overflow:hidden"><div id="loading-bar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;animation:loadbar 2s ease forwards"></div></div>';
+    document.body.appendChild(el);
+    if(!document.querySelector('#loadbar-style')){
+      const s=document.createElement('style');
+      s.id='loadbar-style';
+      s.textContent='@keyframes loadbar{to{width:90%}}';
+      document.head.appendChild(s);
+    }
+  }
+  el.style.display = show ? 'flex' : 'none';
 }
 
 const DEFAULT_CATS = [
@@ -2150,7 +2217,21 @@ function startGistAutoSync(){
 
 // ====================== BACKUP ======================
 function exportData(){
-  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  // Inclui configurações no backup
+  const backup = {
+    ...DB,
+    _settings: {
+      gist_token: localStorage.getItem('mc_gist_token')||'',
+      gist_id: localStorage.getItem('mc_gist_id')||'',
+      theme: localStorage.getItem('mc_theme')||'dark',
+      accent: localStorage.getItem('mc_accent')||'',
+      accent2: localStorage.getItem('mc_accent2')||'',
+      drive_url: localStorage.getItem('mc_drive_url')||'',
+      meta_daily: localStorage.getItem('mc_meta_daily')||'',
+      meta_weekly: localStorage.getItem('mc_meta_weekly')||'',
+    }
+  };
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download='meucatalogo-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
   localStorage.setItem('mc_unsaved','false');
@@ -2189,11 +2270,34 @@ function importData(e){
     try{
       const data=JSON.parse(ev.target.result);
       if(!data.series) throw new Error('Formato inválido');
+      // Restaura configurações se existirem no backup
+      if(data._settings){
+        const s=data._settings;
+        if(s.gist_token) localStorage.setItem('mc_gist_token', s.gist_token);
+        if(s.gist_id) localStorage.setItem('mc_gist_id', s.gist_id);
+        if(s.theme) localStorage.setItem('mc_theme', s.theme);
+        if(s.accent) localStorage.setItem('mc_accent', s.accent);
+        if(s.accent2) localStorage.setItem('mc_accent2', s.accent2);
+        if(s.drive_url) localStorage.setItem('mc_drive_url', s.drive_url);
+        if(s.meta_daily) localStorage.setItem('mc_meta_daily', s.meta_daily);
+        if(s.meta_weekly) localStorage.setItem('mc_meta_weekly', s.meta_weekly);
+        delete data._settings;
+      }
       DB=data;
       if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
       if(!DB.history) DB.history=[];
       saveDB(); renderAll();
-      showToast('Dados importados!','success');
+      applyTheme(localStorage.getItem('mc_theme')||'dark');
+      applyStoredAccent();
+      loadMetas();
+      // Reconectar Gist se token existir
+      if(gistToken() && gistId()){
+        document.getElementById('gist-token').value=gistToken();
+        updateGistUI(true);
+        setGistStatus('✅ Reconectado via backup','#27ae60');
+        startGistAutoSync();
+      }
+      showToast('Dados e configurações restaurados!','success');
     } catch(err){ showToast('Erro ao importar: '+err.message,'error'); }
   };
   reader.readAsText(file);
