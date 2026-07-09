@@ -1080,15 +1080,14 @@ function saveDB(){
   localStorage.setItem('mc_db', JSON.stringify(DB));
   localStorage.setItem('mc_unsaved', 'true');
   localStorage.setItem('mc_last_save', Date.now());
-  // Se JSONBin configurado, envia para nuvem com debounce
   if(gistToken() && gistId()){
     clearTimeout(window._gistDebounce);
     window._gistDebounce = setTimeout(()=>{
       pushToGist(()=>setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60'));
     }, 1500);
-  } else {
-    showBackupBanner();
   }
+  // Sempre mostra banner de backup JSON independente do Gist
+  showBackupBanner();
 }
 
 // ====================== NAVIGATION ======================
@@ -2278,7 +2277,7 @@ function importData(e){
         if(s.theme) localStorage.setItem('mc_theme', s.theme);
         if(s.accent) localStorage.setItem('mc_accent', s.accent);
         if(s.accent2) localStorage.setItem('mc_accent2', s.accent2);
-        if(s.drive_url) localStorage.setItem('mc_drive_url', s.drive_url);
+        if(s.drive_url){ localStorage.setItem('mc_drive_url', s.drive_url); const dEl=document.getElementById('drive-url-settings'); if(dEl) dEl.value=s.drive_url; }
         if(s.meta_daily) localStorage.setItem('mc_meta_daily', s.meta_daily);
         if(s.meta_weekly) localStorage.setItem('mc_meta_weekly', s.meta_weekly);
         delete data._settings;
