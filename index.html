@@ -40,6 +40,80 @@
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; overflow-x:hidden; }
+#wallpaper-bg {
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+}
+#wallpaper-bg .wp-slide {
+  position:absolute; inset:0;
+  background-size:cover; background-position:center;
+  opacity:0; transition:opacity 2s ease;
+}
+#wallpaper-bg .wp-slide.active { opacity:1; }
+#wallpaper-bg .wp-overlay {
+  position:absolute; inset:0;
+  background:rgba(0,0,0,0.55);
+}
+[data-theme="light"] #wallpaper-bg .wp-overlay { background:rgba(255,255,255,0.55); }
+#sidebar, #main { position:relative; z-index:1; }
+#sidebar { background:rgba(13,13,26,0.88); backdrop-filter:blur(8px); }
+[data-theme="light"] #sidebar { background:rgba(255,255,255,0.88); }
+.content-area { background:transparent; }
+
+/* Widget clima */
+.weather-widget {
+  display:flex; align-items:center;
+  gap:6px; box-sizing:border-box; width:100%;
+}
+.weather-main { display:flex; align-items:baseline; gap:6px; }
+.weather-temp { font-size:28px; font-weight:700; color:#e5e5e5; line-height:1; }
+.weather-desc { font-size:20px; }
+.weather-city { font-size:10px; color:#3d7a45; letter-spacing:1px; text-transform:uppercase; margin-bottom:3px; }
+/* Solar time widget */
+.solar-widget {
+  display:flex; flex-direction:column; justify-content:space-between;
+  width:100%;
+}
+.solar-time { font-size:22px; font-weight:700; color:#e5e5e5; letter-spacing:1px; }
+.solar-label { font-size:9px; color:#3d7a45; letter-spacing:1.5px; text-transform:uppercase; margin-top:1px; }
+.solar-arc-wrap { position:relative; width:100%; margin:6px 0 2px; }
+.solar-times-row { display:flex; justify-content:space-between; font-size:9px; color:#3d7a45; margin-top:4px; }
+.solar-daylight { font-size:9px; color:#5aab6a; text-align:center; }
+/* Resize handle entre widgets */
+.widget-resizer {
+  width:6px; cursor:col-resize; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity 0.2s;
+}
+.widget-resizer:hover, .widget-resizer.dragging { opacity:1; }
+.widget-resizer::after {
+  content:''; display:block; width:2px; height:32px;
+  background:rgba(45,90,48,0.6); border-radius:2px;
+}
+.weather-days { display:flex; gap:5px; align-items:center; }
+.weather-day {
+  text-align:center;
+  background:rgba(30,64,36,0.35); border:1px solid rgba(45,90,48,0.3);
+  border-radius:7px; padding:5px 7px; min-width:36px;
+}
+.weather-day-name { font-size:9px; color:#3d7a45; margin-bottom:2px; }
+.weather-day-icon { font-size:14px; line-height:1; }
+.weather-day-temp { font-size:10px; color:#e5e5e5; margin-top:2px; }
+
+.pw-bars { display:flex; gap:4px; align-items:flex-end; }
+.pw-bar-wrap { display:flex; flex-direction:column; align-items:center; gap:3px; }
+.pw-bar-bg { width:20px; border-radius:4px; background:rgba(26,46,26,0.8); overflow:hidden; position:relative; height:38px; }
+.pw-bar-fill { position:absolute; bottom:0; left:0; right:0; border-radius:4px; transition:height 0.5s ease; }
+.pw-bar-label { font-size:9px; color:#3d7a45; }
+.pw-bar-wrap.today .pw-bar-label { color:#5aab6a; font-weight:700; }
+/* Card hover % overlay */
+.card-pct-overlay {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  font-size:28px; font-weight:800; color:#fff;
+  text-shadow:0 2px 12px rgba(0,0,0,0.8);
+  opacity:0; transition:opacity 0.3s; pointer-events:none;
+  z-index:4;
+}
+.series-card:hover .card-pct-overlay { opacity:1; }
 ::-webkit-scrollbar { width:6px; height:6px; }
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
@@ -492,6 +566,8 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 </head>
 <body>
 
+<div id="wallpaper-bg"><div class="wp-overlay"></div></div>
+
 <!-- DRIVE MODAL -->
 <div class="modal-overlay" id="drive-modal">
   <div class="drive-modal-inner">
@@ -581,6 +657,25 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
           <button class="btn-play" id="hero-play-btn">▶ Assistir</button>
           <button class="btn-info" id="hero-info-btn">ℹ Mais Infos</button>
         </div>
+      </div>
+    </div>
+
+    <!-- WEATHER + PROGRESS WIDGETS -->
+    <div id="widgets-row-outer" style="margin:0 28px 12px;">
+      <div id="widgets-single-container" style="display:flex;align-items:center;gap:0;background:rgba(8,18,8,0.85);backdrop-filter:blur(10px);border:1px solid rgba(30,64,36,0.6);border-radius:12px;padding:12px 16px;box-sizing:border-box;">
+        <div id="temp-widget-wrap" style="flex:0 0 130px;min-width:80px;"></div>
+        <div class="widget-resizer" id="res-1"></div>
+        <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
+        <div class="widget-resizer" id="res-1b"></div>
+        <div id="eps-widget-wrap" style="flex:0 0 220px;min-width:120px;"></div>
+        <div class="widget-resizer" id="res-2"></div>
+        <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
+        <div class="widget-resizer" id="res-2b"></div>
+        <div id="solar-widget-wrap" style="flex:0 0 220px;min-width:140px;"></div>
+        <div class="widget-resizer" id="res-3"></div>
+        <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
+        <div class="widget-resizer" id="res-3b"></div>
+        <div id="forecast-widget-wrap" style="flex:1;min-width:120px;"></div>
       </div>
     </div>
 
@@ -794,6 +889,22 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
       </div>
 
       <div class="config-block">
+        <div class="config-block-title">🖼️ Papel de Parede</div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6">
+          Coloque os arquivos <code>wp1.jpg</code> até <code>wp7.jpg</code> em uma pasta pública e informe a URL base abaixo.<br>
+          Exemplo: <code>https://raw.githubusercontent.com/usuario/repo/main/wallpapers/</code>
+        </p>
+        <div class="form-group">
+          <label class="form-label">URL base dos wallpapers</label>
+          <input class="form-input" id="wp-base-url" placeholder="https://.../">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="applyWpUrl()">✓ Aplicar</button>
+          <button class="btn btn-secondary btn-sm" onclick="clearWallpaper()">✕ Remover</button>
+        </div>
+      </div>
+
+      <div class="config-block">
         <div class="config-block-title">ℹ️ Sobre</div>
         <p style="font-size:12px;color:var(--text2);line-height:1.7">
           <strong>MeuCatálogo v1.0</strong><br>
@@ -984,6 +1095,14 @@ function init(){
   applyTheme(localStorage.getItem('mc_theme')||'dark');
   applyStoredAccent();
   loadMetas();
+  // Limpa cache de clima antigo se formato mudou
+  try{ const c=localStorage.getItem('mc_weather_data'); if(c){ const p=JSON.parse(c); if(!p.forecastHtml){ localStorage.removeItem('mc_weather_data'); localStorage.removeItem('mc_weather_time'); } } }catch(e){ localStorage.removeItem('mc_weather_data'); }
+  // Wallpaper
+  setTimeout(()=>{
+    const wpBase = localStorage.getItem('mc_wp_base');
+    if(wpBase){ document.getElementById('wp-base-url').value=wpBase; loadWallpapers(wpBase); }
+    initWidgetResizers();
+  }, 500);
   // Restaura estado da sidebar
   if(localStorage.getItem('mc_sidebar_collapsed')==='1'){
     document.getElementById('sidebar').classList.add('collapsed');
@@ -1264,6 +1383,193 @@ function showMetaToast(icon,title,body){
   setTimeout(()=>t.classList.remove('show'),6000);
 }
 
+// ====================== WEATHER WIDGET ======================
+const WEATHER_ICONS = {0:'☀️',1:'☀️',2:'⛅',3:'🌥️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
+const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+function renderWeatherWidget(){
+  // Calcula progresso (não depende da API)
+  const today = new Date();
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const ds = d.toLocaleDateString('pt-BR');
+    const count = (DB.history||[]).filter(h=>h.action==='watched'&&h.date===ds).length;
+    days.push({label:DAYS_PT[d.getDay()], count, isToday:i===0});
+  }
+  const total = days.reduce((a,b)=>a+b.count,0);
+  const maxCount = Math.max(...days.map(d=>d.count), 1);
+  const metaDay = parseInt(localStorage.getItem('mc_meta_daily')||'0');
+  const todayCount = days.find(d=>d.isToday)?.count||0;
+  const bars = days.map(d=>{
+    const pct = Math.round((d.count/maxCount)*100);
+    const color = d.count===0?'rgba(45,90,48,0.2)': d.count>=(metaDay||1)?'#3d7a45':'#2d5a30';
+    return `<div class="pw-bar-wrap${d.isToday?' today':''}">
+      <div class="pw-bar-bg"><div class="pw-bar-fill" style="height:${pct}%;background:${color}"></div></div>
+      <div class="pw-bar-label">${d.label[0]}</div>
+    </div>`;
+  }).join('');
+
+  // Widget eps/semana (independente da API)
+  const epsWrap = document.getElementById('eps-widget-wrap');
+  if(epsWrap) epsWrap.innerHTML = `<div class="weather-widget" style="flex-direction:column;justify-content:center;gap:8px;">
+    <div style="font-size:9px;color:#3d7a45;letter-spacing:1px;text-transform:uppercase">📊 Eps / Semana</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div>
+        <div style="font-size:22px;font-weight:700;color:#5aab6a;line-height:1">${total}</div>
+        ${metaDay?`<div style="font-size:9px;color:#5aab6a;margin-top:2px">${todayCount}/${metaDay} hoje</div>`:''}
+      </div>
+      <div class="pw-bars">${bars}</div>
+    </div>
+  </div>`;
+
+  // Cache clima
+  const cached = localStorage.getItem('mc_weather_data');
+  const cachedTime = parseInt(localStorage.getItem('mc_weather_time')||'0');
+  if(cached && Date.now()-cachedTime < 30*60*1000){
+    try{
+      const d = JSON.parse(cached);
+      const tw = document.getElementById('temp-widget-wrap');
+      const fw = document.getElementById('forecast-widget-wrap');
+      if(tw) tw.innerHTML = d.tempHtml||'';
+      if(fw) fw.innerHTML = d.forecastHtml;
+      return;
+    }catch(e){}
+  }
+
+  // Busca API
+  fetch('https://api.open-meteo.com/v1/forecast?latitude=-23.4205&longitude=-51.9333&current=temperature_2m,weathercode&daily=weathercode,temperature_2m_max&timezone=America%2FSao_Paulo&forecast_days=8')
+    .then(r=>r.json()).then(data=>{
+      const cur = data.current;
+      const daily = data.daily;
+      const now = new Date();
+      const icon = WEATHER_ICONS[cur.weathercode]||'🌤️';
+
+      const tempHtml = `<div class="weather-widget" style="flex-direction:column;justify-content:center;align-items:flex-start;gap:4px;height:100%;">
+        <div class="weather-city">📍 Maringá, PR</div>
+        <div class="weather-main">
+          <span class="weather-temp">${Math.round(cur.temperature_2m)}°</span>
+          <span style="font-size:22px;margin-left:6px;">${icon}</span>
+        </div>
+      </div>`;
+
+      let forecastHtml = '<div class="weather-widget" style="gap:5px;flex:1;flex-wrap:wrap;">';
+      const maxDays = Math.min(7, daily.weathercode.length-1);
+      for(let i=1;i<=maxDays;i++){
+        const dd = new Date(now); dd.setDate(dd.getDate()+i);
+        const wc = daily.weathercode[i];
+        const tmax = daily.temperature_2m_max[i];
+        if(wc===undefined||tmax===undefined) continue;
+        forecastHtml += `<div class="weather-day">
+          <div class="weather-day-name">${DAYS_PT[dd.getDay()]}</div>
+          <div class="weather-day-icon">${WEATHER_ICONS[wc]||'⛅'}</div>
+          <div class="weather-day-temp">${Math.round(tmax)}°</div>
+        </div>`;
+      }
+      forecastHtml += '</div>';
+
+      const tw = document.getElementById('temp-widget-wrap');
+      const fw = document.getElementById('forecast-widget-wrap');
+      if(tw) tw.innerHTML = tempHtml;
+      if(fw) fw.innerHTML = forecastHtml;
+      localStorage.setItem('mc_weather_data', JSON.stringify({tempHtml, forecastHtml}));
+      localStorage.setItem('mc_weather_time', Date.now());
+    }).catch(()=>{
+      const tw = document.getElementById('temp-widget-wrap');
+      if(tw) tw.innerHTML = `<div class="weather-widget" style="flex-direction:column;align-items:flex-start;gap:4px;height:100%;"><div class="weather-city">📍 Maringá, PR</div><div class="weather-main"><span class="weather-temp">--°</span><span style="font-size:22px;margin-left:6px;">🌤️</span></div></div>`;
+    });
+}
+
+function renderProgressWidget(){ /* integrado no renderWeatherWidget */ }
+
+// ====================== SOLAR TIME WIDGET ======================
+function renderSolarWidget(){
+  const wrap = document.getElementById('solar-widget-wrap');
+  if(!wrap) return;
+
+  // Coordenadas Maringá
+  const lat = -23.4205, lng = -51.9333;
+
+  function calcSun(date){
+    const JD = date.getTime()/86400000 + 2440587.5;
+    const n = JD - 2451545.0;
+    const L = (280.46 + 0.9856474*n) % 360;
+    const g = (357.528 + 0.9856003*n) % 360;
+    const lambda = L + 1.915*Math.sin(g*Math.PI/180) + 0.02*Math.sin(2*g*Math.PI/180);
+    const eps = 23.439 - 0.0000004*n;
+    const sinDec = Math.sin(eps*Math.PI/180)*Math.sin(lambda*Math.PI/180);
+    const dec = Math.asin(sinDec)*180/Math.PI;
+    const cosH = (Math.sin(-0.833*Math.PI/180) - Math.sin(lat*Math.PI/180)*Math.sin(dec*Math.PI/180))
+                / (Math.cos(lat*Math.PI/180)*Math.cos(dec*Math.PI/180));
+    if(Math.abs(cosH)>1) return null;
+    const H = Math.acos(cosH)*180/Math.PI;
+    const tz = -3;
+    const EoT = (L - lambda)*4;
+    const noon = 12 - EoT/60 - lng/15 - tz;
+    return { rise: noon - H/15, set: noon + H/15 };
+  }
+
+  function toHHMM(h){
+    const hh = Math.floor(h), mm = Math.round((h-hh)*60);
+    return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+  }
+
+  const now = new Date();
+  const sun = calcSun(now);
+  if(!sun){ wrap.innerHTML=''; return; }
+
+  const nowH = now.getHours() + now.getMinutes()/60;
+  const pct = Math.min(1, Math.max(0, (nowH - sun.rise)/(sun.set - sun.rise)));
+  const daylightMins = Math.round((sun.set - sun.rise)*60);
+  const daylightH = Math.floor(daylightMins/60), daylightM = daylightMins%60;
+
+  // Hora atual
+  const timeStr = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  
+  // Período do dia
+  const isDay = nowH >= sun.rise && nowH <= sun.set;
+  const isGolden = (nowH >= sun.rise && nowH <= sun.rise+1) || (nowH >= sun.set-1 && nowH <= sun.set);
+  const periodLabel = !isDay ? 'PERÍODO NOTURNO' : isGolden ? '✨ HORA DOURADA' : '☀️ LUZ DO DIA';
+
+  // SVG linha reta solar (estilo referência)
+  const TW=190, TH=28, pad=8;
+  const lineY=TH/2, lineX1=pad, lineX2=TW-pad;
+  const lineLen=lineX2-lineX1;
+  const sunX=lineX1+pct*lineLen;
+  const trackColor='#1a3a1a';
+  const lineColor=isGolden?'#c8860a':isDay?'#3d7a45':'#1e3a1e';
+  const sunColor=isGolden?'#f0a500':isDay?'#5aab6a':'#2d5a30';
+
+  const svgArc=`<svg width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}" style="width:100%">
+    <line x1="${lineX1}" y1="${lineY}" x2="${lineX2}" y2="${lineY}" stroke="${trackColor}" stroke-width="3" stroke-linecap="round"/>
+    <line x1="${lineX1}" y1="${lineY}" x2="${sunX}" y2="${lineY}" stroke="${lineColor}" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="${lineX1}" cy="${lineY}" r="3" fill="#2d5a30"/>
+    <circle cx="${lineX2}" cy="${lineY}" r="3" fill="#2d5a30"/>
+    ${isDay?`
+    <circle cx="${sunX}" cy="${lineY}" r="7" fill="${sunColor}" opacity="0.2"/>
+    <circle cx="${sunX}" cy="${lineY}" r="4" fill="${sunColor}"/>
+    `:`<circle cx="${sunX}" cy="${lineY}" r="3" fill="${sunColor}"/>`}
+  </svg>`;
+
+  wrap.innerHTML = `<div class="solar-widget">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div class="solar-time">${timeStr}</div>
+        <div class="solar-label">${periodLabel}</div>
+      </div>
+    </div>
+    <div class="solar-arc-wrap">${svgArc}</div>
+    <div class="solar-times-row">
+      <span>🌅 ${toHHMM(sun.rise)}</span>
+      <span class="solar-daylight">${daylightH}h ${daylightM}m de luz</span>
+      <span>🌇 ${toHHMM(sun.set)}</span>
+    </div>
+  </div>`;
+
+  // Atualiza relógio a cada minuto
+  setTimeout(renderSolarWidget, (60 - now.getSeconds())*1000);
+}
+
 // ====================== CATEGORIES ======================
 function renderSidebarCats(){
   const el = document.getElementById('sidebar-cats');
@@ -1368,6 +1674,9 @@ function updateBadges(){
 function renderDashboard(){
   updateBadges();
   renderHero();
+  renderSolarWidget();
+  renderWeatherWidget();
+  renderProgressWidget();
   renderDashWatching();
   renderDashNext();
   renderCatRows();
@@ -1510,6 +1819,7 @@ function cardHTML(s){
       <div class="card-name">${s.name}</div>
       <div class="card-meta">${s.cat} • ${s.year||''}</div>
     </div>
+    <div class="card-pct-overlay">${p>0?p+'%':''}</div>
     ${p>0?`<div class="card-progress-bar"><div class="card-progress-fill" style="width:${p}%;background:${pc}"></div></div>`:''}
   </div>`;
 }
@@ -2367,9 +2677,133 @@ function toggleSidebar(){
   localStorage.setItem('mc_sidebar_collapsed', collapsed ? '1' : '0');
 }
 
+// ====================== WALLPAPER ======================
+const WP_FILES = [
+  'wp1.jpg','wp2.jpg','wp3.jpg','wp4.jpg','wp5.jpg','wp6.jpg','wp7.jpg'
+];
+let wpIndex = 0;
+let wpTimer = null;
+let wpLoaded = [];
+
+function initWallpaper(){
+  const bg = document.getElementById('wallpaper-bg');
+  if(!bg) return;
+  const driveUrl = localStorage.getItem('mc_drive_url')||'';
+  if(!driveUrl) return;
+  // Converte link de pasta Drive para base de imagem direta (arquivo público)
+  // Usuário deve colocar os arquivos na pasta e o site tenta carregar via nome
+  // Cria slides
+  WP_FILES.forEach((f,i)=>{
+    const div = document.createElement('div');
+    div.className = 'wp-slide' + (i===0?' active':'');
+    div.style.backgroundImage = `url(${driveUrl.replace('?usp=drive_link','').replace('?usp=sharing','')}/view?name=${f})`;
+    bg.insertBefore(div, bg.querySelector('.wp-overlay'));
+  });
+  startWallpaperCycle();
+}
+
+function loadWallpapers(baseUrl){
+  const bg = document.getElementById('wallpaper-bg');
+  if(!bg) return;
+  bg.querySelectorAll('.wp-slide').forEach(el=>el.remove());
+  wpLoaded = [];
+  WP_FILES.forEach((f,i)=>{
+    const img = new Image();
+    const url = baseUrl + f;
+    img.onload = ()=>{
+      const div = document.createElement('div');
+      div.className = 'wp-slide';
+      div.dataset.name = f;
+      div.style.backgroundImage = `url(${url})`;
+      bg.insertBefore(div, bg.querySelector('.wp-overlay'));
+      wpLoaded.push(div);
+      wpLoaded.sort((a,b)=>WP_FILES.indexOf(a.dataset.name)-WP_FILES.indexOf(b.dataset.name));
+      if(wpLoaded.length===1){ div.classList.add('active'); startWallpaperCycle(); }
+    };
+    img.src = url;
+  });
+}
+
+function startWallpaperCycle(){
+  clearInterval(wpTimer);
+  wpTimer = setInterval(()=>{
+    if(!wpLoaded.length) return;
+    wpLoaded.forEach(el=>el.classList.remove('active'));
+    wpIndex = (wpIndex+1) % wpLoaded.length;
+    wpLoaded[wpIndex].classList.add('active');
+  }, 8000);
+}
+
+function setWallpaperBase(url){
+  localStorage.setItem('mc_wp_base', url);
+  loadWallpapers(url);
+}
+
+// ====================== WIDGET RESIZER ======================
+function initWidgetResizers(){
+  const resizers = document.querySelectorAll('.widget-resizer');
+  resizers.forEach(res=>{
+    res.addEventListener('mousedown', e=>{
+      e.preventDefault();
+      res.classList.add('dragging');
+      const prev = res.previousElementSibling;
+      const startX = e.clientX;
+      const startW = prev.offsetWidth;
+      const onMove = ev=>{
+        const delta = ev.clientX - startX;
+        const newW = Math.max(80, Math.min(500, startW+delta));
+        prev.style.flex = `0 0 ${newW}px`;
+        saveWidgetSizes();
+      };
+      const onUp = ()=>{
+        res.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+  loadWidgetSizes();
+}
+
+function saveWidgetSizes(){
+  const sizes = {};
+  ['temp-widget-wrap','eps-widget-wrap','solar-widget-wrap'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) sizes[id]=el.offsetWidth;
+  });
+  localStorage.setItem('mc_widget_sizes', JSON.stringify(sizes));
+}
+
+function loadWidgetSizes(){
+  try{
+    const s=JSON.parse(localStorage.getItem('mc_widget_sizes')||'{}');
+    Object.entries(s).forEach(([id,w])=>{
+      const el=document.getElementById(id);
+      if(el) el.style.flex=`0 0 ${w}px`;
+    });
+  }catch(e){}
+}
+
 init();
 
 // Salva ao fechar/sair da aba
+function applyWpUrl(){
+  const url = document.getElementById('wp-base-url').value.trim();
+  if(!url){ showToast('Cole a URL base primeiro.','error'); return; }
+  const base = url.endsWith('/') ? url : url+'/';
+  setWallpaperBase(base);
+  showToast('Wallpapers carregando...','success');
+}
+function clearWallpaper(){
+  localStorage.removeItem('mc_wp_base');
+  const bg = document.getElementById('wallpaper-bg');
+  if(bg) bg.querySelectorAll('.wp-slide').forEach(el=>el.remove());
+  clearInterval(wpTimer);
+  showToast('Wallpaper removido.','success');
+}
+
 window.addEventListener('beforeunload', ()=>{ saveDB(); if(gistToken()&&gistId()) pushToGist(); });
 // Salva quando minimiza ou muda de aba
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveDB(); });
