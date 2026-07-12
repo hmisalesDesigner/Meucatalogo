@@ -96,6 +96,19 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   content:''; display:block; width:2px; height:32px;
   background:rgba(45,90,48,0.6); border-radius:2px;
 }
+/* Resize vertical do container */
+#widgets-row-outer { position:relative; }
+#widget-vresize {
+  position:absolute; bottom:-5px; left:50%; transform:translateX(-50%);
+  width:48px; height:10px; cursor:ns-resize; z-index:10;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity 0.2s;
+}
+#widgets-row-outer:hover #widget-vresize { opacity:1; }
+#widget-vresize::after {
+  content:''; display:block; width:36px; height:3px;
+  background:rgba(45,90,48,0.6); border-radius:2px;
+}
 .weather-days { display:flex; gap:5px; align-items:center; }
 .weather-day {
   text-align:center;
@@ -108,7 +121,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 
 .pw-bars { display:flex; gap:4px; align-items:flex-end; }
 .pw-bar-wrap { display:flex; flex-direction:column; align-items:center; gap:3px; }
-.pw-bar-bg { width:22px; border-radius:5px; background:rgba(20,38,20,0.6); overflow:hidden; position:relative; height:42px; }
+.pw-bar-bg { width:18px; border-radius:4px; background:rgba(20,38,20,0.6); overflow:hidden; position:relative; height:28px; }
 .pw-bar-fill { position:absolute; bottom:0; left:0; right:0; border-radius:4px; transition:height 0.5s ease; }
 .pw-bar-label { font-size:9px; color:#3d7a45; }
 .pw-bar-wrap.today .pw-bar-label { color:#5aab6a; font-weight:700; }
@@ -669,21 +682,34 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 
     <!-- WEATHER + PROGRESS WIDGETS -->
     <div id="widgets-row-outer" style="margin:0 28px 12px;box-sizing:border-box;width:calc(100% - 56px);">
-      <div id="widgets-single-container" style="display:flex;align-items:center;gap:0;background:rgba(8,18,8,0.85);backdrop-filter:blur(10px);border:1px solid rgba(30,64,36,0.6);border-radius:12px;padding:12px 16px;box-sizing:border-box;width:100%;">
-        <div id="temp-widget-wrap" style="flex:0 0 130px;min-width:80px;"></div>
+      <div id="widgets-single-container" style="display:flex;align-items:center;gap:0;background:rgba(8,18,8,0.85);backdrop-filter:blur(10px);border:1px solid rgba(30,64,36,0.6);border-radius:12px;padding:8px 14px;box-sizing:border-box;width:100%;">
+        <div id="temp-widget-wrap" style="flex:0 0 210px;min-width:160px;"></div>
         <div class="widget-resizer" id="res-1"></div>
         <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
         <div class="widget-resizer" id="res-1b"></div>
-        <div id="eps-widget-wrap" style="flex:0 0 220px;min-width:120px;"></div>
+        <div id="eps-widget-wrap" style="flex:0 0 200px;min-width:120px;"></div>
         <div class="widget-resizer" id="res-2"></div>
         <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
         <div class="widget-resizer" id="res-2b"></div>
-        <div id="solar-widget-wrap" style="flex:0 0 220px;min-width:140px;"></div>
+        <div id="solar-widget-wrap" style="flex:0 0 200px;min-width:140px;"></div>
         <div class="widget-resizer" id="res-3"></div>
         <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
         <div class="widget-resizer" id="res-3b"></div>
-        <div id="forecast-widget-wrap" style="flex:1;min-width:120px;"></div>
+        <div id="month-widget-wrap" style="flex:0 0 180px;min-width:120px;"></div>
+        <div class="widget-resizer" id="res-4"></div>
+        <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
+        <div class="widget-resizer" id="res-4b"></div>
+        <div id="consistency-widget-wrap" style="flex:0 0 160px;min-width:120px;"></div>
+        <div class="widget-resizer" id="res-5"></div>
+        <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
+        <div class="widget-resizer" id="res-5b"></div>
+        <div id="forecast-widget-wrap" style="flex:0 0 180px;min-width:120px;"></div>
+        <div class="widget-resizer" id="res-6"></div>
+        <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
+        <div class="widget-resizer" id="res-6b"></div>
+        <div id="skills-widget-wrap" style="flex:1;min-width:160px;"></div>
       </div>
+      <div id="widget-vresize" title="Arrastar para redimensionar"></div>
     </div>
 
     <!-- EM ANDAMENTO -->
@@ -1118,7 +1144,7 @@ function init(){
   applyStoredAccent();
   loadMetas();
   // Limpa cache de clima antigo se formato mudou
-  try{ const c=localStorage.getItem('mc_weather_data'); if(c){ const p=JSON.parse(c); if(!p.forecastHtml){ localStorage.removeItem('mc_weather_data'); localStorage.removeItem('mc_weather_time'); } } }catch(e){ localStorage.removeItem('mc_weather_data'); }
+  try{ const c=localStorage.getItem('mc_weather_data'); if(c){ const p=JSON.parse(c); if(!p.forecastHtml||!p.v||p.v<3){ localStorage.removeItem('mc_weather_data'); localStorage.removeItem('mc_weather_time'); } } }catch(e){ localStorage.removeItem('mc_weather_data'); }
   // Wallpaper
   setTimeout(()=>{
     const wpBase = localStorage.getItem('mc_wp_base');
@@ -1414,6 +1440,20 @@ function showMetaToast(icon,title,body){
 const WEATHER_ICONS = {0:'☀️',1:'☀️',2:'⛅',3:'🌥️',45:'🌫️',48:'🌫️',51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌧️',82:'⛈️',95:'⛈️',96:'⛈️',99:'⛈️'};
 const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
+
+const SKILL_ICONS = {
+  'Photoshop':    {e:'🖼️', c:'#31a8de'},
+  'Premiere Pro': {e:'🎞️', c:'#9999ff'},
+  'After Effects':{e:'✨', c:'#9999ff'},
+  'Illustrator':  {e:'🖊️', c:'#ff9a00'},
+  'IA':           {e:'🤖', c:'#5aab6a'},
+  'Marketing':    {e:'📢', c:'#e74c3c'},
+  'Investimentos':{e:'💹', c:'#f0a500'},
+  'Modelagem 3D': {e:'🧊', c:'#3498db'},
+  'Som':          {e:'🎵', c:'#9b59b6'},
+  'Programação':  {e:'💻', c:'#4ddb6e'},
+};
+
 function renderWeatherWidget(){
   // Calcula progresso (não depende da API)
   const today = new Date();
@@ -1445,15 +1485,13 @@ function renderWeatherWidget(){
 
   // Widget eps/semana (independente da API)
   const epsWrap = document.getElementById('eps-widget-wrap');
-  if(epsWrap) epsWrap.innerHTML = `<div class="weather-widget" style="flex-direction:column;justify-content:center;gap:8px;">
-    <div style="font-size:9px;color:#3d7a45;letter-spacing:1px;text-transform:uppercase">📊 Eps / Semana</div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div>
-        <div style="font-size:22px;font-weight:700;color:#5aab6a;line-height:1">${total}</div>
-        ${metaDay?`<div style="font-size:9px;color:#5aab6a;margin-top:2px">${todayCount}/${metaDay} hoje</div>`:''}
-      </div>
-      <div class="pw-bars">${bars}</div>
+  if(epsWrap) epsWrap.innerHTML = `<div class="weather-widget" style="flex-direction:column;justify-content:center;gap:5px;width:100%;">
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;white-space:nowrap;">
+      <span style="font-size:22px;font-weight:700;color:#4ddb6e;line-height:1;flex-shrink:0">${total}</span>
+      <span style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px;flex-shrink:0">eps/sem</span>
+      ${metaDay?`<span style="font-size:9px;color:#5aab6a;margin-left:4px;flex-shrink:0">${todayCount}/${metaDay} hj</span>`:''}
     </div>
+    <div class="pw-bars">${bars}</div>
   </div>`;
 
   // Cache clima
@@ -1471,18 +1509,62 @@ function renderWeatherWidget(){
   }
 
   // Busca API
-  fetch('https://api.open-meteo.com/v1/forecast?latitude=-23.4205&longitude=-51.9333&current=temperature_2m,weathercode&daily=weathercode,temperature_2m_max&timezone=America%2FSao_Paulo&forecast_days=8')
+  fetch('https://api.open-meteo.com/v1/forecast?latitude=-23.4205&longitude=-51.9333&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,apparent_temperature&daily=weathercode,temperature_2m_max&timezone=America%2FSao_Paulo&forecast_days=8')
     .then(r=>r.json()).then(data=>{
       const cur = data.current;
       const daily = data.daily;
       const now = new Date();
       const icon = WEATHER_ICONS[cur.weathercode]||'🌤️';
 
-      const tempHtml = `<div class="weather-widget" style="flex-direction:column;justify-content:center;align-items:flex-start;gap:4px;height:100%;">
-        <div class="weather-city">📍 Maringá, PR</div>
-        <div class="weather-main">
-          <span class="weather-temp">${Math.round(cur.temperature_2m)}°</span>
-          <span style="font-size:22px;margin-left:6px;">${icon}</span>
+  function windDir(deg){
+    const dirs=['Norte','Nordeste','Leste','Sudeste','Sul','Sudoeste','Oeste','Noroeste'];
+    return dirs[Math.round(deg/45)%8];
+  }
+  function weatherDesc(code){
+    if(code<=1) return 'Céu limpo';
+    if(code<=3) return 'Parcial. nublado';
+    if(code<=48) return 'Neblina';
+    if(code<=55) return 'Garoa';
+    if(code<=65) return 'Chuva leve';
+    if(code<=77) return 'Neve';
+    if(code<=82) return 'Chuva';
+    return 'Tempestade';
+  }
+
+      const windSpd = Math.round(cur.windspeed_10m||0);
+      const windD = windDir(cur.winddirection_10m||0);
+      const desc = weatherDesc(cur.weathercode||0);
+      const apparentTemp = Math.round(cur.apparent_temperature||cur.temperature_2m);
+
+      const tempHtml = `<div class="weather-widget" style="gap:0;padding:0;height:100%;align-items:stretch;">
+        <!-- CLIMA -->
+        <div style="display:flex;flex-direction:column;justify-content:center;padding-right:12px;gap:4px;flex:1;">
+          <div style="font-size:8px;color:#3d7a45;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:2px">Clima</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:28px;line-height:1">${icon}</span>
+            <div>
+              <div style="font-size:22px;font-weight:700;color:#e5e5e5;line-height:1">${Math.round(cur.temperature_2m)}<span style="font-size:13px">°C</span></div>
+              <div style="font-size:8px;color:#5aab6a;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px">${desc}</div>
+            </div>
+          </div>
+          <div style="font-size:8px;color:#3d7a45;margin-top:1px">Sensação ${apparentTemp}°C</div>
+        </div>
+        <!-- DIVISOR -->
+        <div style="width:1px;background:rgba(45,90,48,0.3);flex-shrink:0;margin:0 10px;"></div>
+        <!-- VENTO -->
+        <div style="display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:60px;">
+          <div style="font-size:8px;color:#3d7a45;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:2px">Vento</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M2 11 Q6 7 11 11 Q16 15 20 11" stroke="#5aab6a" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+              <path d="M2 7 Q6 3 11 7 Q16 11 20 7" stroke="#3d7a45" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+              <path d="M2 15 Q6 11 11 15 Q16 19 20 15" stroke="#3d7a45" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+            </svg>
+            <div>
+              <div style="font-size:18px;font-weight:700;color:#e5e5e5;line-height:1">${windSpd}<span style="font-size:9px;color:#5aab6a"> km/h</span></div>
+              <div style="font-size:10px;color:#5aab6a;font-weight:700;margin-top:2px">${windD}</div>
+            </div>
+          </div>
         </div>
       </div>`;
 
@@ -1505,7 +1587,7 @@ function renderWeatherWidget(){
       const fw = document.getElementById('forecast-widget-wrap');
       if(tw) tw.innerHTML = tempHtml;
       if(fw) fw.innerHTML = forecastHtml;
-      localStorage.setItem('mc_weather_data', JSON.stringify({tempHtml, forecastHtml}));
+      localStorage.setItem('mc_weather_data', JSON.stringify({tempHtml, forecastHtml, v:3}));
       localStorage.setItem('mc_weather_time', Date.now());
     }).catch(()=>{
       const tw = document.getElementById('temp-widget-wrap');
@@ -1536,9 +1618,10 @@ function renderSolarWidget(){
                 / (Math.cos(lat*Math.PI/180)*Math.cos(dec*Math.PI/180));
     if(Math.abs(cosH)>1) return null;
     const H = Math.acos(cosH)*180/Math.PI;
-    const tz = -3;
-    const EoT = (L - lambda)*4;
-    const noon = 12 - EoT/60 - lng/15 - tz;
+    const tz = -3; // UTC-3 Brasília
+    const EoT = (L - lambda)*4; // Equação do tempo em minutos
+    // Meio-dia solar local em horas
+    const noon = 12 - EoT/60 - lng/15 + tz;
     return { rise: noon - H/15, set: noon + H/15 };
   }
 
@@ -1562,7 +1645,7 @@ function renderSolarWidget(){
   // Período do dia
   const isDay = nowH >= sun.rise && nowH <= sun.set;
   const isGolden = (nowH >= sun.rise && nowH <= sun.rise+1) || (nowH >= sun.set-1 && nowH <= sun.set);
-  const periodLabel = !isDay ? 'PERÍODO NOTURNO' : isGolden ? '✨ HORA DOURADA' : '☀️ LUZ DO DIA';
+  const periodLabel = !isDay ? 'PERÍODO NOTURNO' : isGolden ? 'HORA DOURADA' : 'LUZ DO DIA';
 
   // SVG linha reta solar (estilo referência)
   const TW=190, TH=28, pad=8;
@@ -1616,6 +1699,166 @@ function renderSolarWidget(){
 
   // Atualiza relógio a cada minuto
   setTimeout(renderSolarWidget, (60 - now.getSeconds())*1000);
+}
+
+// ====================== EXTRA WIDGETS ======================
+function renderMonthWidget(){
+  const wrap = document.getElementById('month-widget-wrap');
+  if(!wrap) return;
+  const now = new Date();
+  const day = now.getDate();
+  const total = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const remaining = total - day;
+  const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const month = monthNames[now.getMonth()];
+
+  let cells = '';
+  for(let d=1;d<=total;d++){
+    const isToday = d===day;
+    const isPast = d<day;
+    const bg = isToday ? '#4ddb6e' : isPast ? 'rgba(45,90,48,0.5)' : 'rgba(30,60,30,0.2)';
+    const border = isToday ? '#4ddb6e' : isPast ? '#2d5a30' : 'rgba(45,90,48,0.2)';
+    const color = isToday ? '#000' : isPast ? '#5aab6a' : '#1e4024';
+    const fw = isToday ? '700' : '400';
+    cells += `<div style="width:7px;height:7px;border-radius:1.5px;background:${bg};border:1px solid ${border};flex-shrink:0" title="Dia ${d}"></div>`;
+  }
+
+  wrap.innerHTML = `<div style="height:100%;box-sizing:border-box;">
+    <div style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${month} ${now.getFullYear()}</div>
+    <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;">
+      <span style="font-size:18px;font-weight:700;color:#e5e5e5;line-height:1">${day}</span>
+      <span style="font-size:9px;color:#3d7a45">/ ${total}</span>
+      <span style="font-size:7.5px;color:#5aab6a;margin-left:3px">${remaining} restantes</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:2px;">${cells}</div>
+  </div>`;
+}
+
+function renderConsistencyWidget(){
+  const wrap = document.getElementById('consistency-widget-wrap');
+  if(!wrap) return;
+
+  // Calcular sequência atual
+  const today = new Date();
+  let streak = 0;
+  for(let i=0;i<365;i++){
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const ds = d.toLocaleDateString('pt-BR');
+    const count = (DB.history||[]).filter(h=>h.action==='watched'&&h.date===ds).length;
+    if(count>0) streak++;
+    else if(i>0) break;
+  }
+
+  const levels = [
+    {min:0,  label:'Iniciante',  emoji:'🌱', color:'#2d5a30'},
+    {min:3,  label:'Aprendiz',   emoji:'🌿', color:'#4ddb6e'},
+    {min:7,  label:'Dedicado',   emoji:'🌳', color:'#5aab6a'},
+    {min:14, label:'Expert',     emoji:'⚡', color:'#f0a500'},
+    {min:30, label:'Mestre',     emoji:'🏆', color:'#f0a500'},
+  ];
+  const lvl = [...levels].reverse().find(l=>streak>=l.min) || levels[0];
+  const nextLvl = levels[levels.indexOf(levels.find(l=>streak<l.min))] || null;
+  const pct = nextLvl ? Math.round((streak/nextLvl.min)*100) : 100;
+
+  wrap.innerHTML = `<div style="height:100%;box-sizing:border-box;">
+    <div style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Consistência</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <span style="font-size:20px;line-height:1">${lvl.emoji}</span>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:${lvl.color}">${lvl.label}</div>
+        <div style="font-size:9px;color:#3d7a45;margin-top:1px">${streak} dia${streak!==1?'s':''} seguidos</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      ${levels.map(l=>{
+        const isCur = l.label===lvl.label;
+        const isDone = streak>=l.min;
+        return `<div style="display:flex;align-items:center;gap:6px;opacity:${isDone?1:0.35}">
+          <span style="font-size:11px">${l.emoji}</span>
+          <span style="font-size:9px;color:${isCur?l.color:'#3d7a45'};font-weight:${isCur?'700':'400'}">${l.label}</span>
+          ${isCur?`<span style="font-size:8px;color:${l.color};margin-left:auto">← atual</span>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+    ${nextLvl?`<div style="margin-top:8px;height:3px;background:rgba(45,90,48,0.2);border-radius:2px"><div style="height:100%;width:${pct}%;background:${lvl.color};border-radius:2px;transition:width 0.5s"></div></div>
+    <div style="font-size:8px;color:#3d7a45;margin-top:3px">Próximo: ${nextLvl.label} (${nextLvl.min} dias)</div>`:'<div style="font-size:8px;color:#f0a500;margin-top:6px">🏆 Nível máximo!</div>'}
+  </div>`;
+}
+
+function renderSkillsWidget(){
+  const wrap = document.getElementById('skills-widget-wrap');
+  if(!wrap) return;
+
+  // Contar eps por categoria
+  const catEps = {};
+  DB.series.forEach(s=>{
+    if(!catEps[s.cat]) catEps[s.cat]=0;
+    catEps[s.cat] += s.watched ? s.watched.filter(Boolean).length : 0;
+  });
+
+  function getLevel(eps){
+    if(eps<=0) return 0;
+    // Escala progressiva: Lv1=1, Lv2=4, Lv3=9, Lv4=16... (lv^2 eps)
+    let lv=0;
+    while((lv+1)*(lv+1) <= eps) lv++;
+    return lv;
+  }
+  function getLevelColor(lv){
+    if(lv<=0) return '#1e4024';
+    if(lv<=2) return '#2d5a30';    // Verde escuro — Iniciante
+    if(lv<=4) return '#2d8a50';    // Verde médio — Aprendiz
+    if(lv<=6) return '#5aab6a';    // Verde claro — Dedicado
+    if(lv<=8) return '#f0a500';    // Dourado — Experiente
+    if(lv<=10) return '#4a90e2';   // Azul brilhante — Avançado
+    if(lv<=12) return '#9b59b6';   // Roxo — Especialista
+    if(lv<=15) return '#e91e8c';   // Magenta — Mestre
+    if(lv<=18) return '#e74c3c';   // Vermelho — Elite
+    if(lv<=22) return '#ff6b35';   // Laranja fogo — Lendário
+    return '#ffffff';              // Branco — Transcendente (Lv23+)
+  }
+  function getMaxLevel(cat){
+    // Nunca reduz — usa o maior entre atual e salvo
+    const saved = (DB.skillLevels && DB.skillLevels[cat]) || 0;
+    return saved;
+  }
+  function saveMaxLevel(cat, lv){
+    if(!DB.skillLevels) DB.skillLevels={};
+    if(lv > (DB.skillLevels[cat]||0)){
+      DB.skillLevels[cat]=lv;
+      saveDB();
+    }
+  }
+
+  const cats = DB.cats && DB.cats.length ? DB.cats : Object.keys(SKILL_ICONS).map(name=>({name}));
+
+  const icons = cats.map(c=>{
+    const data = SKILL_ICONS[c.name] || {e: c.icon||'📚', c:'#3d7a45'};
+    const eps = catEps[c.name]||0;
+    const currentLv = getLevel(eps);
+    // Nunca reduz — mantém o máximo histórico
+    const savedLv = getMaxLevel(c.name);
+    const lv = Math.max(currentLv, savedLv);
+    if(currentLv > savedLv) saveMaxLevel(c.name, currentLv);
+    const hasContent = DB.series.some(s=>s.cat===c.name);
+    const col = lv>0 ? getLevelColor(lv) : data.c;
+    const opacity = hasContent ? 1 : 0.25;
+    const border = lv>0 ? col : 'rgba(45,90,48,0.3)';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:52px;opacity:${opacity}">
+      <div style="width:30px;height:30px;border-radius:50%;background:rgba(8,18,8,0.6);border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:14px;position:relative">
+        ${data.e}
+        ${lv>0?`<div style="position:absolute;bottom:-3px;right:-3px;background:${col};color:#000;font-size:6px;font-weight:700;border-radius:4px;padding:1px 3px;line-height:1.3">Lv${lv}</div>`:''}
+      </div>
+      <div style="font-size:7px;color:${lv>0?col:'#3d7a45'};text-align:center;line-height:1.2;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name.split(' ')[0]}</div>
+      <div style="width:36px;height:2.5px;background:rgba(45,90,48,0.15);border-radius:2px" title="${eps} eps → Lv${lv} → próximo: ${(lv+1)*(lv+1)} eps">
+        <div style="height:100%;width:${lv>0?Math.min(((eps - lv*lv)/((lv+1)*(lv+1)-lv*lv))*100,100):0}%;background:${col};border-radius:2px;transition:width 0.5s"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = `<div style="height:100%;box-sizing:border-box;">
+    <div style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Habilidades</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">${icons}</div>
+  </div>`;
 }
 
 // ====================== CATEGORIES ======================
@@ -1725,6 +1968,9 @@ function renderDashboard(){
   renderSolarWidget();
   renderWeatherWidget();
   renderProgressWidget();
+  renderMonthWidget();
+  renderConsistencyWidget();
+  renderSkillsWidget();
   renderDashWatching();
   renderDashNext();
   renderCatRows();
@@ -2794,6 +3040,7 @@ function setWallpaperBase(url){
 
 // ====================== WIDGET RESIZER ======================
 function initWidgetResizers(){
+  // Resize horizontal
   const resizers = document.querySelectorAll('.widget-resizer');
   resizers.forEach(res=>{
     res.addEventListener('mousedown', e=>{
@@ -2817,12 +3064,41 @@ function initWidgetResizers(){
       document.addEventListener('mouseup', onUp);
     });
   });
+
+  // Resize vertical do container
+  const vres = document.getElementById('widget-vresize');
+  const container = document.getElementById('widgets-single-container');
+  if(vres && container){
+    const savedH = localStorage.getItem('mc_widget_height');
+    if(savedH) container.style.minHeight = savedH+'px';
+
+    vres.addEventListener('mousedown', e=>{
+      e.preventDefault();
+      const startY = e.clientY;
+      const startH = container.offsetHeight;
+      document.body.style.cursor='ns-resize';
+      const onMove = ev=>{
+        const delta = ev.clientY - startY;
+        const newH = Math.max(50, Math.min(300, startH+delta));
+        container.style.minHeight = newH+'px';
+      };
+      const onUp = ()=>{
+        document.body.style.cursor='';
+        localStorage.setItem('mc_widget_height', container.offsetHeight);
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
   loadWidgetSizes();
 }
 
 function saveWidgetSizes(){
   const sizes = {};
-  ['temp-widget-wrap','eps-widget-wrap','solar-widget-wrap'].forEach(id=>{
+  ['temp-widget-wrap','eps-widget-wrap','solar-widget-wrap','month-widget-wrap','consistency-widget-wrap','forecast-widget-wrap'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) sizes[id]=el.offsetWidth;
   });
