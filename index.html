@@ -42,8 +42,12 @@
 body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; overflow-x:hidden; }
 body.has-wallpaper { background:#0a0a0a; }
 #wallpaper-bg {
-  position:fixed; inset:0; z-index:0; pointer-events:none;
+  position:fixed; left:var(--sidebar-width); right:0; bottom:0;
+  top:56px; /* abaixo do topbar */
+  z-index:0; pointer-events:none; overflow:hidden;
+  transition:left 0.3s ease;
 }
+body.sidebar-collapsed #wallpaper-bg { left:0; }
 #wallpaper-bg .wp-slide {
   position:absolute; inset:0;
   background-size:cover; background-position:center;
@@ -59,6 +63,8 @@ body.has-wallpaper { background:#0a0a0a; }
 #sidebar { background:rgba(10,10,20,0.82); backdrop-filter:blur(12px); }
 [data-theme="light"] #sidebar { background:rgba(255,255,255,0.88); }
 .content-area { background:transparent; }
+/* Hero acima do wallpaper */
+#hero-banner { position:relative; z-index:2; }
 
 /* Widget clima */
 .weather-widget {
@@ -102,7 +108,7 @@ body.has-wallpaper { background:#0a0a0a; }
 
 .pw-bars { display:flex; gap:4px; align-items:flex-end; }
 .pw-bar-wrap { display:flex; flex-direction:column; align-items:center; gap:3px; }
-.pw-bar-bg { width:20px; border-radius:4px; background:rgba(26,46,26,0.8); overflow:hidden; position:relative; height:38px; }
+.pw-bar-bg { width:22px; border-radius:5px; background:rgba(20,38,20,0.6); overflow:hidden; position:relative; height:42px; }
 .pw-bar-fill { position:absolute; bottom:0; left:0; right:0; border-radius:4px; transition:height 0.5s ease; }
 .pw-bar-label { font-size:9px; color:#3d7a45; }
 .pw-bar-wrap.today .pw-bar-label { color:#5aab6a; font-weight:700; }
@@ -195,7 +201,7 @@ body.has-wallpaper { background:#0a0a0a; }
 #hero-banner {
   width:100%; aspect-ratio:21/9; position:relative;
   overflow:hidden; background:#000;
-  max-height:420px; z-index:2;
+  max-height:420px;
 }
 #hero-banner img { width:100%; height:100%; object-fit:cover; opacity:0.7; }
 #hero-banner .banner-overlay {
@@ -662,7 +668,7 @@ body.has-wallpaper { background:#0a0a0a; }
     </div>
 
     <!-- WEATHER + PROGRESS WIDGETS -->
-    <div id="widgets-row-outer" style="margin:0 28px 12px;box-sizing:border-box;">
+    <div id="widgets-row-outer" style="margin:0 28px 12px;box-sizing:border-box;width:calc(100% - 56px);">
       <div id="widgets-single-container" style="display:flex;align-items:center;gap:0;background:rgba(8,18,8,0.85);backdrop-filter:blur(10px);border:1px solid rgba(30,64,36,0.6);border-radius:12px;padding:12px 16px;box-sizing:border-box;width:100%;">
         <div id="temp-widget-wrap" style="flex:0 0 130px;min-width:80px;"></div>
         <div class="widget-resizer" id="res-1"></div>
@@ -1125,6 +1131,7 @@ function init(){
     document.getElementById('sidebar').classList.add('collapsed');
     document.getElementById('main').style.marginLeft='0';
     document.getElementById('sidebar-toggle').textContent='☰';
+    document.body.classList.add('sidebar-collapsed');
   }
   // Drive URL
   const drive = localStorage.getItem('mc_drive_url');
@@ -1423,10 +1430,16 @@ function renderWeatherWidget(){
   const todayCount = days.find(d=>d.isToday)?.count||0;
   const bars = days.map(d=>{
     const pct = Math.round((d.count/maxCount)*100);
-    const color = d.count===0?'rgba(45,90,48,0.2)': d.count>=(metaDay||1)?'#3d7a45':'#2d5a30';
+    const isEmpty = d.count===0;
+    const isDone = !isEmpty && d.count>=(metaDay||1);
+    const barColor = isEmpty ? 'rgba(45,90,48,0.15)' : isDone ? '#4ddb6e' : '#2d8a50';
+    const glowColor = isDone ? 'rgba(77,219,110,0.35)' : isEmpty ? 'none' : 'rgba(45,138,80,0.2)';
+    const labelColor = d.isToday ? '#4ddb6e' : '#3d7a45';
     return `<div class="pw-bar-wrap${d.isToday?' today':''}">
-      <div class="pw-bar-bg"><div class="pw-bar-fill" style="height:${pct}%;background:${color}"></div></div>
-      <div class="pw-bar-label">${d.label[0]}</div>
+      <div class="pw-bar-bg" style="border:1px solid rgba(45,90,48,0.2);">
+        <div class="pw-bar-fill" style="height:${Math.max(pct,isEmpty?0:8)}%;background:${barColor};box-shadow:${isEmpty?'none':'0 0 6px '+glowColor};"></div>
+      </div>
+      <div class="pw-bar-label" style="color:${labelColor};font-weight:${d.isToday?'700':'400'}">${d.label[0]}</div>
     </div>`;
   }).join('');
 
@@ -1561,28 +1574,43 @@ function renderSolarWidget(){
   const sunColor=isGolden?'#f0a500':isDay?'#5aab6a':'#2d5a30';
 
   const svgArc=`<svg width="${TW}" height="${TH}" viewBox="0 0 ${TW} ${TH}" style="width:100%">
-    <line x1="${lineX1}" y1="${lineY}" x2="${lineX2}" y2="${lineY}" stroke="${trackColor}" stroke-width="3" stroke-linecap="round"/>
-    <line x1="${lineX1}" y1="${lineY}" x2="${sunX}" y2="${lineY}" stroke="${lineColor}" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="${lineX1}" cy="${lineY}" r="3" fill="#2d5a30"/>
-    <circle cx="${lineX2}" cy="${lineY}" r="3" fill="#2d5a30"/>
+    <line x1="${lineX1}" y1="${lineY}" x2="${lineX2}" y2="${lineY}" stroke="${trackColor}" stroke-width="4" stroke-linecap="round"/>
+    <line x1="${lineX1}" y1="${lineY}" x2="${sunX}" y2="${lineY}" stroke="${lineColor}" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="${lineX1}" cy="${lineY}" r="4" fill="#2d5a30"/>
+    <circle cx="${lineX2}" cy="${lineY}" r="4" fill="#2d5a30"/>
     ${isDay?`
-    <circle cx="${sunX}" cy="${lineY}" r="7" fill="${sunColor}" opacity="0.2"/>
-    <circle cx="${sunX}" cy="${lineY}" r="4" fill="${sunColor}"/>
-    `:`<circle cx="${sunX}" cy="${lineY}" r="3" fill="${sunColor}"/>`}
+    <circle cx="${sunX}" cy="${lineY}" r="9" fill="${sunColor}" opacity="0.15"/>
+    <circle cx="${sunX}" cy="${lineY}" r="5" fill="${sunColor}"/>
+    <circle cx="${sunX}" cy="${lineY}" r="3" fill="#fff" opacity="0.6"/>
+    `:`<circle cx="${sunX}" cy="${lineY}" r="4" fill="${sunColor}"/>`}
   </svg>`;
 
-  wrap.innerHTML = `<div class="solar-widget">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div>
-        <div class="solar-time">${timeStr}</div>
-        <div class="solar-label">${periodLabel}</div>
-      </div>
+  const iconColor = isGolden ? '#f0a500' : isDay ? '#5aab6a' : '#3d7a45';
+  const iconEmoji = isGolden ? '✨' : isDay ? '☀️' : '🌙';
+
+  wrap.innerHTML = `<div class="solar-widget" style="width:100%">
+    <!-- Linha 1: hora + label -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+      <span style="font-size:11px;color:${iconColor}">${iconEmoji}</span>
+      <span class="solar-time" style="font-size:16px;font-weight:700;color:#e5e5e5;letter-spacing:1px">${timeStr}</span>
+      <span class="solar-label" style="font-size:9px;color:${iconColor};letter-spacing:1.5px">${periodLabel}</span>
     </div>
-    <div class="solar-arc-wrap">${svgArc}</div>
-    <div class="solar-times-row">
-      <span>🌅 ${toHHMM(sun.rise)}</span>
-      <span class="solar-daylight">${daylightH}h ${daylightM}m de luz</span>
-      <span>🌇 ${toHHMM(sun.set)}</span>
+    <!-- Linha 2: barra solar -->
+    <div class="solar-arc-wrap" style="margin:4px 0 2px">${svgArc}</div>
+    <!-- Linha 3: nascer | luz do dia | pôr -->
+    <div style="display:flex;justify-content:space-between;align-items:center;font-size:9px;margin-top:2px;">
+      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;">
+        <span style="color:#3d7a45;text-transform:uppercase;letter-spacing:0.8px">Nascer</span>
+        <span style="color:#e5e5e5;font-weight:700;font-size:11px">${toHHMM(sun.rise)}</span>
+      </div>
+      <div style="text-align:center;">
+        <span style="color:#3d7a45;text-transform:uppercase;letter-spacing:0.8px">LUZ DO DIA</span><br>
+        <span style="color:#5aab6a;font-weight:700;font-size:10px">${daylightH}h ${daylightM}m</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+        <span style="color:#3d7a45;text-transform:uppercase;letter-spacing:0.8px">Pôr</span>
+        <span style="color:#e5e5e5;font-weight:700;font-size:11px">${toHHMM(sun.set)}</span>
+      </div>
     </div>
   </div>`;
 
@@ -2699,6 +2727,7 @@ function toggleSidebar(){
   main.style.marginLeft = collapsed ? '0' : 'var(--sidebar-width)';
   btn.textContent = collapsed ? '☰' : '✕';
   localStorage.setItem('mc_sidebar_collapsed', collapsed ? '1' : '0');
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
 }
 
 // ====================== WALLPAPER ======================
