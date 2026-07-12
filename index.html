@@ -40,6 +40,7 @@
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); display:flex; min-height:100vh; overflow-x:hidden; }
+body.has-wallpaper { background:#0a0a0a; }
 #wallpaper-bg {
   position:fixed; inset:0; z-index:0; pointer-events:none;
 }
@@ -51,11 +52,11 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 #wallpaper-bg .wp-slide.active { opacity:1; }
 #wallpaper-bg .wp-overlay {
   position:absolute; inset:0;
-  background:rgba(0,0,0,0.55);
+  background:rgba(0,0,0,0.45);
 }
 [data-theme="light"] #wallpaper-bg .wp-overlay { background:rgba(255,255,255,0.55); }
 #sidebar, #main { position:relative; z-index:1; }
-#sidebar { background:rgba(13,13,26,0.88); backdrop-filter:blur(8px); }
+#sidebar { background:rgba(10,10,20,0.82); backdrop-filter:blur(12px); }
 [data-theme="light"] #sidebar { background:rgba(255,255,255,0.88); }
 .content-area { background:transparent; }
 
@@ -161,7 +162,7 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:
 }
 
 /* MAIN */
-#main { margin-left:var(--sidebar-width); flex:1; min-height:100vh; background:var(--bg); transition:margin-left 0.3s ease; }
+#main { margin-left:var(--sidebar-width); flex:1; min-height:100vh; background:transparent; transition:margin-left 0.3s ease; }
 
 /* TOP BAR */
 #topbar {
@@ -1167,6 +1168,9 @@ function fetchGistPrimary(){
       renderAll(); updateBadges();
       setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60');
       startGistAutoSync();
+      // Restaura wallpaper automaticamente
+      const wpBase=localStorage.getItem('mc_wp_base');
+      if(wpBase){ const wpEl=document.getElementById('wp-base-url'); if(wpEl) wpEl.value=wpBase; setTimeout(()=>loadWallpapers(wpBase),800); }
     }
   }).catch(err=>{
     clearTimeout(timeout);
@@ -2565,6 +2569,7 @@ function exportData(){
       accent: localStorage.getItem('mc_accent')||'',
       accent2: localStorage.getItem('mc_accent2')||'',
       drive_url: localStorage.getItem('mc_drive_url')||'',
+      wp_base: localStorage.getItem('mc_wp_base')||'',
       meta_daily: localStorage.getItem('mc_meta_daily')||'',
       meta_weekly: localStorage.getItem('mc_meta_weekly')||'',
     }
@@ -2617,6 +2622,7 @@ function importData(e){
         if(s.accent) localStorage.setItem('mc_accent', s.accent);
         if(s.accent2) localStorage.setItem('mc_accent2', s.accent2);
         if(s.drive_url){ localStorage.setItem('mc_drive_url', s.drive_url); const dEl=document.getElementById('drive-url-settings'); if(dEl) dEl.value=s.drive_url; }
+        if(s.wp_base){ localStorage.setItem('mc_wp_base', s.wp_base); const wpEl=document.getElementById('wp-base-url'); if(wpEl) wpEl.value=s.wp_base; setTimeout(()=>loadWallpapers(s.wp_base),800); }
         if(s.meta_daily) localStorage.setItem('mc_meta_daily', s.meta_daily);
         if(s.meta_weekly) localStorage.setItem('mc_meta_weekly', s.meta_weekly);
         delete data._settings;
@@ -2707,21 +2713,21 @@ function loadWallpapers(baseUrl){
   if(!bg) return;
   bg.querySelectorAll('.wp-slide').forEach(el=>el.remove());
   wpLoaded = [];
+  wpIndex = 0;
+  document.body.classList.add('has-wallpaper');
+
   WP_FILES.forEach((f,i)=>{
-    const img = new Image();
     const url = baseUrl + f;
-    img.onload = ()=>{
-      const div = document.createElement('div');
-      div.className = 'wp-slide';
-      div.dataset.name = f;
-      div.style.backgroundImage = `url(${url})`;
-      bg.insertBefore(div, bg.querySelector('.wp-overlay'));
-      wpLoaded.push(div);
-      wpLoaded.sort((a,b)=>WP_FILES.indexOf(a.dataset.name)-WP_FILES.indexOf(b.dataset.name));
-      if(wpLoaded.length===1){ div.classList.add('active'); startWallpaperCycle(); }
-    };
-    img.src = url;
+    const div = document.createElement('div');
+    div.className = 'wp-slide';
+    div.dataset.name = f;
+    div.style.backgroundImage = `url(${url})`;
+    bg.insertBefore(div, bg.querySelector('.wp-overlay'));
+    wpLoaded.push(div);
+    if(i===0){ div.classList.add('active'); }
   });
+
+  startWallpaperCycle();
 }
 
 function startWallpaperCycle(){
@@ -2798,6 +2804,7 @@ function applyWpUrl(){
 }
 function clearWallpaper(){
   localStorage.removeItem('mc_wp_base');
+  document.body.classList.remove('has-wallpaper');
   const bg = document.getElementById('wallpaper-bg');
   if(bg) bg.querySelectorAll('.wp-slide').forEach(el=>el.remove());
   clearInterval(wpTimer);
