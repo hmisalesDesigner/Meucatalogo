@@ -166,7 +166,7 @@ body.has-wallpaper { background:#0a0a0a; }
 
 /* TOP BAR */
 #topbar {
-  position:sticky; top:0; z-index:50;
+  position:sticky; top:0; z-index:52;
   background:linear-gradient(to bottom,rgba(10,10,18,0.95) 60%,transparent);
   padding:12px 28px; display:flex; align-items:center; justify-content:space-between;
 }
@@ -195,7 +195,7 @@ body.has-wallpaper { background:#0a0a0a; }
 #hero-banner {
   width:100%; aspect-ratio:21/9; position:relative;
   overflow:hidden; background:#000;
-  max-height:420px;
+  max-height:420px; z-index:2;
 }
 #hero-banner img { width:100%; height:100%; object-fit:cover; opacity:0.7; }
 #hero-banner .banner-overlay {
@@ -899,7 +899,22 @@ body.has-wallpaper { background:#0a0a0a; }
           <label class="form-label">URL base dos wallpapers</label>
           <input class="form-input" id="wp-base-url" placeholder="https://.../">
         </div>
-        <div style="display:flex;gap:8px;">
+        <div class="form-group" style="margin-top:14px;">
+          <label class="form-label" style="display:flex;justify-content:space-between;">
+            <span>Opacidade do Wallpaper</span>
+            <span id="wp-opacity-val" style="color:var(--accent);font-weight:700">35%</span>
+          </label>
+          <div style="position:relative;height:28px;display:flex;align-items:center;margin:6px 0;">
+            <div style="position:absolute;left:0;right:0;height:4px;background:var(--border);border-radius:2px;"></div>
+            <div id="wp-opacity-fill" style="position:absolute;left:0;height:4px;background:var(--accent);border-radius:2px;width:35%;transition:width 0.1s;"></div>
+            <input type="range" id="wp-opacity-range" min="5" max="80" value="35"
+              style="position:absolute;left:0;right:0;width:100%;opacity:0;height:28px;cursor:pointer;z-index:2;"
+              oninput="updateWpOpacityUI(this.value)">
+            <div id="wp-opacity-thumb" style="position:absolute;left:35%;transform:translateX(-50%);width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);pointer-events:none;transition:left 0.1s;"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:6px" onclick="saveWpOpacity()">💾 Salvar opacidade</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
           <button class="btn btn-primary btn-sm" onclick="applyWpUrl()">✓ Aplicar</button>
           <button class="btn btn-secondary btn-sm" onclick="clearWallpaper()">✕ Remover</button>
         </div>
@@ -1103,6 +1118,7 @@ function init(){
     const wpBase = localStorage.getItem('mc_wp_base');
     if(wpBase){ document.getElementById('wp-base-url').value=wpBase; loadWallpapers(wpBase); }
     initWidgetResizers();
+    loadWpOpacity();
   }, 500);
   // Restaura estado da sidebar
   if(localStorage.getItem('mc_sidebar_collapsed')==='1'){
@@ -2570,6 +2586,7 @@ function exportData(){
       accent2: localStorage.getItem('mc_accent2')||'',
       drive_url: localStorage.getItem('mc_drive_url')||'',
       wp_base: localStorage.getItem('mc_wp_base')||'',
+      wp_opacity: localStorage.getItem('mc_wp_opacity')||'35',
       meta_daily: localStorage.getItem('mc_meta_daily')||'',
       meta_weekly: localStorage.getItem('mc_meta_weekly')||'',
     }
@@ -2622,6 +2639,7 @@ function importData(e){
         if(s.accent) localStorage.setItem('mc_accent', s.accent);
         if(s.accent2) localStorage.setItem('mc_accent2', s.accent2);
         if(s.drive_url){ localStorage.setItem('mc_drive_url', s.drive_url); const dEl=document.getElementById('drive-url-settings'); if(dEl) dEl.value=s.drive_url; }
+        if(s.wp_opacity){ localStorage.setItem('mc_wp_opacity', s.wp_opacity); applyWpOpacityCSS(parseInt(s.wp_opacity)); }
         if(s.wp_base){ localStorage.setItem('mc_wp_base', s.wp_base); const wpEl=document.getElementById('wp-base-url'); if(wpEl) wpEl.value=s.wp_base; setTimeout(()=>loadWallpapers(s.wp_base),800); }
         if(s.meta_daily) localStorage.setItem('mc_meta_daily', s.meta_daily);
         if(s.meta_weekly) localStorage.setItem('mc_meta_weekly', s.meta_weekly);
@@ -2795,6 +2813,38 @@ function loadWidgetSizes(){
 init();
 
 // Salva ao fechar/sair da aba
+function updateWpOpacityUI(val){
+  document.getElementById('wp-opacity-val').textContent = val+'%';
+  document.getElementById('wp-opacity-fill').style.width = val+'%';
+  document.getElementById('wp-opacity-thumb').style.left = val+'%';
+  // Preview em tempo real
+  document.querySelectorAll('.wp-slide.active').forEach(el=>el.style.opacity=val/100);
+}
+
+function saveWpOpacity(){
+  const val = document.getElementById('wp-opacity-range').value;
+  localStorage.setItem('mc_wp_opacity', val);
+  // Aplica em todos os slides
+  document.querySelectorAll('.wp-slide').forEach(el=>el.style.opacity='0');
+  document.querySelectorAll('.wp-slide.active').forEach(el=>el.style.opacity=val/100);
+  // Atualiza CSS dinâmico
+  applyWpOpacityCSS(val);
+  showToast('Opacidade salva!','success');
+}
+
+function applyWpOpacityCSS(val){
+  let style = document.getElementById('wp-opacity-style');
+  if(!style){ style=document.createElement('style'); style.id='wp-opacity-style'; document.head.appendChild(style); }
+  style.textContent = `#wallpaper-bg .wp-slide.active { opacity:${val/100} !important; }`;
+}
+
+function loadWpOpacity(){
+  const val = parseInt(localStorage.getItem('mc_wp_opacity')||'35');
+  const rangeEl = document.getElementById('wp-opacity-range');
+  if(rangeEl){ rangeEl.value=val; updateWpOpacityUI(val); }
+  applyWpOpacityCSS(val);
+}
+
 function applyWpUrl(){
   const url = document.getElementById('wp-base-url').value.trim();
   if(!url){ showToast('Cole a URL base primeiro.','error'); return; }
