@@ -756,7 +756,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 
     <!-- WEATHER + PROGRESS WIDGETS -->
     <div id="widgets-row-outer" style="margin:0 0 12px;box-sizing:border-box;width:100%;">
-      <div id="widgets-single-container" style="display:flex;align-items:center;gap:0;background:rgba(8,18,8,0.85);backdrop-filter:blur(10px);border:1px solid rgba(30,64,36,0.6);border-radius:0;padding:24px 20px 8px;box-sizing:border-box;width:100%;">
+      <div id="widgets-single-container" style="display:flex;align-items:center;gap:0;background:rgba(8,18,8,0.85);backdrop-filter:blur(10px);border:1px solid rgba(30,64,36,0.6);border-radius:0;padding:8px 20px;box-sizing:border-box;width:100%;">
         <div id="temp-widget-wrap" style="flex:0 0 185px;min-width:160px;"></div>
         <div class="widget-resizer" id="res-1"></div>
         <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
@@ -1960,7 +1960,7 @@ function renderSkillsWidget(){
   }).join('');
 
   wrap.innerHTML = `<div style="box-sizing:border-box;position:relative;display:flex;align-items:center;height:100%;">
-    <div style="position:absolute;top:-18px;left:0;font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px;">Habilidades</div>
+
     <div style="display:flex;align-items:center;gap:0;position:relative;width:100%;">
       <button id="skills-btn-left" onclick="scrollSkills(-1)" style="background:none;border:none;color:#3d7a45;font-size:20px;cursor:pointer;padding:0 4px;flex-shrink:0;display:none;line-height:1">‹</button>
       <div id="skills-scroll" style="display:flex;gap:28px;overflow-x:auto;scrollbar-width:none;align-items:center;flex:1;padding:0 8px;">${icons}</div>
@@ -3223,7 +3223,8 @@ function initWidgetResizers(){
   const container = document.getElementById('widgets-single-container');
   if(vres && container){
     const savedH = localStorage.getItem('mc_widget_height');
-    if(savedH) container.style.minHeight = savedH+'px';
+    if(savedH && parseInt(savedH) < 200) container.style.minHeight = savedH+'px';
+    else localStorage.removeItem('mc_widget_height');
 
     vres.addEventListener('mousedown', e=>{
       e.preventDefault();
