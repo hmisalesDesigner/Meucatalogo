@@ -104,6 +104,27 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   content:''; display:block; width:2px; height:32px;
   background:rgba(45,90,48,0.6); border-radius:2px;
 }
+/* Skills widget */
+.skill-item { display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative;flex-shrink:0; }
+.skill-circle { width:54px;height:54px;border-radius:50%;background:rgba(8,18,8,0.6);display:flex;align-items:center;justify-content:center;font-size:26px;position:relative;transition:transform 0.15s; }
+.skill-item:hover .skill-circle { transform:scale(1.1); }
+.skill-badge { position:absolute;bottom:-2px;right:-8px;font-size:10px;font-weight:800;border-radius:6px;padding:2px 6px;line-height:1.3;white-space:nowrap; }
+.skill-name { font-size:11px;text-align:center;width:62px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600; }
+.skill-bar { width:48px;height:3px;background:rgba(45,90,48,0.2);border-radius:2px; }
+.skill-bar-fill { height:100%;border-radius:2px;transition:width 0.5s; }
+.skill-tooltip {
+  display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:rgba(6,12,6,0.97);border:1px solid rgba(45,90,48,0.5);border-radius:10px;
+  padding:10px 14px;width:165px;z-index:999;pointer-events:none;
+  box-shadow:0 4px 16px rgba(0,0,0,0.6);
+}
+.skill-item:hover .skill-tooltip { display:block; }
+.skill-tooltip::after { content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:rgba(45,90,48,0.5); }
+.tt-title { font-size:12px;font-weight:700;margin-bottom:6px; }
+.tt-row { display:flex;justify-content:space-between;font-size:10px;color:#5aab6a;margin-bottom:3px; }
+.tt-bar-bg { height:4px;background:rgba(45,90,48,0.2);border-radius:2px;margin-top:6px; }
+.tt-bar-fill { height:100%;border-radius:2px; }
+.tt-note { font-size:9px;color:#3d7a45;margin-top:5px; }
 /* Resize vertical do container */
 #widgets-row-outer { position:relative; }
 #widget-vresize {
@@ -1828,6 +1849,9 @@ function renderSkillsWidget(){
 
   const cats = DB.cats && DB.cats.length ? DB.cats : Object.keys(SKILL_ICONS).map(name=>({name}));
 
+  const LEVEL_NAMES = ['','Iniciante','Aprendiz','Dedicado','Experiente','Avançado','Avançado','Especialista','Especialista','Expert','Expert','Mestre','Mestre','Elite','Elite','Elite','Lendário','Lendário','Lendário','Transcendente'];
+  function getLevelName(lv){ return LEVEL_NAMES[Math.min(lv,LEVEL_NAMES.length-1)]||'Transcendente'; }
+
   const icons = cats.map(c=>{
     const data = SKILL_ICONS[c.name] || {e: c.icon||'📚', c:'#3d7a45'};
     const eps = catEps[c.name]||0;
@@ -1854,20 +1878,26 @@ function renderSkillsWidget(){
     </div>`;
   }).join('');
 
-  wrap.innerHTML = `<div style="height:100%;box-sizing:border-box;position:relative;">
-    <div style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Habilidades</div>
-    <div id="skills-scroll" style="display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;">${icons}</div>
-    <div id="skills-arrow" style="position:absolute;right:0;top:50%;transform:translateY(-50%);background:linear-gradient(to left,rgba(8,18,8,0.95) 60%,transparent);padding:4px 2px 4px 16px;font-size:14px;color:#3d7a45;pointer-events:none;display:none">›</div>
+  wrap.innerHTML = `<div style="box-sizing:border-box;position:relative;display:flex;flex-direction:column;justify-content:center;gap:4px;height:100%;">
+    <div style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px;">Habilidades</div>
+    <div style="display:flex;align-items:center;gap:0;position:relative;">
+      <button id="skills-btn-left" onclick="scrollSkills(-1)" style="background:none;border:none;color:#3d7a45;font-size:20px;cursor:pointer;padding:0 4px;flex-shrink:0;display:none;line-height:1">‹</button>
+      <div id="skills-scroll" style="display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;align-items:center;flex:1;">${icons}</div>
+      <button id="skills-btn-right" onclick="scrollSkills(1)" style="background:none;border:none;color:#3d7a45;font-size:20px;cursor:pointer;padding:0 4px;flex-shrink:0;display:none;line-height:1">›</button>
+    </div>
   </div>`;
-  // Mostrar seta se overflow
   setTimeout(()=>{
     const sc = document.getElementById('skills-scroll');
-    const ar = document.getElementById('skills-arrow');
-    if(sc && ar && sc.scrollWidth > sc.clientWidth){
-      ar.style.display='block';
-      sc.addEventListener('scroll',()=>{ ar.style.display = sc.scrollLeft+sc.clientWidth>=sc.scrollWidth-4?'none':'block'; });
+    const bl = document.getElementById('skills-btn-left');
+    const br = document.getElementById('skills-btn-right');
+    if(sc && sc.scrollWidth > sc.clientWidth){
+      br.style.display='block';
+      sc.addEventListener('scroll',()=>{
+        bl.style.display = sc.scrollLeft>4?'block':'none';
+        br.style.display = sc.scrollLeft+sc.clientWidth<sc.scrollWidth-4?'block':'none';
+      });
     }
-  },100);
+  },150);
 }
 
 function renderMonthWidgetStats(){
@@ -3152,6 +3182,11 @@ function loadWidgetSizes(){
       if(el) el.style.flex=`0 0 ${w}px`;
     });
   }catch(e){}
+}
+
+function scrollSkills(dir){
+  const sc = document.getElementById('skills-scroll');
+  if(sc) sc.scrollBy({left: dir*120, behavior:'smooth'});
 }
 
 init();
