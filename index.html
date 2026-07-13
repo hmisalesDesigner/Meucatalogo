@@ -108,8 +108,8 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 .skill-item { display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;position:relative;flex-shrink:0; }
 .skill-circle { width:58px;height:58px;border-radius:50%;background:rgba(8,18,8,0.6);display:flex;align-items:center;justify-content:center;font-size:28px;position:relative;transition:transform 0.15s; }
 .skill-item:hover .skill-circle { transform:scale(1.1); }
-.skill-badge { position:absolute;bottom:-6px;right:-12px;font-size:14px;font-weight:900;border-radius:8px;padding:3px 9px;line-height:1.4;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.7); }
-.skill-name { font-size:14px;text-align:center;width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700; }
+.skill-badge { position:absolute;bottom:-6px;right:-12px;font-size:16px;font-weight:900;border-radius:8px;padding:3px 9px;line-height:1.4;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.7); }
+.skill-name { font-size:15.3px;text-align:center;width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700; }
 .skill-bar { width:48px;height:3px;background:rgba(45,90,48,0.2);border-radius:2px; }
 .skill-bar-fill { height:100%;border-radius:2px;transition:width 0.5s; }
 .skill-tooltip {
@@ -484,6 +484,51 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 .contrib-cell:hover { opacity:0.8; }
 .contrib-legend { display:flex;align-items:center;gap:5px;margin-top:8px;justify-content:flex-end;font-size:11px;color:var(--text2); }
 .contrib-legend-cell { width:12px;height:12px;border-radius:2px; }
+/* Cut-In Level Up Banner */
+#cutin-overlay {
+  position:fixed;inset:0;background:rgba(0,0,0,0);z-index:9999;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;transition:background 0.25s;
+}
+#cutin-overlay.active { background:rgba(0,0,0,0.88);pointer-events:all;cursor:pointer; }
+#cutin-banner {
+  position:relative;width:90%;max-width:680px;height:160px;
+  overflow:hidden;opacity:0;transform:scaleX(0);
+  transition:transform 0.18s cubic-bezier(0.2,0,0,1), opacity 0.1s;
+  flex-shrink:0;
+}
+#cutin-banner.show { opacity:1;transform:scaleX(1); }
+.cutin-left {
+  position:absolute;left:0;top:0;bottom:0;width:58%;
+  background:linear-gradient(135deg,#0a0800 0%,#1c1400 50%,#2a1e00 100%);
+  border-right:3px solid var(--cutin-color,#f0a500);
+  clip-path:polygon(0 0,100% 0,88% 100%,0 100%);
+  display:flex;align-items:center;padding:0 28px;gap:18px;
+}
+.cutin-right {
+  position:absolute;right:0;top:0;bottom:0;width:48%;
+  background:linear-gradient(225deg,#0a0800 0%,#1c1400 50%,#2a1e00 100%);
+  border-left:3px solid var(--cutin-color,#f0a500);
+  clip-path:polygon(12% 0,100% 0,100% 100%,0 100%);
+  display:flex;align-items:center;justify-content:flex-end;padding:0 28px;
+}
+.cutin-badge-img { width:80px;height:80px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 12px var(--cutin-color,#f0a500)); }
+.cutin-badge-svg { width:80px;height:80px;flex-shrink:0; }
+.cutin-info { display:flex;flex-direction:column;gap:3px; }
+.cutin-sup { font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--cutin-color,#f0a500);opacity:0.8; }
+.cutin-lv { font-size:38px;font-weight:900;color:var(--cutin-color,#f0a500);line-height:1; }
+.cutin-name { font-size:20px;font-weight:700;color:#fff8e0; }
+.cutin-slash {
+  position:absolute;top:0;bottom:0;left:50%;width:4px;
+  background:linear-gradient(to bottom,transparent 0%,var(--cutin-color,#f0a500) 30%,#fff 50%,var(--cutin-color,#f0a500) 70%,transparent 100%);
+  opacity:0;transform:scaleY(0);transition:transform 0.08s,opacity 0.08s;
+}
+#cutin-banner.show .cutin-slash { opacity:1;transform:scaleY(1);transition-delay:0.12s; }
+.cutin-lines {
+  position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent,transparent 48px,rgba(240,165,0,0.03) 48px,rgba(240,165,0,0.03) 49px);
+}
+.cutin-hint { font-size:10px;color:rgba(255,248,224,0.4);text-align:right;letter-spacing:1px; }
 /* Meta notification */
 .meta-toast { position:fixed;top:70px;right:20px;z-index:900;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;box-shadow:var(--shadow);max-width:280px;transform:translateX(320px);transition:transform 0.4s ease;font-size:13px; }
 .meta-toast.show { transform:translateX(0); }
@@ -1000,6 +1045,27 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 </div><!-- end main -->
 
 <!-- TOAST -->
+<div id="cutin-overlay" onclick="closeCutin()">
+  <div id="cutin-banner">
+    <div class="cutin-lines"></div>
+    <div class="cutin-left">
+      <div id="cutin-badge-wrap"></div>
+      <div class="cutin-info">
+        <span class="cutin-sup">Nível atingido</span>
+        <span class="cutin-lv" id="cutin-lv">Lv1</span>
+        <span class="cutin-name" id="cutin-name">Iniciante</span>
+      </div>
+    </div>
+    <div class="cutin-right">
+      <div style="text-align:right">
+        <div style="font-size:10px;color:var(--cutin-color,#f0a500);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Consistência</div>
+        <div style="font-size:13px;color:#f0a500" id="cutin-streak"></div>
+        <div class="cutin-hint" style="margin-top:12px">Toque para continuar</div>
+      </div>
+    </div>
+    <div class="cutin-slash"></div>
+  </div>
+</div>
 <div id="toast"></div>
 <div class="meta-toast" id="meta-toast"><div class="meta-toast-title"><span id="meta-toast-icon">🎯</span><span id="meta-toast-title">Meta atingida!</span><span class="meta-toast-close" onclick="document.getElementById('meta-toast').classList.remove('show')">✕</span></div><div id="meta-toast-body" style="color:var(--text2);font-size:12px;line-height:1.5"></div></div>
 
@@ -1171,8 +1237,9 @@ function init(){
   applyStoredAccent();
   loadMetas();
   // Limpa cache de clima antigo se formato mudou
-  try{ const c=localStorage.getItem('mc_weather_data'); if(c){ const p=JSON.parse(c); if(!p.forecastHtml||!p.v||p.v<3){ localStorage.removeItem('mc_weather_data'); localStorage.removeItem('mc_weather_time'); } } }catch(e){ localStorage.removeItem('mc_weather_data'); }
+  try{ const c=localStorage.getItem('mc_weather_data'); if(c){ const p=JSON.parse(c); if(!p.forecastHtml||!p.v||p.v<4){ localStorage.removeItem('mc_weather_data'); localStorage.removeItem('mc_weather_time'); } } }catch(e){ localStorage.removeItem('mc_weather_data'); }
   // Wallpaper
+  preloadLevelupSound();
   setTimeout(()=>{
     const wpBase = localStorage.getItem('mc_wp_base');
     if(wpBase){ document.getElementById('wp-base-url').value=wpBase; loadWallpapers(wpBase); }
@@ -1536,7 +1603,7 @@ function renderWeatherWidget(){
   }
 
   // Busca API
-  fetch('https://api.open-meteo.com/v1/forecast?latitude=-23.4205&longitude=-51.9333&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,apparent_temperature&daily=weathercode,temperature_2m_max&timezone=America%2FSao_Paulo&forecast_days=8')
+  fetch('https://api.open-meteo.com/v1/forecast?latitude=-23.4205&longitude=-51.9333&current=temperature_2m,weathercode,windspeed_10m,winddirection_10m,apparent_temperature,relativehumidity_2m&daily=weathercode,temperature_2m_max&timezone=America%2FSao_Paulo&forecast_days=8')
     .then(r=>r.json()).then(data=>{
       const cur = data.current;
       const daily = data.daily;
@@ -1559,6 +1626,7 @@ function renderWeatherWidget(){
   }
 
       const windSpd = Math.round(cur.windspeed_10m||0);
+      const humidity = Math.round(cur.relativehumidity_2m||0);
       const windD = windDir(cur.winddirection_10m||0);
       const desc = weatherDesc(cur.weathercode||0);
       const apparentTemp = Math.round(cur.apparent_temperature||cur.temperature_2m);
@@ -1575,6 +1643,7 @@ function renderWeatherWidget(){
             </div>
           </div>
           <div style="font-size:11px;color:#5aab6a;margin-top:2px;font-weight:600;white-space:nowrap">Sensação ${apparentTemp}°C</div>
+          <div style="font-size:10px;color:#3d7a45;margin-top:1px;white-space:nowrap">💧 Umidade ${humidity}%</div>
         </div>
         <!-- DIVISOR -->
         <div style="width:1px;background:rgba(45,90,48,0.3);flex-shrink:0;margin:0 10px;"></div>
@@ -1614,7 +1683,7 @@ function renderWeatherWidget(){
       const fw = document.getElementById('forecast-widget-wrap');
       if(tw) tw.innerHTML = tempHtml;
       if(fw) fw.innerHTML = forecastHtml;
-      localStorage.setItem('mc_weather_data', JSON.stringify({tempHtml, forecastHtml, v:3}));
+      localStorage.setItem('mc_weather_data', JSON.stringify({tempHtml, forecastHtml, v:4}));
       localStorage.setItem('mc_weather_time', Date.now());
     }).catch(()=>{
       const tw = document.getElementById('temp-widget-wrap');
@@ -1777,23 +1846,23 @@ function renderConsistencyWidget(){
   }
 
   const levels = [
-    {min:0,  label:'Iniciante',  emoji:'🌱', color:'#2d5a30'},
-    {min:3,  label:'Aprendiz',   emoji:'🌿', color:'#4ddb6e'},
-    {min:7,  label:'Dedicado',   emoji:'🌳', color:'#5aab6a'},
-    {min:14, label:'Expert',     emoji:'⚡', color:'#f0a500'},
-    {min:30, label:'Mestre',     emoji:'🏆', color:'#f0a500'},
+    {min:0,  label:'Iniciante',  emoji:'🔰', color:'#2d5a30'},
+    {min:3,  label:'Aprendiz',   emoji:'⬡',  color:'#4ddb6e'},
+    {min:7,  label:'Dedicado',   emoji:'🛡️', color:'#5aab6a'},
+    {min:14, label:'Expert',     emoji:'⚜️', color:'#f0a500'},
+    {min:30, label:'Mestre',     emoji:'🎖️', color:'#f0a500'},
   ];
   const lvl = [...levels].reverse().find(l=>streak>=l.min) || levels[0];
   const nextLvl = levels[levels.indexOf(levels.find(l=>streak<l.min))] || null;
   const pct = nextLvl ? Math.round((streak/nextLvl.min)*100) : 100;
 
   wrap.innerHTML = `<div style="height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:4px;">
-    <div style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px">Consistência</div>
+    <div style="font-size:10.7px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px">Consistência</div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <span style="font-size:18px;line-height:1">${lvl.emoji}</span>
+      <span style="font-size:21.3px;line-height:1">${lvl.emoji}</span>
       <div>
-        <div style="font-size:14px;font-weight:700;color:${lvl.color};line-height:1.2">${lvl.label}</div>
-        <div style="font-size:11px;color:#3d7a45;margin-top:1px">${streak} dia${streak!==1?'s':''} seguidos</div>
+        <div style="font-size:14.7px;font-weight:700;color:${lvl.color};line-height:1.2">${lvl.label}</div>
+        <div style="font-size:12px;color:#3d7a45;margin-top:1px">${streak} dia${streak!==1?'s':''} seguidos</div>
       </div>
     </div>
     <div style="height:2.5px;background:rgba(45,90,48,0.2);border-radius:2px;">
@@ -1849,9 +1918,8 @@ function renderSkillsWidget(){
 
   const cats = DB.cats && DB.cats.length ? DB.cats : Object.keys(SKILL_ICONS).map(name=>({name}));
 
-  const LEVEL_NAMES = ['','Iniciante','Aprendiz','Dedicado','Experiente','Avançado','Avançado','Especialista','Especialista','Expert','Expert','Mestre','Mestre','Elite','Elite','Elite','Lendário','Lendário','Lendário','Transcendente'];
-  function getLevelName(lv){ return LEVEL_NAMES[Math.min(lv,LEVEL_NAMES.length-1)]||'Transcendente'; }
-
+  const LEVEL_NAMES = ['','Iniciante','Novato','Aprendiz','Praticante','Dedicado','Aplicado','Comprometido','Persistente','Consistente','Disciplinado','Focado','Determinado','Habilidoso','Competente','Expert','Profissional','Especialista','Avançado','Talentoso','Mestre','Virtuoso','Excepcional','Elite','Supremo','Lendário','Épico','Mítico','Glorioso','Imortal','Ascendido','Transcendente','Celestial','Divino','Absoluto','Lendário Supremo'];
+  function getLevelName(lv){ return LEVEL_NAMES[Math.min(lv,LEVEL_NAMES.length-1)]||'Lendário Supremo'; }
   const icons = cats.map(c=>{
     const data = SKILL_ICONS[c.name] || {e: c.icon||'📚', c:'#3d7a45'};
     const eps = catEps[c.name]||0;
@@ -2689,7 +2757,10 @@ function toggleEp(sid, idx){
   saveDB();
   openDetail(sid);
   updateBadges();
-  if(s.watched[idx]) checkMetas();
+  if(s.watched[idx]){
+    checkMetas();
+    checkConsistencyLevelUp();
+  }
 }
 
 function rateEp(sid, idx, stars){
@@ -3182,6 +3253,109 @@ function loadWidgetSizes(){
       if(el) el.style.flex=`0 0 ${w}px`;
     });
   }catch(e){}
+}
+
+// ====================== BADGE URL ======================
+function getBadgeUrl(lv){
+  if(lv<=0) return '';
+  const n = Math.min(lv,35);
+  return `https://raw.githubusercontent.com/hmisalesDesigner/Meucatalogo/main/badges/badge-${String(n).padStart(2,'0')}.png`;
+}
+
+// ====================== LEVEL UP CUTIN ======================
+const LEVELUP_SOUND = 'https://raw.githubusercontent.com/hmisalesDesigner/Meucatalogo/main/sounds/levelup.wav';
+let levelupAudio = null;
+
+function preloadLevelupSound(){
+  try{ levelupAudio = new Audio(LEVELUP_SOUND); levelupAudio.load(); }catch(e){}
+}
+
+function playLevelupSound(){
+  try{
+    if(levelupAudio){ levelupAudio.currentTime=0; levelupAudio.play().catch(()=>{}); }
+    else {
+      const a = new Audio(LEVELUP_SOUND);
+      a.play().catch(()=>{});
+    }
+  }catch(e){}
+}
+
+function getLevelColor(lv){
+  if(lv<=0) return '#1e4024';
+  if(lv<=2) return '#2d5a30';
+  if(lv<=4) return '#2d8a50';
+  if(lv<=6) return '#5aab6a';
+  if(lv<=8) return '#f0a500';
+  if(lv<=10) return '#4a90e2';
+  if(lv<=12) return '#9b59b6';
+  if(lv<=15) return '#e91e8c';
+  if(lv<=18) return '#e74c3c';
+  if(lv<=22) return '#ff6b35';
+  if(lv<=28) return '#ff4444';
+  if(lv<=32) return '#cc44ff';
+  return '#ffffff';
+}
+
+function showLevelUpCutin(lv, streak){
+  const name = LEVEL_NAMES[Math.min(lv,LEVEL_NAMES.length-1)]||'Lendário Supremo';
+  const col = getLevelColor(lv);
+  const badgeUrl = getBadgeUrl(lv);
+
+  document.getElementById('cutin-overlay').style.setProperty('--cutin-color', col);
+  document.getElementById('cutin-lv').textContent = 'Lv ' + lv;
+  document.getElementById('cutin-name').textContent = name;
+  document.getElementById('cutin-streak').textContent = streak + ' dias seguidos';
+
+  const wrap = document.getElementById('cutin-badge-wrap');
+  if(badgeUrl){
+    wrap.innerHTML = `<img src="${badgeUrl}" class="cutin-badge-img" alt="${name}" onerror="this.style.display='none'">`;
+  } else {
+    wrap.innerHTML = cutinSVGBadge(col);
+  }
+
+  playLevelupSound();
+  const overlay = document.getElementById('cutin-overlay');
+  const banner = document.getElementById('cutin-banner');
+  overlay.classList.add('active');
+  setTimeout(()=>banner.classList.add('show'), 80);
+}
+
+function closeCutin(){
+  const overlay = document.getElementById('cutin-overlay');
+  const banner = document.getElementById('cutin-banner');
+  banner.classList.remove('show');
+  setTimeout(()=>overlay.classList.remove('active'), 200);
+}
+
+function cutinSVGBadge(col){
+  return `<svg class="cutin-badge-svg" viewBox="0 0 64 64">
+    <path d="M32 2 L62 17 L62 46 Q62 62 32 62 Q2 62 2 46 L2 17 Z" fill="#1a1000" stroke="${col}" stroke-width="3"/>
+    <path d="M32 12 L52 23 L52 42 Q52 54 32 54 Q12 54 12 42 L12 23 Z" fill="#110c00" stroke="${col}" stroke-width="1" opacity="0.5"/>
+    <polygon points="32,16 35,26 46,26 37,32 40,42 32,36 24,42 27,32 18,26 29,26" fill="${col}"/>
+    <circle cx="32" cy="32" r="4" fill="#fff8e0" opacity="0.8"/>
+  </svg>`;
+}
+
+function checkConsistencyLevelUp(){
+  const today = new Date();
+  let streak=0;
+  for(let i=0;i<365;i++){
+    const d=new Date(today); d.setDate(d.getDate()-i);
+    const ds=d.toLocaleDateString('pt-BR');
+    const count=(DB.history||[]).filter(h=>h.action==='watched'&&h.date===ds).length;
+    if(count>0) streak++;
+    else if(i>0) break;
+  }
+  const levels=[{min:0},{min:3},{min:7},{min:10},{min:14},{min:18},{min:22},{min:26},{min:30},{min:35}];
+  const lastShown = parseInt(localStorage.getItem('mc_last_cutin_lv')||'0');
+  // Verificar se cruzou algum limiar de nível
+  for(let i=levels.length-1;i>=0;i--){
+    if(streak>=levels[i].min && i>lastShown){
+      localStorage.setItem('mc_last_cutin_lv', i);
+      setTimeout(()=>showLevelUpCutin(i, streak), 500);
+      break;
+    }
+  }
 }
 
 function scrollSkills(dir){
