@@ -58,6 +58,14 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   position:absolute; inset:0;
   background:rgba(0,0,0,0.72);
 }
+#wallpaper-bg .wp-overlay::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:180px;
+  background:linear-gradient(to bottom, #0a0a0a 0%, rgba(0,0,0,0.85) 50%, transparent 100%);
+  pointer-events:none; z-index:1;
+}
+[data-theme="light"] #wallpaper-bg .wp-overlay::before {
+  background:linear-gradient(to bottom, #f0f0f5 0%, rgba(240,240,245,0.85) 50%, transparent 100%);
+}
 [data-theme="light"] #wallpaper-bg .wp-overlay { background:rgba(255,255,255,0.55); }
 #sidebar, #main { position:relative; z-index:1; }
 #sidebar { background:rgba(10,10,20,0.82); backdrop-filter:blur(12px); }
@@ -681,8 +689,8 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
     </div>
 
     <!-- WEATHER + PROGRESS WIDGETS -->
-    <div id="widgets-row-outer" style="margin:0 28px 12px;box-sizing:border-box;width:calc(100% - 56px);">
-      <div id="widgets-single-container" style="display:flex;align-items:center;gap:0;background:rgba(8,18,8,0.85);backdrop-filter:blur(10px);border:1px solid rgba(30,64,36,0.6);border-radius:12px;padding:8px 14px;box-sizing:border-box;width:100%;">
+    <div id="widgets-row-outer" style="margin:0 0 12px;box-sizing:border-box;width:100%;">
+      <div id="widgets-single-container" style="display:flex;align-items:center;gap:0;background:rgba(8,18,8,0.85);backdrop-filter:blur(10px);border:1px solid rgba(30,64,36,0.6);border-radius:0;padding:8px 20px;box-sizing:border-box;width:100%;">
         <div id="temp-widget-wrap" style="flex:0 0 210px;min-width:160px;"></div>
         <div class="widget-resizer" id="res-1"></div>
         <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
@@ -1536,7 +1544,7 @@ function renderWeatherWidget(){
 
       const tempHtml = `<div class="weather-widget" style="gap:0;padding:0;height:100%;align-items:stretch;">
         <!-- CLIMA -->
-        <div style="display:flex;flex-direction:column;justify-content:center;padding-right:12px;gap:4px;flex:1;">
+        <div style="display:flex;flex-direction:column;justify-content:center;padding-right:12px;gap:4px;flex:1;min-width:0;">
           <div style="font-size:8px;color:#3d7a45;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:2px">Clima</div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-size:28px;line-height:1">${icon}</span>
@@ -1545,7 +1553,7 @@ function renderWeatherWidget(){
               <div style="font-size:8px;color:#5aab6a;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px">${desc}</div>
             </div>
           </div>
-          <div style="font-size:8px;color:#3d7a45;margin-top:1px">Sensação ${apparentTemp}°C</div>
+          <div style="font-size:11px;color:#5aab6a;margin-top:2px;font-weight:600;white-space:nowrap">Sensação ${apparentTemp}°C</div>
         </div>
         <!-- DIVISOR -->
         <div style="width:1px;background:rgba(45,90,48,0.3);flex-shrink:0;margin:0 10px;"></div>
@@ -1759,18 +1767,18 @@ function renderConsistencyWidget(){
   const pct = nextLvl ? Math.round((streak/nextLvl.min)*100) : 100;
 
   wrap.innerHTML = `<div style="height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:4px;">
-    <div style="font-size:7.5px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px">Consistência</div>
+    <div style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px">Consistência</div>
     <div style="display:flex;align-items:center;gap:8px;">
       <span style="font-size:18px;line-height:1">${lvl.emoji}</span>
       <div>
-        <div style="font-size:12px;font-weight:700;color:${lvl.color};line-height:1.2">${lvl.label}</div>
-        <div style="font-size:7.5px;color:#3d7a45;margin-top:1px">${streak} dia${streak!==1?'s':''} seguidos</div>
+        <div style="font-size:14px;font-weight:700;color:${lvl.color};line-height:1.2">${lvl.label}</div>
+        <div style="font-size:11px;color:#3d7a45;margin-top:1px">${streak} dia${streak!==1?'s':''} seguidos</div>
       </div>
     </div>
     <div style="height:2.5px;background:rgba(45,90,48,0.2);border-radius:2px;">
       <div style="height:100%;width:${pct}%;background:${lvl.color};border-radius:2px;transition:width 0.5s"></div>
     </div>
-    <div style="font-size:7.5px;color:#3d7a45;">${nextLvl?`Próximo: ${nextLvl.label} (${nextLvl.min}d)`:'🏆 Nível máximo!'}</div>
+    <div style="font-size:10px;color:#3d7a45;">${nextLvl?`Próximo: ${nextLvl.label} (${nextLvl.min}d)`:'🏆 Nível máximo!'}</div>
   </div>`;
 }
 
@@ -1833,21 +1841,31 @@ function renderSkillsWidget(){
     const opacity = hasContent ? 1 : 0.25;
     const border = lv>0 ? col : 'rgba(45,90,48,0.3)';
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:52px;opacity:${opacity}">
-      <div style="width:30px;height:30px;border-radius:50%;background:rgba(8,18,8,0.6);border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:14px;position:relative">
+      <div style="width:38px;height:38px;border-radius:50%;background:rgba(8,18,8,0.6);border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:18px;position:relative">
         ${data.e}
         ${lv>0?`<div style="position:absolute;bottom:-3px;right:-3px;background:${col};color:#000;font-size:6px;font-weight:700;border-radius:4px;padding:1px 3px;line-height:1.3">Lv${lv}</div>`:''}
       </div>
-      <div style="font-size:7px;color:${lv>0?col:'#3d7a45'};text-align:center;line-height:1.2;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name.split(' ')[0]}</div>
+      <div style="font-size:9px;color:${lv>0?col:'#3d7a45'};text-align:center;line-height:1.2;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name.split(' ')[0]}</div>
       <div style="width:36px;height:2.5px;background:rgba(45,90,48,0.15);border-radius:2px" title="${eps} eps → Lv${lv} → próximo: ${(lv+1)*(lv+1)} eps">
         <div style="height:100%;width:${lv>0?Math.min(((eps - lv*lv)/((lv+1)*(lv+1)-lv*lv))*100,100):0}%;background:${col};border-radius:2px;transition:width 0.5s"></div>
       </div>
     </div>`;
   }).join('');
 
-  wrap.innerHTML = `<div style="height:100%;box-sizing:border-box;">
-    <div style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Habilidades</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;">${icons}</div>
+  wrap.innerHTML = `<div style="height:100%;box-sizing:border-box;position:relative;">
+    <div style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Habilidades</div>
+    <div id="skills-scroll" style="display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;">${icons}</div>
+    <div id="skills-arrow" style="position:absolute;right:0;top:50%;transform:translateY(-50%);background:linear-gradient(to left,rgba(8,18,8,0.95) 60%,transparent);padding:4px 2px 4px 16px;font-size:14px;color:#3d7a45;pointer-events:none;display:none">›</div>
   </div>`;
+  // Mostrar seta se overflow
+  setTimeout(()=>{
+    const sc = document.getElementById('skills-scroll');
+    const ar = document.getElementById('skills-arrow');
+    if(sc && ar && sc.scrollWidth > sc.clientWidth){
+      ar.style.display='block';
+      sc.addEventListener('scroll',()=>{ ar.style.display = sc.scrollLeft+sc.clientWidth>=sc.scrollWidth-4?'none':'block'; });
+    }
+  },100);
 }
 
 function renderMonthWidgetStats(){
