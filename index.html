@@ -695,10 +695,6 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
         <div class="widget-resizer" id="res-3"></div>
         <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
         <div class="widget-resizer" id="res-3b"></div>
-        <div id="month-widget-wrap" style="flex:0 0 180px;min-width:120px;"></div>
-        <div class="widget-resizer" id="res-4"></div>
-        <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
-        <div class="widget-resizer" id="res-4b"></div>
         <div id="consistency-widget-wrap" style="flex:0 0 160px;min-width:120px;"></div>
         <div class="widget-resizer" id="res-5"></div>
         <div style="width:1px;height:40px;background:rgba(45,90,48,0.3);margin:0 2px;flex-shrink:0;"></div>
@@ -788,6 +784,8 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
       <div class="stat-card"><div class="stat-num" id="qs-eps">0</div><div class="stat-label">Eps Assistidos</div></div>
     </div>
     <div class="stats-grid" id="stats-grid"></div>
+    <div class="section-title">Dias do Mês</div>
+    <div style="padding:0 28px 16px;" id="stats-month-wrap"></div>
     <div class="section-title">Episódios no Último Ano</div>
     <div class="contrib-wrap" id="contrib-section">
       <div class="contrib-header">
@@ -1703,7 +1701,7 @@ function renderSolarWidget(){
 
 // ====================== EXTRA WIDGETS ======================
 function renderMonthWidget(){
-  const wrap = document.getElementById('month-widget-wrap');
+  const wrap = document.getElementById('stats-month-wrap');
   if(!wrap) return;
   const now = new Date();
   const day = now.getDate();
@@ -1760,28 +1758,19 @@ function renderConsistencyWidget(){
   const nextLvl = levels[levels.indexOf(levels.find(l=>streak<l.min))] || null;
   const pct = nextLvl ? Math.round((streak/nextLvl.min)*100) : 100;
 
-  wrap.innerHTML = `<div style="height:100%;box-sizing:border-box;">
-    <div style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Consistência</div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <span style="font-size:20px;line-height:1">${lvl.emoji}</span>
+  wrap.innerHTML = `<div style="height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:4px;">
+    <div style="font-size:7.5px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px">Consistência</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:18px;line-height:1">${lvl.emoji}</span>
       <div>
-        <div style="font-size:12px;font-weight:700;color:${lvl.color}">${lvl.label}</div>
-        <div style="font-size:9px;color:#3d7a45;margin-top:1px">${streak} dia${streak!==1?'s':''} seguidos</div>
+        <div style="font-size:12px;font-weight:700;color:${lvl.color};line-height:1.2">${lvl.label}</div>
+        <div style="font-size:7.5px;color:#3d7a45;margin-top:1px">${streak} dia${streak!==1?'s':''} seguidos</div>
       </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:4px;">
-      ${levels.map(l=>{
-        const isCur = l.label===lvl.label;
-        const isDone = streak>=l.min;
-        return `<div style="display:flex;align-items:center;gap:6px;opacity:${isDone?1:0.35}">
-          <span style="font-size:11px">${l.emoji}</span>
-          <span style="font-size:9px;color:${isCur?l.color:'#3d7a45'};font-weight:${isCur?'700':'400'}">${l.label}</span>
-          ${isCur?`<span style="font-size:8px;color:${l.color};margin-left:auto">← atual</span>`:''}
-        </div>`;
-      }).join('')}
+    <div style="height:2.5px;background:rgba(45,90,48,0.2);border-radius:2px;">
+      <div style="height:100%;width:${pct}%;background:${lvl.color};border-radius:2px;transition:width 0.5s"></div>
     </div>
-    ${nextLvl?`<div style="margin-top:8px;height:3px;background:rgba(45,90,48,0.2);border-radius:2px"><div style="height:100%;width:${pct}%;background:${lvl.color};border-radius:2px;transition:width 0.5s"></div></div>
-    <div style="font-size:8px;color:#3d7a45;margin-top:3px">Próximo: ${nextLvl.label} (${nextLvl.min} dias)</div>`:'<div style="font-size:8px;color:#f0a500;margin-top:6px">🏆 Nível máximo!</div>'}
+    <div style="font-size:7.5px;color:#3d7a45;">${nextLvl?`Próximo: ${nextLvl.label} (${nextLvl.min}d)`:'🏆 Nível máximo!'}</div>
   </div>`;
 }
 
@@ -1858,6 +1847,36 @@ function renderSkillsWidget(){
   wrap.innerHTML = `<div style="height:100%;box-sizing:border-box;">
     <div style="font-size:9px;color:#3d7a45;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Habilidades</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;">${icons}</div>
+  </div>`;
+}
+
+function renderMonthWidgetStats(){
+  const wrap = document.getElementById('stats-month-wrap');
+  if(!wrap) return;
+  const now = new Date();
+  const day = now.getDate();
+  const total = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const remaining = total - day;
+  const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const month = monthNames[now.getMonth()];
+
+  let cells = '';
+  for(let d=1;d<=total;d++){
+    const isToday = d===day;
+    const isPast = d<day;
+    const bg = isToday?'#4ddb6e':isPast?'rgba(45,90,48,0.5)':'rgba(30,60,30,0.2)';
+    const border = isToday?'#4ddb6e':isPast?'#2d5a30':'rgba(45,90,48,0.2)';
+    const color = isToday?'#000':isPast?'#5aab6a':'#1e4024';
+    cells += `<div style="width:32px;height:32px;border-radius:5px;background:${bg};border:1px solid ${border};font-size:11px;color:${color};display:flex;align-items:center;justify-content:center;font-weight:${isToday?'700':'400'};flex-shrink:0">${d}</div>`;
+  }
+
+  wrap.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;">
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px;">
+      <span style="font-size:32px;font-weight:700;color:var(--text);line-height:1">${day}</span>
+      <span style="font-size:14px;color:var(--text2)">de ${total} · ${month} ${now.getFullYear()}</span>
+      <span style="font-size:12px;color:#5aab6a;margin-left:6px">${remaining} dias restantes</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">${cells}</div>
   </div>`;
 }
 
@@ -1968,7 +1987,6 @@ function renderDashboard(){
   renderSolarWidget();
   renderWeatherWidget();
   renderProgressWidget();
-  renderMonthWidget();
   renderConsistencyWidget();
   renderSkillsWidget();
   renderDashWatching();
@@ -2244,6 +2262,7 @@ function renderNotes(){
 
 function renderStats(){
   renderContribGraph();
+  renderMonthWidgetStats();
   const total = DB.series.length;
   const done = DB.series.filter(s=>getProgress(s)===100).length;
   let eps=0; DB.series.forEach(s=>{ if(s.watched) s.watched.forEach(w=>{ if(w) eps++; }); });
@@ -3098,7 +3117,7 @@ function initWidgetResizers(){
 
 function saveWidgetSizes(){
   const sizes = {};
-  ['temp-widget-wrap','eps-widget-wrap','solar-widget-wrap','month-widget-wrap','consistency-widget-wrap','forecast-widget-wrap'].forEach(id=>{
+  ['temp-widget-wrap','eps-widget-wrap','solar-widget-wrap','consistency-widget-wrap','forecast-widget-wrap'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) sizes[id]=el.offsetWidth;
   });
