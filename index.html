@@ -2628,6 +2628,7 @@ function saveSeries(){
     s.year=document.getElementById('f-year').value;
     s.desc=document.getElementById('f-desc').value.trim();
     s.seasons=seasons;
+    s.lastSeason=0; // Reset para 1ª temporada ao editar
     if(tempCoverData) s.cover=tempCoverData;
     if(tempBannerData) s.banner=tempBannerData;
     // Resize watched/ratings arrays if needed
@@ -2801,9 +2802,10 @@ function epStarsHTML(idx, rating){
 }
 
 function switchSeason(i){
-  detailActiveSeason=i;
+  const season = parseInt(i);
+  detailActiveSeason = season;
   const s=DB.series.find(x=>x.id===detailId);
-  if(s){ s.lastSeason=i; saveDB(); renderDetailSeasons(s,i); }
+  if(s){ s.lastSeason=season; saveDB(); renderDetailSeasons(s, season); }
 }
 
 function toggleEp(sid, idx){
