@@ -1121,7 +1121,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 </div>
 
 <!-- GOOGLE DRIVE LINK MODAL -->
-<div class="modal-overlay" id="drive-link-modal">
+<div class="modal-overlay" id="drive-link-modal" style="z-index:2000;">
   <div class="modal" style="max-width:460px;">
     <div class="modal-header">
       <div class="modal-title" id="drive-link-title">Link da Capa (Google Drive)</div>
@@ -3136,6 +3136,12 @@ function importData(e){
         if(s.meta_weekly) localStorage.setItem('mc_meta_weekly', s.meta_weekly);
         delete data._settings;
       }
+      // Remove Base64 das imagens para não estourar o localStorage
+      let removedCount = 0;
+      data.series.forEach(s=>{
+        if(s.cover && s.cover.startsWith('data:')){ s.cover=''; removedCount++; }
+        if(s.banner && s.banner.startsWith('data:')){ s.banner=''; removedCount++; }
+      });
       DB=data;
       if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
       if(!DB.history) DB.history=[];
@@ -3150,7 +3156,11 @@ function importData(e){
         setGistStatus('✅ Reconectado via backup','#27ae60');
         startGistAutoSync();
       }
-      showToast('Dados e configurações restaurados!','success');
+      const msg = removedCount > 0
+        ? `Dados restaurados! ${removedCount} imagem(ns) em Base64 removida(s) — substitua pelos links do Google Drive.`
+        : 'Dados e configurações restaurados!';
+      showToast(msg,'success');
+      if(removedCount>0) setTimeout(()=>detectBase64Images(),1000);
     } catch(err){ showToast('Erro ao importar: '+err.message,'error'); }
   };
   reader.readAsText(file);
