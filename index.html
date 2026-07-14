@@ -939,6 +939,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn btn-secondary" onclick="exportData()">⬇ Exportar JSON</button>
           <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">⬆ Importar JSON</button>
+          <button class="btn btn-secondary" onclick="fixTelegramLinks()" title="Corrige links t.me → telegram.me">🔗 Corrigir Links Telegram</button>
           <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
           <button class="btn btn-danger" onclick="confirmClearData()">🗑 Limpar Tudo</button>
         </div>
@@ -3380,16 +3381,29 @@ function checkConsistencyLevelUp(){
 
 function fixTelegramLinks(){
   let changed = false;
+  function fixUrl(url){
+    if(!url) return url;
+    // Cobrir todas as variações possíveis de t.me
+    const patterns = [
+      [/https?:\/\/t\.me\//g, 'https://telegram.me/'],
+      [/https?:\/\/www\.t\.me\//g, 'https://telegram.me/'],
+    ];
+    let fixed = url;
+    patterns.forEach(([re, rep])=>{ fixed = fixed.replace(re, rep); });
+    return fixed;
+  }
   DB.series.forEach(s=>{
     if(s.links) s.links = s.links.map(l=>{
-      if(l && l.includes('t.me/')){
-        const fixed = l.replace('https://t.me/','https://telegram.me/').replace('http://t.me/','https://telegram.me/');
-        if(fixed !== l){ changed = true; return fixed; }
-      }
+      const fixed = fixUrl(l);
+      if(fixed !== l){ changed = true; return fixed; }
       return l;
     });
   });
-  if(changed){ saveDB(); }
+  if(changed){
+    showToast('Links do Telegram corrigidos!','success');
+    saveDB();
+    pushToGist(()=>setGistStatus('✅ Links corrigidos e salvos na nuvem','#27ae60'));
+  }
 }
 
 function scrollSkills(dir){
