@@ -1072,6 +1072,20 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
     <div class="cutin-slash"></div>
   </div>
 </div>
+<div id="sync-warning" style="display:none;position:fixed;top:60px;right:20px;z-index:900;background:var(--card);border:1px solid #e74c3c;border-radius:10px;padding:14px 18px;box-shadow:var(--shadow);max-width:300px;animation:slideIn 0.3s ease;">
+  <div style="display:flex;align-items:flex-start;gap:10px;">
+    <span style="font-size:20px;flex-shrink:0">⚠️</span>
+    <div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:#e74c3c">Sincronização falhou</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">Seus dados não foram salvos na nuvem. Clique abaixo para tentar novamente.</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="retrySyncFromWarning()">⬆ Enviar para Nuvem</button>
+        <button class="btn btn-secondary btn-sm" onclick="dismissSyncWarning()">Depois</button>
+      </div>
+    </div>
+  </div>
+</div>
+<style>@keyframes slideIn{from{transform:translateX(320px);opacity:0}to{transform:translateX(0);opacity:1}}</style>
 <div id="toast"></div>
 <div class="meta-toast" id="meta-toast"><div class="meta-toast-title"><span id="meta-toast-icon">🎯</span><span id="meta-toast-title">Meta atingida!</span><span class="meta-toast-close" onclick="document.getElementById('meta-toast').classList.remove('show')">✕</span></div><div id="meta-toast-body" style="color:var(--text2);font-size:12px;line-height:1.5"></div></div>
 
@@ -1323,6 +1337,7 @@ function fetchGistPrimary(){
     loadDB(); renderAll(); updateBadges();
     setGistStatus('⚠️ Sem conexão — usando dados locais','#f39c12');
     startGistAutoSync();
+    showSyncWarning();
   }, 8000);
 
   fetch(`${GIST_API}/${id}`,{
@@ -2630,7 +2645,7 @@ function saveSeries(){
       seasons, cover:tempCoverData||'', banner:tempBannerData||'',
       watched:new Array(totalEps).fill(false),
       ratings:new Array(totalEps).fill(0),
-      fav:false, addedAt:Date.now()
+      fav:false, lastSeason:0, addedAt:Date.now()
     };
     DB.series.push(s);
     localStorage.setItem('mc_last_accessed', s.id);
@@ -2679,7 +2694,9 @@ function openDetail(id){
   const fill=document.getElementById('detail-prog-fill');
   fill.style.width=p+'%'; fill.style.background=pc;
 
-  detailActiveSeason = (s.lastSeason !== undefined) ? s.lastSeason : 0;
+  detailActiveSeason = (s.lastSeason !== undefined && s.lastSeason !== null) ? parseInt(s.lastSeason) : 0;
+  // Garante que não ultrapasse o número de temporadas
+  if(s.seasons && detailActiveSeason >= s.seasons.length) detailActiveSeason = 0;
   renderDetailSeasons(s, detailActiveSeason);
   document.getElementById('detail-modal').classList.add('open');
 }
@@ -2994,11 +3011,14 @@ function pushToGist(cb){
     signal: controller.signal
   }).then(r=>{
     clearTimeout(timeout);
-    if(r.ok){ if(cb) cb(); }
+    if(r.ok){ syncFailCount=0; dismissSyncWarning(); if(cb) cb(); }
     else setGistStatus(`❌ Erro ${r.status}.`,'#e74c3c');
   }).catch(err=>{
     clearTimeout(timeout);
-    if(err.name!=='AbortError') setGistStatus('❌ Falha de conexão.','#e74c3c');
+    if(err.name!=='AbortError'){
+      setGistStatus('❌ Falha de conexão.','#e74c3c');
+      showSyncWarning();
+    }
   });
 }
 
@@ -3541,6 +3561,39 @@ function detectBase64Images(){
 function openEditFromSettings(id){
   goTo('dashboard');
   setTimeout(()=>openAddModal(id), 200);
+}
+
+// ====================== SYNC WARNING ======================
+let syncWarningTimer = null;
+let syncFailCount = 0;
+
+function showSyncWarning(){
+  syncFailCount++;
+  // Só mostra após 2 falhas consecutivas
+  if(syncFailCount < 2) return;
+  const el = document.getElementById('sync-warning');
+  if(el) el.style.display='block';
+}
+
+function dismissSyncWarning(){
+  const el = document.getElementById('sync-warning');
+  if(el) el.style.display='none';
+  syncFailCount=0;
+}
+
+function retrySyncFromWarning(){
+  dismissSyncWarning();
+  if(gistToken() && gistId()){
+    setGistStatus('Enviando...','#f39c12');
+    pushToGist(()=>{
+      setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60');
+      showToast('Dados enviados para nuvem!','success');
+      syncFailCount=0;
+    });
+  } else {
+    goTo('settings');
+    showToast('Configure o GitHub Gist em Configurações.','error');
+  }
 }
 
 function scrollSkills(dir){
