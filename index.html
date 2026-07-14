@@ -1240,6 +1240,7 @@ function init(){
   try{ const c=localStorage.getItem('mc_weather_data'); if(c){ const p=JSON.parse(c); if(!p.forecastHtml||!p.v||p.v<4){ localStorage.removeItem('mc_weather_data'); localStorage.removeItem('mc_weather_time'); } } }catch(e){ localStorage.removeItem('mc_weather_data'); }
   // Wallpaper
   preloadLevelupSound();
+  fixTelegramLinks();
   setTimeout(()=>{
     const wpBase = localStorage.getItem('mc_wp_base');
     if(wpBase){ document.getElementById('wp-base-url').value=wpBase; loadWallpapers(wpBase); }
@@ -2712,7 +2713,9 @@ function saveEpLink(sid, idx, url){
   const s=DB.series.find(x=>x.id===sid); if(!s) return;
   if(!s.links) s.links=[];
   while(s.links.length<=idx) s.links.push('');
-  s.links[idx]=url.trim();
+  let fixedUrl = url.trim();
+  if(fixedUrl.includes('t.me/')) fixedUrl = fixedUrl.replace('https://t.me/','https://telegram.me/').replace('http://t.me/','https://telegram.me/');
+  s.links[idx]=fixedUrl;
   saveDB();
   // atualiza o botão de play inline
   const btn = document.getElementById('eplink-'+idx);
@@ -3372,6 +3375,20 @@ function checkConsistencyLevelUp(){
       break;
     }
   }
+}
+
+function fixTelegramLinks(){
+  let changed = false;
+  DB.series.forEach(s=>{
+    if(s.links) s.links = s.links.map(l=>{
+      if(l && l.includes('t.me/')){
+        const fixed = l.replace('https://t.me/','https://telegram.me/').replace('http://t.me/','https://telegram.me/');
+        if(fixed !== l){ changed = true; return fixed; }
+      }
+      return l;
+    });
+  });
+  if(changed){ saveDB(); }
 }
 
 function scrollSkills(dir){
