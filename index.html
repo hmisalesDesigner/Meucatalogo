@@ -936,6 +936,11 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 
       <div class="config-block">
         <div class="config-block-title">💾 Backup e Dados</div>
+        <div id="base64-alert" style="display:none;background:rgba(231,76,60,0.1);border:1px solid #e74c3c;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;">
+          <div style="font-weight:700;color:#e74c3c;margin-bottom:8px;">⚠️ Séries com imagens em Base64 (ocupando espaço):</div>
+          <div id="base64-list"></div>
+          <div style="color:var(--text2);margin-top:8px;font-size:11px;">Edite cada série e substitua a capa/banner pelo link do Google Drive.</div>
+        </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <button class="btn btn-secondary" onclick="exportData()">⬇ Exportar JSON</button>
           <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">⬆ Importar JSON</button>
@@ -1101,6 +1106,37 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   </div>
 </div>
 
+<!-- GOOGLE DRIVE LINK MODAL -->
+<div class="modal-overlay" id="drive-link-modal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <div class="modal-title" id="drive-link-title">Link da Capa (Google Drive)</div>
+      <button class="modal-close" onclick="closeDriveLinkModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        No Google Drive, clique com o botão direito na imagem → <strong>Compartilhar</strong> → <strong>Copiar link</strong> e cole abaixo.<br>
+        O link deve ser público ou acessível por qualquer pessoa.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Link do Google Drive</label>
+        <input class="form-input" id="drive-link-input" placeholder="https://drive.google.com/file/d/..." oninput="previewDriveLink()">
+      </div>
+      <div id="drive-link-preview" style="margin-top:10px;display:none;text-align:center;">
+        <img id="drive-link-img" src="" style="max-height:150px;max-width:100%;border-radius:6px;object-fit:contain;" alt="Preview">
+      </div>
+      <p style="font-size:11px;color:var(--text2);margin-top:10px;">
+        💡 Dica: após compartilhar, o link ficará no formato:<br>
+        <code style="font-size:10px">https://drive.google.com/file/d/ID/view</code>
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeDriveLinkModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmDriveLink()">✓ Usar este link</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD/EDIT SERIES MODAL -->
 <div class="modal-overlay" id="add-modal">
   <div class="modal">
@@ -1112,7 +1148,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
       <div class="form-row">
         <div class="form-group" style="flex:0 0 110px;">
           <label class="form-label">Capa (2:3)</label>
-          <div class="img-upload-area" id="cover-upload-area" onclick="document.getElementById('cover-input').click()">
+          <div class="img-upload-area" id="cover-upload-area" onclick="openDriveLinkModal('cover')">
             <input type="file" id="cover-input" accept="image/png,image/jpeg" onchange="handleCoverUpload(event)" style="display:none">
             <img id="cover-preview" class="img-preview" src="" style="display:none">
             <div id="cover-placeholder">
@@ -1159,7 +1195,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 
       <div class="form-group">
         <label class="form-label">Banner Horizontal (21:9) <span style="font-size:10px;color:var(--text2)">— exibido ao clicar na série</span></label>
-        <div class="img-upload-area" onclick="document.getElementById('banner-input').click()" style="padding:12px">
+        <div class="img-upload-area" onclick="openDriveLinkModal('banner')" style="padding:12px">
           <input type="file" id="banner-input" accept="image/png,image/jpeg" onchange="handleBannerUpload(event)" style="display:none">
           <img id="banner-preview" class="banner-preview" src="" style="display:none">
           <div id="banner-placeholder" style="display:flex;align-items:center;gap:8px;justify-content:center;">
@@ -1395,6 +1431,7 @@ function goTo(view){
   if(view==='history-view') renderHistory();
   if(view==='notes-view') renderNotes();
   if(view==='stats-view') renderStats();
+    if(view==='settings') detectBase64Images();
   if(view==='search-view'){ document.getElementById('search-input').focus(); doSearch(); }
 }
 
@@ -3118,6 +3155,9 @@ document.getElementById('add-modal').addEventListener('mousedown',e=>{
 document.getElementById('detail-modal').addEventListener('mousedown',e=>{
   if(e.target===document.getElementById('detail-modal')) closeDetailModal();
 });
+document.getElementById('drive-link-modal').addEventListener('mousedown',e=>{
+  if(e.target===document.getElementById('drive-link-modal')) closeDriveLinkModal();
+});
 document.getElementById('cat-modal').addEventListener('mousedown',e=>{
   if(e.target===document.getElementById('cat-modal')) closeCatModal();
 });
@@ -3404,6 +3444,103 @@ function fixTelegramLinks(){
     saveDB();
     pushToGist(()=>setGistStatus('✅ Links corrigidos e salvos na nuvem','#27ae60'));
   }
+}
+
+// ====================== GOOGLE DRIVE LINK MODAL ======================
+let driveLinkTarget = 'cover'; // 'cover' ou 'banner'
+
+function openDriveLinkModal(target){
+  driveLinkTarget = target;
+  const title = target === 'cover' ? 'Link da Capa (Google Drive)' : 'Link do Banner (Google Drive)';
+  document.getElementById('drive-link-title').textContent = title;
+  document.getElementById('drive-link-input').value = '';
+  document.getElementById('drive-link-preview').style.display = 'none';
+  document.getElementById('drive-link-modal').classList.add('open');
+}
+
+function closeDriveLinkModal(){
+  document.getElementById('drive-link-modal').classList.remove('open');
+}
+
+function convertDriveUrl(url){
+  // Converte link de compartilhamento para link direto de imagem
+  if(!url) return '';
+  // https://drive.google.com/file/d/ID/view → https://drive.google.com/uc?export=view&id=ID
+  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(match) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+  // Se já for link direto
+  if(url.includes('uc?export=view')) return url;
+  return url;
+}
+
+function previewDriveLink(){
+  const url = document.getElementById('drive-link-input').value.trim();
+  const directUrl = convertDriveUrl(url);
+  const preview = document.getElementById('drive-link-preview');
+  const img = document.getElementById('drive-link-img');
+  if(directUrl){
+    img.src = directUrl;
+    img.onload = ()=>{ preview.style.display='block'; };
+    img.onerror = ()=>{ preview.style.display='none'; };
+  } else {
+    preview.style.display='none';
+  }
+}
+
+function confirmDriveLink(){
+  const url = document.getElementById('drive-link-input').value.trim();
+  if(!url){ showToast('Cole o link do Google Drive.','error'); return; }
+  const directUrl = convertDriveUrl(url);
+  if(driveLinkTarget === 'cover'){
+    tempCoverData = directUrl;
+    document.getElementById('cover-preview').src = directUrl;
+    document.getElementById('cover-preview').style.display = 'block';
+    document.getElementById('cover-placeholder').style.display = 'none';
+  } else {
+    tempBannerData = directUrl;
+    document.getElementById('banner-preview').src = directUrl;
+    document.getElementById('banner-preview').style.display = 'block';
+    document.getElementById('banner-placeholder').style.display = 'none';
+  }
+  closeDriveLinkModal();
+  showToast('Link aplicado!','success');
+}
+
+function detectBase64Images(){
+  const alert = document.getElementById('base64-alert');
+  const list = document.getElementById('base64-list');
+  if(!alert||!list) return;
+
+  const problematic = [];
+  DB.series.forEach(s=>{
+    const hasCoverB64 = s.cover && s.cover.startsWith('data:');
+    const hasBannerB64 = s.banner && s.banner.startsWith('data:');
+    if(hasCoverB64||hasBannerB64){
+      problematic.push({name:s.name, id:s.id, cover:hasCoverB64, banner:hasBannerB64});
+    }
+  });
+
+  if(!problematic.length){
+    alert.style.display='none';
+    return;
+  }
+
+  alert.style.display='block';
+  list.innerHTML = problematic.map(p=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(231,76,60,0.2);">
+      <div>
+        <div style="font-weight:600;color:var(--text)">${p.name}</div>
+        <div style="font-size:10px;color:#e74c3c;margin-top:2px;">
+          ${p.cover?'📷 Capa em Base64':''}${p.cover&&p.banner?' · ':''}${p.banner?'🖼️ Banner em Base64':''}
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="openEditFromSettings('${p.id}')">✏ Editar</button>
+    </div>`).join('');
+}
+
+function openEditFromSettings(id){
+  goTo('dashboard');
+  setTimeout(()=>openAddModal(id), 200);
 }
 
 function scrollSkills(dir){
