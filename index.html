@@ -1308,6 +1308,7 @@ function fetchGistPrimary(){
       DB = parsed;
       if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
       if(!DB.history) DB.history=[];
+      fixTelegramLinks();
       localStorage.setItem('mc_db', JSON.stringify(DB));
       renderAll(); updateBadges();
       setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60');
