@@ -657,6 +657,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   .series-card { flex:0 0 calc(33% - 8px); }
 }
 </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -1305,19 +1306,37 @@ function init(){
   populateYears();
   buildSeasonInputs();
 
-  if(gistToken() && gistId()){
-    // Gist como fonte principal — carrega da nuvem primeiro
+  if(gdriveToken){
+    // Google Drive como fonte principal
+    showLoadingOverlay(true, 'Conectando ao Google Drive...', '');
+    setLoadingProgress(20, 'Conectando ao Google Drive...');
+    gdriveLoad(()=>{
+      setLoadingProgress(80, 'Carregando suas séries...');
+      fixTelegramLinks();
+      renderAll(); updateBadges();
+      setLoadingProgress(100, 'Pronto!');
+      setTimeout(()=>showLoadingOverlay(false), 500);
+    });
+  } else if(gistToken() && gistId()){
+    // Fallback: Gist
     const gt2=document.getElementById('gist-token'); if(gt2) gt2.value=gistToken();
     updateGistUI(true);
     setGistStatus('Carregando dados da nuvem...','#f39c12');
-    showLoadingOverlay(true);
+    showLoadingOverlay(true, 'Conectando ao GitHub Gist...', '');
     fetchGistPrimary();
   } else {
-    // Sem Gist — usa localStorage
-    loadDB();
-    renderAll();
-    updateBadges();
-    setTimeout(()=>{ if(DB.series.length > 0) showBackupBanner(); }, 2000);
+    // Sem banco de dados — mostra tela de boas vindas
+    showLoadingOverlay(true, 'Bem-vindo ao MeuCatálogo!', 'Conecte o Google Drive para começar');
+    setLoadingProgress(100);
+    // Botão para ir às configurações
+    const el = document.getElementById('loading-overlay');
+    if(el){
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-primary';
+      btn.textContent = '⚙ Configurar Google Drive';
+      btn.onclick = ()=>{ showLoadingOverlay(false); loadDB(); renderAll(); goTo('settings'); };
+      el.appendChild(btn);
+    }
   }
 }
 
@@ -1373,22 +1392,32 @@ function fetchGistPrimary(){
   });
 }
 
-function showLoadingOverlay(show){
+function showLoadingOverlay(show, msg, status){
   let el = document.getElementById('loading-overlay');
   if(!el){
     el = document.createElement('div');
     el.id='loading-overlay';
     el.style.cssText='position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-size:14px;color:var(--text2)';
-    el.innerHTML='<div style="font-size:32px">☁️</div><div>Carregando dados da nuvem...</div><div style="width:200px;height:3px;background:var(--border);border-radius:2px;overflow:hidden"><div id="loading-bar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;animation:loadbar 2s ease forwards"></div></div>';
+    el.innerHTML=`
+      <div style="font-size:48px" id="loading-icon">🟢</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text)" id="loading-title">MeuCatálogo</div>
+      <div id="loading-msg" style="font-size:13px;color:var(--text2)">Conectando ao Google Drive...</div>
+      <div style="width:240px;height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+        <div id="loading-bar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width 0.5s"></div>
+      </div>
+      <div id="loading-status" style="font-size:11px;color:var(--text2);margin-top:4px;"></div>`;
     document.body.appendChild(el);
-    if(!document.querySelector('#loadbar-style')){
-      const s=document.createElement('style');
-      s.id='loadbar-style';
-      s.textContent='@keyframes loadbar{to{width:90%}}';
-      document.head.appendChild(s);
-    }
   }
+  if(msg) document.getElementById('loading-msg').textContent = msg;
+  if(status) document.getElementById('loading-status').textContent = status;
   el.style.display = show ? 'flex' : 'none';
+}
+
+function setLoadingProgress(pct, msg){
+  const bar = document.getElementById('loading-bar');
+  const msgEl = document.getElementById('loading-msg');
+  if(bar) bar.style.width = pct+'%';
+  if(msg && msgEl) msgEl.textContent = msg;
 }
 
 const DEFAULT_CATS = [
@@ -1407,16 +1436,16 @@ function saveDB(){
   localStorage.setItem('mc_db', JSON.stringify(DB));
   localStorage.setItem('mc_unsaved', 'true');
   localStorage.setItem('mc_last_save', Date.now());
-  if(gistToken() && gistId()){
+  // Auto-sync Google Drive se conectado (prioridade)
+  if(gdriveToken){
+    clearTimeout(window._driveDebounce);
+    window._driveDebounce = setTimeout(()=>gdriveSave(), 3000);
+  } else if(gistToken() && gistId()){
+    // Fallback: Gist apenas se Drive não estiver conectado
     clearTimeout(window._gistDebounce);
     window._gistDebounce = setTimeout(()=>{
       pushToGist(()=>setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60'));
     }, 1500);
-  }
-  // Auto-sync Google Drive se conectado
-  if(gdriveToken){
-    clearTimeout(window._driveDebounce);
-    window._driveDebounce = setTimeout(()=>gdriveSave(), 3000);
   }
   // Sempre mostra banner de backup JSON independente do Gist
   showBackupBanner();
@@ -3123,6 +3152,7 @@ function updateGistUI(connected){
 }
 
 function startGistAutoSync(){
+  if(gdriveToken) return; // Drive tem prioridade
   clearInterval(gistSyncTimer);
   if(!gistToken()||!gistId()) return;
   gistSyncTimer=setInterval(()=>{
@@ -3665,8 +3695,8 @@ let syncWarningTimer = null;
 let syncFailCount = 0;
 
 function showSyncWarning(){
+  if(gdriveToken) return; // Drive conectado, não mostrar aviso do Gist
   syncFailCount++;
-  // Só mostra após 2 falhas consecutivas
   if(syncFailCount < 2) return;
   const el = document.getElementById('sync-warning');
   if(el) el.style.display='block';
@@ -3713,26 +3743,35 @@ function updateGdriveUI(){
   }
 }
 
+let gdriveTokenClient = null;
+
 function connectGdrive(){
-  const redirectUri = window.location.origin + window.location.pathname;
-  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GDRIVE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(GDRIVE_SCOPE)}&prompt=consent`;
-  window.location.href = authUrl;
+  if(!gdriveTokenClient){
+    gdriveTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GDRIVE_CLIENT_ID,
+      scope: GDRIVE_SCOPE,
+      callback: (resp)=>{
+        if(resp.error){ showToast('Erro ao conectar: '+resp.error,'error'); return; }
+        gdriveToken = resp.access_token;
+        localStorage.setItem('mc_gdrive_token', gdriveToken);
+        showToast('Google Drive conectado!','success');
+        updateGdriveUI();
+        showLoadingOverlay(true,'Carregando dados do Drive...','');
+        setLoadingProgress(30,'Buscando seus dados...');
+        gdriveLoad(()=>{
+          fixTelegramLinks();
+          renderAll(); updateBadges();
+          setLoadingProgress(100,'Pronto!');
+          setTimeout(()=>showLoadingOverlay(false),500);
+        });
+      }
+    });
+  }
+  gdriveTokenClient.requestAccessToken({prompt:'consent'});
 }
 
 function handleGdriveCallback(){
-  const hash = window.location.hash;
-  if(!hash.includes('access_token')) return;
-  const params = new URLSearchParams(hash.substring(1));
-  const token = params.get('access_token');
-  if(!token) return;
-  gdriveToken = token;
-  localStorage.setItem('mc_gdrive_token', token);
-  // Limpa o hash da URL
-  history.replaceState(null, '', window.location.pathname);
-  showToast('Google Drive conectado!','success');
-  updateGdriveUI();
-  // Tenta carregar dados existentes
-  gdriveLoad(()=>{ saveDB(); renderAll(); });
+  // Não necessário mais com GIS
 }
 
 function disconnectGdrive(){
