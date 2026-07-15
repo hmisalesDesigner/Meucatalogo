@@ -952,29 +952,20 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
         <p style="font-size:11px;color:var(--text2);margin-top:10px;">Exporte seus dados regularmente para fazer backup. Importe para restaurar.</p>
       </div>
 
-      <div class="config-block" id="gist-block">
-        <div class="config-block-title">☁️ Sincronização Online (GitHub Gist)</div>
-        <div id="gist-status-bar" style="display:none;padding:8px 12px;border-radius:6px;font-size:12px;margin-bottom:12px;"></div>
+      <div class="config-block">
+        <div class="config-block-title">🟢 Google Drive (Banco de Dados)</div>
         <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
-          Salva seus dados online via GitHub Gist. Acesse de qualquer navegador.<br>
-          <strong>1.</strong> Gere um token em GitHub → Settings → Developer settings → Personal access tokens → marque <em>gist</em><br>
-          <strong>2.</strong> Cole o token abaixo e clique em Conectar
+          Salva seus dados diretamente no seu Google Drive. Sem limite de tamanho, mais confiável que o GitHub Gist.
         </p>
-        <div class="form-group">
-          <label class="form-label">GitHub Token (ghp_...)</label>
-          <input class="form-input" id="gist-token" type="password" placeholder="ghp_...">
-        </div>
-        <div class="form-group" style="display:none" id="gist-id-group">
-          <label class="form-label">Gist ID (gerado automaticamente)</label>
-          <input class="form-input" id="gist-id" readonly placeholder="Será gerado ao conectar">
-        </div>
+        <div id="gdrive-status" style="font-size:12px;margin-bottom:10px;"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="connectGist()">🔗 Conectar</button>
-          <button class="btn btn-secondary" onclick="syncFromGist(false)" id="gist-sync-btn" style="display:none">⬇ Baixar da Nuvem</button>
-          <button class="btn btn-secondary" onclick="forcePushGist()" id="gist-push-btn" style="display:none">⬆ Enviar para Nuvem</button>
-          <button class="btn btn-danger btn-sm" onclick="disconnectGist()" id="gist-disconnect-btn" style="display:none">Desconectar</button>
+          <button class="btn btn-primary" id="gdrive-connect-btn" onclick="connectGdrive()">🔗 Conectar Google Drive</button>
+          <button class="btn btn-secondary" onclick="gdriveSave(()=>showToast('Salvo no Drive!','success'))">⬆ Salvar no Drive</button>
+          <button class="btn btn-secondary" onclick="gdriveLoad(()=>{renderAll();showToast('Carregado do Drive!','success')})">⬇ Carregar do Drive</button>
         </div>
       </div>
+
+      
 
       <div class="config-block">
         <div class="config-block-title">☁️ Google Drive</div>
@@ -1034,10 +1025,10 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
       <div class="config-block">
         <div class="config-block-title">ℹ️ Sobre</div>
         <p style="font-size:12px;color:var(--text2);line-height:1.7">
-          <strong>MeuCatálogo v1.0</strong><br>
+          <strong>MeuCatálogo v2.0</strong><br>
           Plataforma pessoal de acompanhamento de cursos e séries.<br>
-          Dados armazenados localmente no navegador (localStorage).<br>
-          Use Exportar/Importar para backup e migração.
+          Dados sincronizados automaticamente com o Google Drive.<br>
+          Use Exportar/Importar para backup local.
         </p>
       </div>
     </div>
