@@ -3695,7 +3695,7 @@ let syncWarningTimer = null;
 let syncFailCount = 0;
 
 function showSyncWarning(){
-  if(gdriveToken) return; // Drive conectado, não mostrar aviso do Gist
+  if(gdriveToken || gdriveTokenClient) return; // Drive conectado
   syncFailCount++;
   if(syncFailCount < 2) return;
   const el = document.getElementById('sync-warning');
@@ -3831,10 +3831,12 @@ function gdriveSave(cb){
         showToast('💾 Salvo no Google Drive!','success');
         if(cb) cb();
       } else if(r.status===401){
-        gdriveToken=null; localStorage.removeItem('mc_gdrive_token'); updateGdriveUI();
-        showToast('Sessão Google expirada. Reconecte.','error');
+        // Token expirado — renova automaticamente
+        gdriveToken=null; localStorage.removeItem('mc_gdrive_token');
+        refreshGdriveToken(()=>gdriveSave(cb));
       } else {
         showToast(`Erro ao salvar no Drive: ${r.status}`,'error');
+        showSyncWarning();
       }
     });
   };
@@ -3859,8 +3861,46 @@ function gdriveLoad(cb){
       }
     }).catch(()=>{ if(cb) cb(); });
   };
-  if(gdriveFileId) doLoad(gdriveFileId);
-  else gdriveFindOrCreateFile(doLoad);
+  const doLoadWithRetry = (fileId)=>{
+    fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{
+      headers:{'Authorization':'Bearer '+gdriveToken}
+    }).then(r=>{
+      if(r.status===401){ refreshGdriveToken(()=>doLoad(fileId)); return null; }
+      return r.json();
+    }).then(data=>{
+      if(!data) return;
+      if(data.series){
+        DB = data;
+        if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
+        if(!DB.history) DB.history=[];
+        localStorage.setItem('mc_db', JSON.stringify(DB));
+        if(cb) cb();
+      }
+    }).catch(()=>{ if(cb) cb(); });
+  };
+  if(gdriveFileId) doLoadWithRetry(gdriveFileId);
+  else gdriveFindOrCreateFile(doLoadWithRetry);
+}
+
+function refreshGdriveToken(cb){
+  if(!gdriveTokenClient){
+    gdriveTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GDRIVE_CLIENT_ID,
+      scope: GDRIVE_SCOPE,
+      callback: (resp)=>{
+        if(resp.error){
+          showToast('Sessão Google expirada. Reconecte o Drive em Configurações.','error');
+          updateGdriveUI();
+          return;
+        }
+        gdriveToken = resp.access_token;
+        localStorage.setItem('mc_gdrive_token', gdriveToken);
+        if(cb) cb();
+      }
+    });
+  }
+  // Tenta renovar silenciosamente (sem popup)
+  gdriveTokenClient.requestAccessToken({prompt:''});
 }
 
 function scrollSkills(dir){
