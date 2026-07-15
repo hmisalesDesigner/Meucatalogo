@@ -3455,7 +3455,6 @@ function fixTelegramLinks(){
   let changed = false;
   function fixUrl(url){
     if(!url) return url;
-    // Cobrir todas as variações possíveis de t.me
     const patterns = [
       [/https?:\/\/t\.me\//g, 'https://telegram.me/'],
       [/https?:\/\/www\.t\.me\//g, 'https://telegram.me/'],
@@ -3464,15 +3463,27 @@ function fixTelegramLinks(){
     patterns.forEach(([re, rep])=>{ fixed = fixed.replace(re, rep); });
     return fixed;
   }
+  function fixDriveUrl(url){
+    if(!url) return url;
+    if(url.includes('uc?export=view&id=')||url.includes('uc?export=view%26id=')){
+      const m = url.match(/id=([a-zA-Z0-9_-]+)/);
+      if(m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+    }
+    return url;
+  }
   DB.series.forEach(s=>{
     if(s.links) s.links = s.links.map(l=>{
       const fixed = fixUrl(l);
       if(fixed !== l){ changed = true; return fixed; }
       return l;
     });
+    const fc = fixDriveUrl(s.cover);
+    if(fc !== s.cover){ s.cover=fc; changed=true; }
+    const fb = fixDriveUrl(s.banner);
+    if(fb !== s.banner){ s.banner=fb; changed=true; }
   });
   if(changed){
-    showToast('Links do Telegram corrigidos!','success');
+    showToast('Links corrigidos!','success');
     saveDB();
     pushToGist(()=>setGistStatus('✅ Links corrigidos e salvos na nuvem','#27ae60'));
   }
@@ -3495,13 +3506,21 @@ function closeDriveLinkModal(){
 }
 
 function convertDriveUrl(url){
-  // Converte link de compartilhamento para link direto de imagem
   if(!url) return '';
-  // https://drive.google.com/file/d/ID/view → https://drive.google.com/uc?export=view&id=ID
-  const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if(match) return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-  // Se já for link direto
-  if(url.includes('uc?export=view')) return url;
+  // Extrai o ID do arquivo do link do Google Drive
+  let id = '';
+  // Formato: /file/d/ID/view ou /d/ID
+  const m1 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(m1) id = m1[1];
+  // Formato: id=ID
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(m2) id = m2[1];
+  if(id){
+    // Usa thumbnail que funciona publicamente sem autenticação
+    return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+  }
+  // Se já for link direto compatível
+  if(url.includes('thumbnail?id=') || url.includes('uc?export=view')) return url;
   return url;
 }
 
