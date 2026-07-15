@@ -1286,6 +1286,10 @@ function init(){
   preloadLevelupSound();
   handleGdriveCallback();
   initGoogleDrive();
+  if(localStorage.getItem('mc_gdrive_token')){
+    localStorage.removeItem('mc_gist_token');
+    localStorage.removeItem('mc_gist_id');
+  }
   fixTelegramLinks();
   setTimeout(()=>{
     const wpBase = localStorage.getItem('mc_wp_base');
@@ -1317,13 +1321,6 @@ function init(){
       setLoadingProgress(100, 'Pronto!');
       setTimeout(()=>showLoadingOverlay(false), 500);
     });
-  } else if(gistToken() && gistId()){
-    // Fallback: Gist
-    const gt2=document.getElementById('gist-token'); if(gt2) gt2.value=gistToken();
-    updateGistUI(true);
-    setGistStatus('Carregando dados da nuvem...','#f39c12');
-    showLoadingOverlay(true, 'Conectando ao GitHub Gist...', '');
-    fetchGistPrimary();
   } else {
     // Sem banco de dados — mostra tela de boas vindas
     showLoadingOverlay(true, 'Bem-vindo ao MeuCatálogo!', 'Conecte o Google Drive para começar');
@@ -3152,7 +3149,7 @@ function updateGistUI(connected){
 }
 
 function startGistAutoSync(){
-  if(gdriveToken) return; // Drive tem prioridade
+  if(gdriveToken || localStorage.getItem('mc_gdrive_token')) return;
   clearInterval(gistSyncTimer);
   if(!gistToken()||!gistId()) return;
   gistSyncTimer=setInterval(()=>{
@@ -3695,7 +3692,7 @@ let syncWarningTimer = null;
 let syncFailCount = 0;
 
 function showSyncWarning(){
-  if(gdriveToken || gdriveTokenClient) return; // Drive conectado
+  if(gdriveToken || gdriveTokenClient || localStorage.getItem('mc_gdrive_token')) return;
   syncFailCount++;
   if(syncFailCount < 2) return;
   const el = document.getElementById('sync-warning');
