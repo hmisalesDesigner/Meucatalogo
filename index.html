@@ -1307,7 +1307,7 @@ function init(){
 
   if(gistToken() && gistId()){
     // Gist como fonte principal — carrega da nuvem primeiro
-    document.getElementById('gist-token').value = gistToken();
+    const gt2=document.getElementById('gist-token'); if(gt2) gt2.value=gistToken();
     updateGistUI(true);
     setGistStatus('Carregando dados da nuvem...','#f39c12');
     showLoadingOverlay(true);
@@ -2946,7 +2946,7 @@ function gistToken(){ return localStorage.getItem('mc_gist_token')||''; }
 function gistId(){ return localStorage.getItem('mc_gist_id')||''; }
 
 function connectGist(){
-  const token = document.getElementById('gist-token').value.trim();
+  const gistTokEl = document.getElementById('gist-token'); const token = gistTokEl ? gistTokEl.value.trim() : '';
   if(!token){ showToast('Cole seu GitHub Token primeiro.','error'); return; }
   setGistStatus('Conectando...','#f39c12');
   const existingId = gistId();
@@ -3097,8 +3097,8 @@ function disconnectGist(){
   clearInterval(gistSyncTimer);
   updateGistUI(false);
   setGistStatus('','');
-  document.getElementById('gist-token').value='';
-  document.getElementById('gist-id').value='';
+  const gt3=document.getElementById('gist-token'); if(gt3) gt3.value='';
+  const gi3=document.getElementById('gist-id'); if(gi3) gi3.value='';
   showToast('Desconectado.','success');
 }
 
@@ -3119,7 +3119,7 @@ function updateGistUI(connected){
   ['gist-sync-btn','gist-push-btn','gist-disconnect-btn'].forEach(id=>{
     const e=document.getElementById(id); if(e) e.style.display=connected?'':'none';
   });
-  if(connected && document.getElementById('gist-id')) document.getElementById('gist-id').value=gistId();
+  const giEl=document.getElementById('gist-id'); if(connected && giEl) giEl.value=gistId();
 }
 
 function startGistAutoSync(){
@@ -3217,7 +3217,7 @@ function importData(e){
       loadMetas();
       // Reconectar Gist se token existir
       if(gistToken() && gistId()){
-        document.getElementById('gist-token').value=gistToken();
+        const gtEl=document.getElementById('gist-token'); if(gtEl) gtEl.value=gistToken();
         updateGistUI(true);
         setGistStatus('✅ Reconectado via backup','#27ae60');
         startGistAutoSync();
