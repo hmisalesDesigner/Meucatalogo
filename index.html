@@ -945,6 +945,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
           <button class="btn btn-secondary" onclick="exportData()">⬇ Exportar JSON</button>
           <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">⬆ Importar JSON</button>
           <button class="btn btn-secondary" onclick="fixTelegramLinks()" title="Corrige links t.me → telegram.me">🔗 Corrigir Links Telegram</button>
+          <button class="btn btn-secondary" onclick="clearHistory()" title="Limpa histórico antigo para reduzir tamanho do backup">🗑 Limpar Histórico</button>
           <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
           <button class="btn btn-danger" onclick="confirmClearData()">🗑 Limpar Tudo</button>
         </div>
@@ -3001,20 +3002,59 @@ function forcePushGist(){
   });
 }
 
+function clearHistory(){
+  if(!confirm('Limpar histórico de episódios assistidos? Os episódios marcados como assistidos permanecem, apenas o log de datas é reduzido.')) return;
+  if(DB.history && DB.history.length > 100){
+    DB.history = DB.history.slice(-100);
+    saveDB();
+    pushToGist(()=>setGistStatus('✅ Histórico limpo e sincronizado','#27ae60'));
+    showToast('Histórico reduzido para 100 entradas.','success');
+  } else {
+    showToast('Histórico já está compacto.','success');
+  }
+}
+
+function getCompressedDB(){
+  // Cria uma cópia do DB sem dados que engordam desnecessariamente
+  const db = JSON.parse(JSON.stringify(DB));
+  // Limita histórico a 100 entradas mais recentes
+  if(db.history && db.history.length > 100){
+    db.history = db.history.slice(-100);
+  }
+  // Remove episódios com nome padrão "Episódio N" para economizar espaço
+  // (são regenerados automaticamente)
+  db.series.forEach(s=>{
+    if(s.epNames) s.epNames = s.epNames.map((n,i)=>{
+      if(n === `Episódio ${i+1}` || n === `Ep ${i+1}` || n === '') return '';
+      return n;
+    });
+  });
+  return db;
+}
+
 function pushToGist(cb){
   const token=gistToken(), id=gistId();
   if(!token||!id) return;
+  const payload = JSON.stringify(getCompressedDB());
+  const sizeKB = Math.round(payload.length/1024);
+  if(sizeKB > 900){
+    setGistStatus(`⚠️ Dados grandes (${sizeKB}KB). Considere limpar o histórico.`,'#f39c12');
+  }
   const controller = new AbortController();
   const timeout = setTimeout(()=>{ controller.abort(); setGistStatus('❌ Timeout.','#e74c3c'); }, 10000);
   fetch(`${GIST_API}/${id}`,{
     method:'PATCH',
     headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},
-    body: JSON.stringify({files:{'meucatalogo.json':{content:JSON.stringify(DB)}}}),
+    body: JSON.stringify({files:{'meucatalogo.json':{content:payload}}}),
     signal: controller.signal
   }).then(r=>{
     clearTimeout(timeout);
     if(r.ok){ syncFailCount=0; dismissSyncWarning(); if(cb) cb(); }
-    else setGistStatus(`❌ Erro ${r.status}.`,'#e74c3c');
+    else{
+      setGistStatus(`❌ Erro ${r.status}.`,'#e74c3c');
+      if(r.status===403||r.status===422) showToast(`Erro ${r.status} — dados muito grandes. Tente limpar o histórico em Configurações.`,'error');
+      showSyncWarning();
+    }
   }).catch(err=>{
     clearTimeout(timeout);
     if(err.name!=='AbortError'){
