@@ -1292,6 +1292,8 @@ function init(){
   try{ const c=localStorage.getItem('mc_weather_data'); if(c){ const p=JSON.parse(c); if(!p.forecastHtml||!p.v||p.v<4){ localStorage.removeItem('mc_weather_data'); localStorage.removeItem('mc_weather_time'); } } }catch(e){ localStorage.removeItem('mc_weather_data'); }
   // Wallpaper
   preloadLevelupSound();
+  handleGdriveCallback();
+  initGoogleDrive();
   fixTelegramLinks();
   setTimeout(()=>{
     const wpBase = localStorage.getItem('mc_wp_base');
@@ -1419,6 +1421,11 @@ function saveDB(){
     window._gistDebounce = setTimeout(()=>{
       pushToGist(()=>setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60'));
     }, 1500);
+  }
+  // Auto-sync Google Drive se conectado
+  if(gdriveToken){
+    clearTimeout(window._driveDebounce);
+    window._driveDebounce = setTimeout(()=>gdriveSave(), 3000);
   }
   // Sempre mostra banner de backup JSON independente do Gist
   showBackupBanner();
@@ -2935,6 +2942,13 @@ function saveDriveUrl(){
 
 // ====================== GITHUB GIST SYNC ======================
 const GIST_API = 'https://api.github.com/gists';
+
+// ====================== GOOGLE DRIVE CONFIG ======================
+const GDRIVE_CLIENT_ID = '843209225598-oerm5p09qr5olbofn9d5j5to0p1t6e0f.apps.googleusercontent.com';
+const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_FILE_NAME = 'meucatalogo_db.json';
+let gdriveToken = null;
+let gdriveFileId = null;
 let gistSyncTimer = null;
 
 function gistToken(){ return localStorage.getItem('mc_gist_token')||''; }
@@ -3015,20 +3029,36 @@ function clearHistory(){
 }
 
 function getCompressedDB(){
-  // Cria uma cópia do DB sem dados que engordam desnecessariamente
   const db = JSON.parse(JSON.stringify(DB));
-  // Limita histórico a 100 entradas mais recentes
-  if(db.history && db.history.length > 100){
-    db.history = db.history.slice(-100);
-  }
-  // Remove episódios com nome padrão "Episódio N" para economizar espaço
-  // (são regenerados automaticamente)
+  // Limita histórico a 50 entradas mais recentes
+  if(db.history && db.history.length > 50) db.history = db.history.slice(-50);
+  // Remove campos vazios e desnecessários de cada série
   db.series.forEach(s=>{
-    if(s.epNames) s.epNames = s.epNames.map((n,i)=>{
-      if(n === `Episódio ${i+1}` || n === `Ep ${i+1}` || n === '') return '';
-      return n;
-    });
+    // Remove epNames vazios ou padrão
+    if(s.epNames){
+      const hasCustom = s.epNames.some((n,i)=> n && n !== `Episódio ${i+1}` && n !== `Ep ${i+1}`);
+      if(!hasCustom) delete s.epNames;
+      else s.epNames = s.epNames.map((n,i)=> (n === `Episódio ${i+1}` || n === `Ep ${i+1}`) ? '' : (n||''));
+    }
+    // Remove arrays de watched/ratings se todos false/0
+    if(s.watched && s.watched.every(v=>!v)){
+      delete s.watched;
+    }
+    if(s.ratings && s.ratings.every(v=>!v)){
+      delete s.ratings;
+    }
+    // Remove links se todos vazios
+    if(s.links && s.links.every(l=>!l)) delete s.links;
+    // Remove campos vazios
+    if(!s.desc) delete s.desc;
+    if(!s.director) delete s.director;
+    if(!s.banner) delete s.banner;
+    if(!s.notes) delete s.notes;
   });
+  // Remove skillLevels zerados
+  if(db.skillLevels){
+    Object.keys(db.skillLevels).forEach(k=>{ if(!db.skillLevels[k]) delete db.skillLevels[k]; });
+  }
   return db;
 }
 
@@ -3037,11 +3067,16 @@ function pushToGist(cb){
   if(!token||!id) return;
   const payload = JSON.stringify(getCompressedDB());
   const sizeKB = Math.round(payload.length/1024);
-  if(sizeKB > 900){
-    setGistStatus(`⚠️ Dados grandes (${sizeKB}KB). Considere limpar o histórico.`,'#f39c12');
+  console.log(`Gist payload: ${sizeKB}KB`);
+  if(sizeKB > 950){
+    setGistStatus(`❌ Dados muito grandes (${sizeKB}KB). Limite é ~1MB.`,'#e74c3c');
+    showToast(`Dados muito grandes (${sizeKB}KB). Exporte um backup e limpe dados antigos.`,'error');
+    showSyncWarning();
+    return;
   }
+  if(sizeKB > 700) setGistStatus(`⚠️ Dados grandes (${sizeKB}KB)...`,'#f39c12');
   const controller = new AbortController();
-  const timeout = setTimeout(()=>{ controller.abort(); setGistStatus('❌ Timeout.','#e74c3c'); }, 10000);
+  const timeout = setTimeout(()=>{ controller.abort(); setGistStatus('❌ Timeout.','#e74c3c'); }, 15000);
   fetch(`${GIST_API}/${id}`,{
     method:'PATCH',
     headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'},
@@ -3051,8 +3086,8 @@ function pushToGist(cb){
     clearTimeout(timeout);
     if(r.ok){ syncFailCount=0; dismissSyncWarning(); if(cb) cb(); }
     else{
-      setGistStatus(`❌ Erro ${r.status}.`,'#e74c3c');
-      if(r.status===403||r.status===422) showToast(`Erro ${r.status} — dados muito grandes. Tente limpar o histórico em Configurações.`,'error');
+      setGistStatus(`❌ Erro ${r.status} (${sizeKB}KB).`,'#e74c3c');
+      if(r.status===403||r.status===422) showToast(`Erro ${r.status} — dados muito grandes (${sizeKB}KB). Limpe o histórico em Configurações.`,'error');
       showSyncWarning();
     }
   }).catch(err=>{
@@ -3665,6 +3700,137 @@ function retrySyncFromWarning(){
     goTo('settings');
     showToast('Configure o GitHub Gist em Configurações.','error');
   }
+}
+
+// ====================== GOOGLE DRIVE SYNC ======================
+function initGoogleDrive(){
+  // Carrega o token salvo
+  gdriveToken = localStorage.getItem('mc_gdrive_token');
+  gdriveFileId = localStorage.getItem('mc_gdrive_file_id');
+  updateGdriveUI();
+}
+
+function updateGdriveUI(){
+  const btn = document.getElementById('gdrive-connect-btn');
+  const status = document.getElementById('gdrive-status');
+  if(gdriveToken){
+    if(btn){ btn.textContent = '✓ Conectado — Desconectar'; btn.onclick = disconnectGdrive; }
+    if(status){ status.textContent = '✅ Google Drive conectado'; status.style.color='#27ae60'; }
+  } else {
+    if(btn){ btn.textContent = '🔗 Conectar Google Drive'; btn.onclick = connectGdrive; }
+    if(status){ status.textContent = ''; }
+  }
+}
+
+function connectGdrive(){
+  const redirectUri = window.location.origin + window.location.pathname;
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GDRIVE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(GDRIVE_SCOPE)}&prompt=consent`;
+  window.location.href = authUrl;
+}
+
+function handleGdriveCallback(){
+  const hash = window.location.hash;
+  if(!hash.includes('access_token')) return;
+  const params = new URLSearchParams(hash.substring(1));
+  const token = params.get('access_token');
+  if(!token) return;
+  gdriveToken = token;
+  localStorage.setItem('mc_gdrive_token', token);
+  // Limpa o hash da URL
+  history.replaceState(null, '', window.location.pathname);
+  showToast('Google Drive conectado!','success');
+  updateGdriveUI();
+  // Tenta carregar dados existentes
+  gdriveLoad(()=>{ saveDB(); renderAll(); });
+}
+
+function disconnectGdrive(){
+  if(!confirm('Desconectar Google Drive?')) return;
+  localStorage.removeItem('mc_gdrive_token');
+  localStorage.removeItem('mc_gdrive_file_id');
+  gdriveToken = null;
+  gdriveFileId = null;
+  updateGdriveUI();
+  showToast('Google Drive desconectado.','success');
+}
+
+function gdriveFindOrCreateFile(cb){
+  if(!gdriveToken) return;
+  // Busca arquivo existente
+  fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GDRIVE_FILE_NAME}'&fields=files(id,name)`,{
+    headers:{'Authorization':'Bearer '+gdriveToken}
+  }).then(r=>r.json()).then(data=>{
+    if(data.files && data.files.length>0){
+      gdriveFileId = data.files[0].id;
+      localStorage.setItem('mc_gdrive_file_id', gdriveFileId);
+      if(cb) cb(gdriveFileId);
+    } else {
+      // Cria novo arquivo
+      fetch('https://www.googleapis.com/drive/v3/files',{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body: JSON.stringify({name:GDRIVE_FILE_NAME, parents:['appDataFolder']})
+      }).then(r=>r.json()).then(file=>{
+        gdriveFileId = file.id;
+        localStorage.setItem('mc_gdrive_file_id', gdriveFileId);
+        if(cb) cb(gdriveFileId);
+      });
+    }
+  }).catch(err=>{
+    if(err.status===401){ gdriveToken=null; localStorage.removeItem('mc_gdrive_token'); updateGdriveUI(); }
+  });
+}
+
+function gdriveSave(cb){
+  if(!gdriveToken){ if(cb) cb(); return; }
+  const payload = JSON.stringify(getCompressedDB());
+  const sizeKB = Math.round(payload.length/1024);
+  console.log(`Drive payload: ${sizeKB}KB`);
+  const doSave = (fileId)=>{
+    const url = fileId
+      ? `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`
+      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=media';
+    const method = fileId ? 'PATCH' : 'POST';
+    fetch(url,{
+      method,
+      headers:{'Authorization':'Bearer '+gdriveToken,'Content-Type':'application/json'},
+      body: payload
+    }).then(r=>{
+      if(r.ok){
+        r.json().then(f=>{ if(f.id){ gdriveFileId=f.id; localStorage.setItem('mc_gdrive_file_id',f.id); } });
+        showToast('💾 Salvo no Google Drive!','success');
+        if(cb) cb();
+      } else if(r.status===401){
+        gdriveToken=null; localStorage.removeItem('mc_gdrive_token'); updateGdriveUI();
+        showToast('Sessão Google expirada. Reconecte.','error');
+      } else {
+        showToast(`Erro ao salvar no Drive: ${r.status}`,'error');
+      }
+    });
+  };
+  if(gdriveFileId) doSave(gdriveFileId);
+  else gdriveFindOrCreateFile(doSave);
+}
+
+function gdriveLoad(cb){
+  if(!gdriveToken) return;
+  const doLoad = (fileId)=>{
+    if(!fileId){ if(cb) cb(); return; }
+    fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{
+      headers:{'Authorization':'Bearer '+gdriveToken}
+    }).then(r=>r.json()).then(data=>{
+      if(data.series){
+        DB = data;
+        if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
+        if(!DB.history) DB.history=[];
+        localStorage.setItem('mc_db', JSON.stringify(DB));
+        showToast('✅ Dados carregados do Google Drive!','success');
+        if(cb) cb();
+      }
+    }).catch(()=>{ if(cb) cb(); });
+  };
+  if(gdriveFileId) doLoad(gdriveFileId);
+  else gdriveFindOrCreateFile(doLoad);
 }
 
 function scrollSkills(dir){
