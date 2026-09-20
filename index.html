@@ -2791,6 +2791,28 @@ function renderDetailSeasons(s, activeSeason){
   }
 }
 
+function extractNameFromUrl(url){
+  if(!url) return '';
+  try{
+    // Google Drive — não tem nome na URL, retorna vazio
+    if(url.includes('drive.google.com') || url.includes('docs.google.com')) return '';
+    // Telegram — não tem nome na URL
+    if(url.includes('telegram.me') || url.includes('t.me')) return '';
+    // Tenta extrair nome do arquivo da URL
+    const u = new URL(url);
+    const parts = u.pathname.split('/');
+    const filename = parts[parts.length-1];
+    if(!filename) return '';
+    // Remove extensão e decodifica
+    const name = decodeURIComponent(filename)
+      .replace(/\.[^.]+$/, '') // remove extensão
+      .replace(/[-_]/g, ' ')   // troca - e _ por espaço
+      .replace(/\s+/g, ' ')    // normaliza espaços
+      .trim();
+    return name;
+  }catch(e){ return ''; }
+}
+
 function saveEpLink(sid, idx, url){
   const s=DB.series.find(x=>x.id===sid); if(!s) return;
   if(!s.links) s.links=[];
@@ -2798,6 +2820,20 @@ function saveEpLink(sid, idx, url){
   let fixedUrl = url.trim();
   if(fixedUrl.includes('t.me/')) fixedUrl = fixedUrl.replace('https://t.me/','https://telegram.me/').replace('http://t.me/','https://telegram.me/');
   s.links[idx]=fixedUrl;
+
+  // Auto-preenche nome do episódio se estiver vazio
+  const nameInput = document.getElementById('epname-'+idx);
+  const currentName = nameInput ? nameInput.value.trim() : '';
+  if(!currentName && fixedUrl){
+    const extractedName = extractNameFromUrl(fixedUrl);
+    if(extractedName){
+      if(!s.epNames) s.epNames=[];
+      while(s.epNames.length<=idx) s.epNames.push('');
+      s.epNames[idx] = extractedName;
+      if(nameInput) nameInput.value = extractedName;
+    }
+  }
+
   saveDB();
   // atualiza o botão de play inline
   const btn = document.getElementById('eplink-'+idx);
@@ -2805,9 +2841,9 @@ function saveEpLink(sid, idx, url){
   if(parent){
     let playBtn = parent.querySelector('.ep-link-btn');
     if(playBtn && !(playBtn.classList.contains('ep-link-btn-empty'))){
-      playBtn.href = url.trim();
-    } else if(playBtn && url.trim()){
-      playBtn.outerHTML = `<a href="${url.trim()}" target="_blank" class="ep-link-btn" onclick="event.stopPropagation()" title="Abrir vídeo">▶</a>`;
+      playBtn.href = fixedUrl;
+    } else if(playBtn && fixedUrl){
+      playBtn.outerHTML = `<a href="${fixedUrl}" target="_blank" class="ep-link-btn" onclick="event.stopPropagation()" title="Abrir vídeo">▶</a>`;
     }
   }
 }
