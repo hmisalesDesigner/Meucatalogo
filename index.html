@@ -4125,10 +4125,25 @@ async function importGoogleDriveFolder(url){
       const folder = subfolders[i];
       const eps = await gdrivListFolder(folder.id, token);
       const videos = eps.filter(e=>e.mimeType!=='application/vnd.google-apps.folder' && isVideo(e.name));
+      const docs = eps.filter(e=>e.mimeType!=='application/vnd.google-apps.folder' && !isVideo(e.name) && isVideoOrDoc(e.name));
       videos.sort((a,b)=>naturalSort(a.name, b.name));
-      console.log(`Temporada ${i+1} (${folder.name}): ${videos.length} vídeos`, videos.map(v=>v.name));
+      console.log(`Subpasta ${i+1} (${folder.name}): ${videos.length} vídeos`, videos.map(v=>v.name));
+
+      if(videos.length === 0){
+        // Pasta sem vídeos = pasta de materiais
+        docs.forEach(d=>materials.push({
+          name: d.name.replace(/\.[^.]+$/,'').trim(),
+          url: `https://drive.google.com/file/d/${d.id}/view`
+        }));
+        // Adiciona a própria pasta como material de acesso
+        materials.push({
+          name: '📁 ' + folder.name,
+          url: `https://drive.google.com/drive/folders/${folder.id}`
+        });
+        continue; // Pula — não vira temporada
+      }
       seasons.push({
-        name: `${i+1}ª Temporada`,
+        name: `${seasons.length+1}ª Temporada`,
         episodes: videos.map(v=>({
           name: v.name.replace(/\.[^.]+$/,'').trim(),
           url: `https://drive.google.com/file/d/${v.id}/view`
