@@ -2695,6 +2695,25 @@ function saveSeries(){
     while(s.watched.length<totalEps) s.watched.push(false);
     if(!s.ratings) s.ratings=[];
     while(s.ratings.length<totalEps) s.ratings.push(0);
+    // Aplicar nomes e links importados também na edição
+    console.log('importedData no saveSeries (edit):', importedData ? importedData.length + ' temporadas' : 'NULL');
+    if(importedData){
+      s.epNames = [];
+      s.links = [];
+      let globalIdx = 0;
+      importedData.forEach(season=>{
+        season.episodes.forEach(ep=>{
+          s.epNames[globalIdx] = ep.name || '';
+          s.links[globalIdx] = ep.url || '';
+          globalIdx++;
+        });
+      });
+      window._importedSeasonData = null;
+    }
+    if(window._importedMaterials && window._importedMaterials.length){
+      s.materials = window._importedMaterials;
+      window._importedMaterials = null;
+    }
     showToast('Série atualizada!','success');
   } else {
     const s={
