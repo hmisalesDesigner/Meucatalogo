@@ -2791,26 +2791,41 @@ function renderDetailSeasons(s, activeSeason){
   }
 }
 
-function extractNameFromUrl(url){
-  if(!url) return '';
+function extractNameFromUrl(url, cb){
+  if(!url){ cb(''); return; }
   try{
-    // Google Drive — não tem nome na URL, retorna vazio
-    if(url.includes('drive.google.com') || url.includes('docs.google.com')) return '';
-    // Telegram — não tem nome na URL
-    if(url.includes('telegram.me') || url.includes('t.me')) return '';
-    // Tenta extrair nome do arquivo da URL
+    // Google Drive — busca nome via API
+    if(url.includes('drive.google.com') || url.includes('docs.google.com')){
+      const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      const fileId = match ? match[1] : (idMatch ? idMatch[1] : null);
+      if(fileId && gdriveToken){
+        fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=name`,{
+          headers:{'Authorization':'Bearer '+gdriveToken}
+        }).then(r=>r.json()).then(data=>{
+          if(data.name){
+            // Remove extensão do nome
+            const name = data.name.replace(/\.[^.]+$/, '').trim();
+            cb(name);
+          } else cb('');
+        }).catch(()=>cb(''));
+      } else cb('');
+      return;
+    }
+    // Telegram — não tem nome
+    if(url.includes('telegram.me') || url.includes('t.me')){ cb(''); return; }
+    // URL comum — extrai do path
     const u = new URL(url);
     const parts = u.pathname.split('/');
     const filename = parts[parts.length-1];
-    if(!filename) return '';
-    // Remove extensão e decodifica
+    if(!filename){ cb(''); return; }
     const name = decodeURIComponent(filename)
-      .replace(/\.[^.]+$/, '') // remove extensão
-      .replace(/[-_]/g, ' ')   // troca - e _ por espaço
-      .replace(/\s+/g, ' ')    // normaliza espaços
+      .replace(/\.[^.]+$/, '')
+      .replace(/[-_]/g, ' ')
+      .replace(/\s+/g, ' ')
       .trim();
-    return name;
-  }catch(e){ return ''; }
+    cb(name);
+  }catch(e){ cb(''); }
 }
 
 function saveEpLink(sid, idx, url){
@@ -2825,13 +2840,15 @@ function saveEpLink(sid, idx, url){
   const nameInput = document.getElementById('epname-'+idx);
   const currentName = nameInput ? nameInput.value.trim() : '';
   if(!currentName && fixedUrl){
-    const extractedName = extractNameFromUrl(fixedUrl);
-    if(extractedName){
-      if(!s.epNames) s.epNames=[];
-      while(s.epNames.length<=idx) s.epNames.push('');
-      s.epNames[idx] = extractedName;
-      if(nameInput) nameInput.value = extractedName;
-    }
+    extractNameFromUrl(fixedUrl, (extractedName)=>{
+      if(extractedName){
+        if(!s.epNames) s.epNames=[];
+        while(s.epNames.length<=idx) s.epNames.push('');
+        s.epNames[idx] = extractedName;
+        if(nameInput) nameInput.value = extractedName;
+        saveDB();
+      }
+    });
   }
 
   saveDB();
