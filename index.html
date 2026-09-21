@@ -1214,7 +1214,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
         </div>
         <div class="form-row" style="align-items:center;margin-bottom:8px;">
           <div class="form-group" style="flex:0 0 160px;margin-bottom:0">
-            <input class="form-input" id="f-seasons" type="number" min="1" max="50" value="1" placeholder="Nº de temporadas" oninput="buildSeasonInputs()">
+            <input class="form-input" id="f-seasons" type="number" min="1" max="100" value="1" placeholder="Nº de temporadas" oninput="buildSeasonInputs()">
           </div>
           <div style="font-size:12px;color:var(--text2);padding-top:0">temporada(s)</div>
         </div>
@@ -2622,14 +2622,14 @@ function fillForm(s){
 function buildSeasonInputs(existing){
   const n = parseInt(document.getElementById('f-seasons').value)||1;
   const cont = document.getElementById('seasons-inputs');
-  // Salva valores já digitados antes de reconstruir
   const current = [];
   cont.querySelectorAll('input').forEach((el,i)=>current[i]=el.value);
-  cont.innerHTML='';
+  let html = '';
   for(let i=0;i<n;i++){
     const val = existing&&existing[i]!==undefined ? existing[i] : (current[i]!==undefined ? current[i] : '');
-    cont.innerHTML+=`<div class="season-block"><div class="season-label">Temporada ${i+1}</div><input class="form-input" id="eps-${i}" type="number" min="1" max="500" value="${val}" placeholder="Nº de episódios"></div>`;
+    html+=`<div class="season-block"><div class="season-label">Temporada ${i+1}</div><input class="form-input" id="eps-${i}" type="number" min="1" max="500" value="${val}" placeholder="Nº de episódios"></div>`;
   }
+  cont.innerHTML = html;
 }
 function populateYears(){
   const sel = document.getElementById('f-year');
@@ -2708,6 +2708,7 @@ function saveSeries(){
       fav:false, lastSeason:0, addedAt:Date.now()
     };
     // Aplicar nomes e links importados
+    console.log('importedData no saveSeries:', importedData ? importedData.length + ' temporadas' : 'NULL');
     if(importedData){
       s.epNames = [];
       s.links = [];
@@ -4082,18 +4083,17 @@ function applyImportedSeasons(seasons, materials){
   window._importedSeasonData = seasons;
   window._importedMaterials = materials || [];
 
-  // Atualizar campos de número de temporadas e episódios
-  document.getElementById('f-seasons').value = seasons.length;
-  buildSeasonInputs();
-  setTimeout(()=>{
-    seasons.forEach((season, si)=>{
-      const epInput = document.getElementById('eps-'+si);
-      if(epInput) epInput.value = season.episodes.length;
-    });
-    const total = seasons.reduce((a,s)=>a+s.episodes.length,0);
-    const matMsg = materials && materials.length ? ` + ${materials.length} material(is)` : '';
-    setFolderStatus(`✅ ${seasons.length} temporada(s), ${total} episódios importados${matMsg}! Clique em Salvar.`,'#27ae60');
-  }, 100);
+  // Atualizar campo de temporadas
+  const fSeasons = document.getElementById('f-seasons');
+  if(fSeasons) fSeasons.value = seasons.length;
+
+  // Rebuild com os valores corretos passados diretamente
+  const epCounts = seasons.map(s=>s.episodes.length);
+  buildSeasonInputs(epCounts);
+
+  const total = seasons.reduce((a,s)=>a+s.episodes.length,0);
+  const matMsg = materials && materials.length ? ` + ${materials.length} material(is)` : '';
+  setFolderStatus(`✅ ${seasons.length} temporada(s), ${total} episódios importados${matMsg}! Clique em Salvar.`,'#27ae60');
 }
 
 // ── Google Drive ──────────────────────────────────────────
