@@ -4507,8 +4507,8 @@ function confirmTelegramImport(){
     if(!firstUrl){ showToast(`Temporada ${i+1}: cole o link do primeiro episódio.`,'error'); return; }
 
     // Extrair base e número do link
-    const baseMatch = firstUrl.match(/^(https?:\/\/telegram\.me\/c\/\d+\/)(\d+)/);
-    if(!baseMatch){ showToast(`Temporada ${i+1}: link inválido. Use o formato telegram.me/c/ID/NUMERO`,'error'); return; }
+    const baseMatch = firstUrl.match(/^(https?:\/\/(?:telegram|t)\.me\/c\/\d+\/)(\d+)/);
+    if(!baseMatch){ showToast(`Temporada ${i+1}: link inválido. Use o formato https://telegram.me/c/ID/NUMERO`,'error'); return; }
 
     const base = baseMatch[1];
     const firstNum = parseInt(baseMatch[2]);
