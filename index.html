@@ -2667,13 +2667,17 @@ function saveSeries(){
   if(!name){ showToast('Digite o nome da série.','error'); return; }
   if(!cat){ showToast('Selecione uma categoria.','error'); return; }
   const nSeas=parseInt(document.getElementById('f-seasons').value)||1;
-  const seasons=[];
-  for(let i=0;i<nSeas;i++) seasons.push(parseInt(document.getElementById('eps-'+i).value)||1);
+  const importedData = window._importedSeasonData;
+
+  // Se tem dados importados, usar eles como fonte de verdade
+  let seasons = [];
+  if(importedData){
+    seasons = importedData.map(s=>s.episodes.length);
+  } else {
+    for(let i=0;i<nSeas;i++) seasons.push(parseInt(document.getElementById('eps-'+i).value)||1);
+  }
 
   const totalEps = seasons.reduce((a,b)=>a+b,0);
-
-  // Usar dados importados se disponíveis
-  const importedData = window._importedSeasonData;
 
   if(editingId){
     const s=DB.series.find(x=>x.id===editingId);
@@ -3099,6 +3103,7 @@ const GIST_API = 'https://api.github.com/gists';
 
 // ====================== GOOGLE DRIVE CONFIG ======================
 const GDRIVE_CLIENT_ID = '843209225598-oerm5p09qr5olbofn9d5j5to0p1t6e0f.apps.googleusercontent.com';
+const YOUTUBE_API_KEY = 'AIzaSyDlXikjS5Ile6AmC9qAZWZ9PsvUAZjiHS8';
 const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.readonly';
 const GDRIVE_FILE_NAME = 'meucatalogo_db.json';
 let gdriveToken = null;
@@ -4058,8 +4063,10 @@ async function importFolderUrl(){
       await importGoogleDriveFolder(url);
     } else if(url.includes('drivedepobre.com')){
       await importDrivePebreFolder(url);
+    } else if(url.includes('youtube.com') || url.includes('youtu.be')){
+      await importYouTubePlaylist(url);
     } else {
-      setFolderStatus('Link não reconhecido. Use Google Drive ou Drive de Pobre.','#e74c3c');
+      setFolderStatus('Link não reconhecido. Use Google Drive, Drive de Pobre ou YouTube.','#e74c3c');
     }
   }catch(e){
     setFolderStatus('Erro ao importar: '+e.message,'#e74c3c');
@@ -4144,9 +4151,9 @@ async function importGoogleDriveFolder(url){
       }
       seasons.push({
         name: `${seasons.length+1}ª Temporada`,
-        episodes: videos.map(v=>({
-          name: v.name.replace(/\.[^.]+$/,'').trim(),
-          url: `https://drive.google.com/file/d/${v.id}/view`
+        episodes: videos.map((v,vi)=>({
+          name: cleanEpName(v.name, vi),
+          url: `https://drive.google.com/file/d/${v.id}/preview`
         }))
       });
     }
@@ -4162,9 +4169,9 @@ async function importGoogleDriveFolder(url){
     videos.sort((a,b)=>naturalSort(a.name, b.name));
     seasons = [{
       name: '1ª Temporada',
-      episodes: videos.map(v=>({
-        name: v.name.replace(/\.[^.]+$/,'').trim(),
-        url: `https://drive.google.com/file/d/${v.id}/view`
+      episodes: videos.map((v,vi)=>({
+        name: cleanEpName(v.name, vi),
+        url: `https://drive.google.com/file/d/${v.id}/preview`
       }))
     }];
     materials = docs.map(f=>({
@@ -4196,80 +4203,89 @@ async function importDrivePebreFolder(url){
   const html = await fetchViaProxy(url);
   if(!html){ setFolderStatus('Não foi possível acessar a pasta.','#e74c3c'); return; }
 
-  // Extrair links de subpastas e arquivos do HTML
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
-
-  // Pegar todos os links internos da página
-  const links = [...doc.querySelectorAll('a[href]')]
-    .map(a=>({
-      href: a.href || a.getAttribute('href'),
-      text: a.textContent.trim()
-    }))
-    .filter(l=>l.href && l.href.includes('drivedepobre.com/') && !l.href.includes('/entrar') && !l.href.includes('/registrar') && !l.href.includes('/premium'));
-
-  // Identificar a pasta atual para filtrar filhos diretos
   const currentPath = new URL(url).pathname;
-  const children = links.filter(l=>{
-    try{
-      const lPath = new URL(l.href).pathname;
-      const parts = lPath.split('/').filter(Boolean);
-      const curParts = currentPath.split('/').filter(Boolean);
-      // Filho direto = um nível a mais que o atual
-      return parts.length === curParts.length + 1 && lPath.startsWith(currentPath);
-    }catch(e){ return false; }
-  });
+  const pathParts = currentPath.split('/').filter(Boolean);
 
-  if(!children.length){ setFolderStatus('Nenhum item encontrado na pasta.','#e74c3c'); return; }
+  // Pegar filhos diretos (um nível abaixo do atual)
+  const children = [...new Set(
+    [...doc.querySelectorAll('a[href]')]
+      .map(a=>a.getAttribute('href'))
+      .filter(h=>{
+        if(!h || !h.includes('drivedepobre.com')) return false;
+        try{
+          const p = new URL(h).pathname.split('/').filter(Boolean);
+          return p.length === pathParts.length + 1 &&
+            p.slice(0, pathParts.length).join('/') === pathParts.join('/') &&
+            !h.includes('/entrar') && !h.includes('/registrar');
+        }catch(e){ return false; }
+      })
+  )];
 
-  // Verificar se são subpastas ou arquivos acessando cada um
-  // Para simplificar: buscar cada item e ver se tem sub-itens
-  setFolderStatus(`Analisando ${children.length} item(ns)...`,'#f0a500');
+  if(!children.length){ setFolderStatus('Nenhum item encontrado. Verifique se é uma pasta.','#e74c3c'); return; }
+
+  setFolderStatus(`Encontrei ${children.length} item(ns). Analisando...`,'#f0a500');
 
   const seasons = [];
   const materials = [];
 
   for(let i=0; i<children.length; i++){
-    const child = children[i];
-    setFolderStatus(`Analisando ${i+1}/${children.length}: ${child.text.substring(0,30)}...`,'#f0a500');
-    const childHtml = await fetchViaProxy(child.href);
+    const childUrl = children[i];
+    setFolderStatus(`Analisando ${i+1}/${children.length}...`,'#f0a500');
+    const childHtml = await fetchViaProxy(childUrl);
     if(!childHtml) continue;
 
     const childDoc = parser.parseFromString(childHtml, 'text/html');
-    const childPath = new URL(child.href).pathname;
+    const childPath = new URL(childUrl).pathname.split('/').filter(Boolean);
 
-    // Ver se tem filhos (é pasta) ou é arquivo
-    const childLinks = [...childDoc.querySelectorAll('a[href]')]
-      .filter(a=>{
-        const h = a.getAttribute('href');
-        return h && h.includes('drivedepobre.com') && h.includes(childPath) && h !== child.href;
-      });
+    // Título da página = nome do item
+    const pageTitle = (childDoc.querySelector('title')||{}).textContent||'';
+    const cleanTitle = pageTitle.replace(/ - Drive de Pobre$/i,'').replace(/\.[^.]+$/,'').trim();
 
-    const isFolder = childLinks.length > 0;
-    const title = (childDoc.querySelector('title')||{}).textContent || child.text;
-    const cleanTitle = title.replace(/ - Drive de Pobre$/i,'').replace(/\.[^.]+$/,'').trim();
+    // Filhos do filho = subpastas (é pasta se tiver links filhos)
+    const grandChildren = [...new Set(
+      [...childDoc.querySelectorAll('a[href]')]
+        .map(a=>a.getAttribute('href'))
+        .filter(h=>{
+          if(!h || !h.includes('drivedepobre.com')) return false;
+          try{
+            const p = new URL(h).pathname.split('/').filter(Boolean);
+            return p.length === childPath.length + 1 &&
+              p.slice(0, childPath.length).join('/') === childPath.join('/');
+          }catch(e){ return false; }
+        })
+    )];
 
-    if(isFolder){
-      // É uma subpasta = temporada
-      const eps = childLinks.map(l=>({
-        name: l.textContent.trim().replace(/\.[^.]+$/,''),
-        url: l.href
-      })).filter(e=>e.name);
-      seasons.push({ name: `${seasons.length+1}ª Temporada`, episodes: eps });
+    if(grandChildren.length > 0){
+      // É uma subpasta → temporada
+      setFolderStatus(`Buscando episódios de: ${cleanTitle}...`,'#f0a500');
+      const eps = [];
+      for(const gcUrl of grandChildren){
+        const gcHtml = await fetchViaProxy(gcUrl);
+        if(!gcHtml) continue;
+        const gcDoc = parser.parseFromString(gcHtml, 'text/html');
+        const gcTitle = ((gcDoc.querySelector('title')||{}).textContent||'')
+          .replace(/ - Drive de Pobre$/i,'').replace(/\.[^.]+$/,'').trim();
+        eps.push({name: gcTitle, url: gcUrl});
+      }
+      // Ordenar por nome
+      eps.sort((a,b)=>naturalSort(a.name, b.name));
+      if(eps.length > 0) seasons.push({name:`${seasons.length+1}ª Temporada`, episodes: eps});
     } else {
-      // É arquivo — verificar se é vídeo ou material
-      const downloadLink = childDoc.querySelector('a[href*="drivedepobre.download"]');
-      const fileUrl = downloadLink ? downloadLink.href : child.href;
-      if(isVideo(cleanTitle+'.mp4')){
-        // Arquivo de vídeo solto — vai para 1ª temporada
+      // É um arquivo
+      const isVid = /\.(mp4|mkv|avi|mov|webm)$/i.test(pageTitle) || pageTitle.toLowerCase().includes('.mp4');
+      if(isVid){
         if(!seasons.length) seasons.push({name:'1ª Temporada', episodes:[]});
-        seasons[0].episodes.push({name:cleanTitle, url:fileUrl});
+        seasons[0].episodes.push({name:cleanTitle, url:childUrl});
       } else {
-        materials.push({name:cleanTitle, url:fileUrl});
+        materials.push({name:cleanTitle, url:childUrl});
       }
     }
   }
 
+  // Ordenar episódios das temporadas
+  seasons.forEach(s=>s.episodes.sort((a,b)=>naturalSort(a.name, b.name)));
   applyImportedSeasons(seasons, materials);
 }
 
@@ -4284,6 +4300,15 @@ async function fetchViaProxy(url){
 // ── Helpers ───────────────────────────────────────────────
 function isVideo(name){
   return /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i.test(name);
+}
+function cleanEpName(name, fallbackIndex){
+  if(!name) return `Episódio ${fallbackIndex+1}`;
+  const cleaned = name.replace(/\.[^.]+$/,'').trim();
+  // Se o nome parece uma URL ou está vazio, usa fallback
+  if(!cleaned || cleaned.startsWith('http') || cleaned.startsWith('https') || cleaned.length < 2){
+    return `Episódio ${fallbackIndex+1}`;
+  }
+  return cleaned;
 }
 function isVideoOrDoc(name){
   return /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v|pdf|zip|rar|docx?|pptx?|xlsx?)$/i.test(name);
@@ -4304,6 +4329,59 @@ function openMaterialsModal(s){
       </div>
     </a>`).join('');
   document.getElementById('materials-modal').classList.add('open');
+}
+
+// ── YouTube Playlist ─────────────────────────────────────
+async function importYouTubePlaylist(url){
+  // Extrair playlist ID
+  let playlistId = '';
+  const m1 = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+  if(m1) playlistId = m1[1];
+  if(!playlistId){ setFolderStatus('Link de playlist inválido. Use youtube.com/playlist?list=...','#e74c3c'); return; }
+
+  setFolderStatus('Buscando vídeos da playlist...','#f0a500');
+
+  let videos = [];
+  let pageToken = '';
+  try{
+    do{
+      const pageParam = pageToken ? `&pageToken=${pageToken}` : '';
+      const apiUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${playlistId}&maxResults=50&key=${YOUTUBE_API_KEY}${pageParam}`;
+      const r = await fetch(apiUrl);
+      const data = await r.json();
+      if(data.error){ setFolderStatus('Erro da API YouTube: '+data.error.message,'#e74c3c'); return; }
+      const items = data.items || [];
+      items.forEach(item=>{
+        const snippet = item.snippet;
+        if(!snippet || snippet.title === 'Private video' || snippet.title === 'Deleted video') return;
+        const videoId = snippet.resourceId && snippet.resourceId.videoId;
+        if(!videoId) return;
+        videos.push({
+          name: snippet.title,
+          url: `https://www.youtube.com/watch?v=${videoId}&vq=hd1080`
+        });
+      });
+      pageToken = data.nextPageToken || '';
+    } while(pageToken);
+  }catch(e){
+    setFolderStatus('Erro ao buscar playlist: '+e.message,'#e74c3c');
+    return;
+  }
+
+  if(!videos.length){ setFolderStatus('Nenhum vídeo encontrado na playlist.','#e74c3c'); return; }
+
+  // Buscar nome da playlist
+  let playlistName = '1ª Temporada';
+  try{
+    const plUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&id=${playlistId}&key=${YOUTUBE_API_KEY}`;
+    const plR = await fetch(plUrl);
+    const plData = await plR.json();
+    if(plData.items && plData.items.length) playlistName = plData.items[0].snippet.title;
+  }catch(e){}
+
+  const seasons = [{name: '1ª Temporada', episodes: videos}];
+  console.log(`YouTube: ${videos.length} vídeos da playlist "${playlistName}"`);
+  applyImportedSeasons(seasons, []);
 }
 
 function scrollSkills(dir){
