@@ -4152,8 +4152,21 @@ async function importGoogleDriveFolder(url){
     for(let i=0; i<subfolders.length; i++){
       const folder = subfolders[i];
       const eps = await gdrivListFolder(folder.id, token);
-      const videos = eps.filter(e=>e.mimeType!=='application/vnd.google-apps.folder' && isVideo(e.name));
+      let videos = eps.filter(e=>e.mimeType!=='application/vnd.google-apps.folder' && isVideo(e.name));
       const docs = eps.filter(e=>e.mimeType!=='application/vnd.google-apps.folder' && !isVideo(e.name) && isVideoOrDoc(e.name));
+      const subSubFolders = eps.filter(e=>e.mimeType==='application/vnd.google-apps.folder');
+
+      // Se não tem vídeos diretos mas tem sub-subpastas, buscar recursivamente
+      if(videos.length === 0 && subSubFolders.length > 0){
+        setFolderStatus(`Buscando em sub-módulos de: ${folder.name}...`,'#f0a500');
+        subSubFolders.sort((a,b)=>naturalSort(a.name, b.name));
+        for(const ssf of subSubFolders){
+          const ssfEps = await gdrivListFolder(ssf.id, token);
+          const ssfVideos = ssfEps.filter(e=>e.mimeType!=='application/vnd.google-apps.folder' && isVideo(e.name));
+          videos = videos.concat(ssfVideos);
+        }
+      }
+
       videos.sort((a,b)=>naturalSort(a.name, b.name));
       console.log(`Subpasta ${i+1} (${folder.name}): ${videos.length} vídeos`, videos.map(v=>v.name));
 
