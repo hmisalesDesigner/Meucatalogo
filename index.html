@@ -2690,11 +2690,13 @@ function saveSeries(){
     s.lastSeason=0; // Reset para 1ª temporada ao editar
     if(tempCoverData) s.cover=tempCoverData;
     if(tempBannerData) s.banner=tempBannerData;
-    // Resize watched/ratings arrays if needed
+    // Resize watched/ratings arrays if needed — preservar estado existente
+    const oldWatched = s.watched ? [...s.watched] : [];
+    const oldRatings = s.ratings ? [...s.ratings] : [];
     if(!s.watched) s.watched=[];
-    while(s.watched.length<totalEps) s.watched.push(false);
+    s.watched = new Array(totalEps).fill(false).map((v,i)=> oldWatched[i] || false);
     if(!s.ratings) s.ratings=[];
-    while(s.ratings.length<totalEps) s.ratings.push(0);
+    s.ratings = new Array(totalEps).fill(0).map((v,i)=> oldRatings[i] || 0);
     // Aplicar nomes e links importados também na edição
     console.log('importedData no saveSeries (edit):', importedData ? importedData.length + ' temporadas' : 'NULL');
     if(importedData){
