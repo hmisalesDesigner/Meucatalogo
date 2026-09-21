@@ -2799,17 +2799,23 @@ function extractNameFromUrl(url, cb){
       const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
       const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
       const fileId = match ? match[1] : (idMatch ? idMatch[1] : null);
-      if(fileId && gdriveToken){
+      const token = gdriveToken || localStorage.getItem('mc_gdrive_token');
+      if(fileId && token){
         fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=name`,{
-          headers:{'Authorization':'Bearer '+gdriveToken}
+          headers:{'Authorization':'Bearer '+token}
         }).then(r=>r.json()).then(data=>{
           if(data.name){
-            // Remove extensão do nome
             const name = data.name.replace(/\.[^.]+$/, '').trim();
             cb(name);
-          } else cb('');
-        }).catch(()=>cb(''));
-      } else cb('');
+          } else {
+            console.log('Drive API response:', data);
+            cb('');
+          }
+        }).catch(e=>{ console.log('Drive API error:', e); cb(''); });
+      } else {
+        console.log('Sem token Drive:', token, 'fileId:', fileId);
+        cb('');
+      }
       return;
     }
     // Telegram — não tem nome
@@ -2825,7 +2831,7 @@ function extractNameFromUrl(url, cb){
       .replace(/\s+/g, ' ')
       .trim();
     cb(name);
-  }catch(e){ cb(''); }
+  }catch(e){ console.log('extractNameFromUrl error:', e); cb(''); }
 }
 
 function saveEpLink(sid, idx, url){
