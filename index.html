@@ -2801,7 +2801,7 @@ function extractNameFromUrl(url, cb){
       const fileId = match ? match[1] : (idMatch ? idMatch[1] : null);
       const token = gdriveToken || localStorage.getItem('mc_gdrive_token');
       if(fileId && token){
-        fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=name`,{
+        fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=name&supportsAllDrives=true&includeItemsFromAllDrives=true`,{
           headers:{'Authorization':'Bearer '+token}
         }).then(r=>r.json()).then(data=>{
           if(data.name){
@@ -3021,7 +3021,7 @@ const GIST_API = 'https://api.github.com/gists';
 
 // ====================== GOOGLE DRIVE CONFIG ======================
 const GDRIVE_CLIENT_ID = '843209225598-oerm5p09qr5olbofn9d5j5to0p1t6e0f.apps.googleusercontent.com';
-const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.readonly';
 const GDRIVE_FILE_NAME = 'meucatalogo_db.json';
 let gdriveToken = null;
 let gdriveFileId = null;
