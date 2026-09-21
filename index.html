@@ -1113,6 +1113,17 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   </div>
 </div>
 
+<!-- MATERIAIS MODAL -->
+<div class="modal-overlay" id="materials-modal" style="z-index:2001;">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">📎 Materiais do Curso</div>
+      <button class="modal-close" onclick="document.getElementById('materials-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body" id="materials-list" style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;"></div>
+  </div>
+</div>
+
 <!-- GOOGLE DRIVE LINK MODAL -->
 <div class="modal-overlay" id="drive-link-modal" style="z-index:2000;">
   <div class="modal" style="max-width:460px;">
@@ -1191,6 +1202,16 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 
       <div class="form-group">
         <label class="form-label">Temporadas e Episódios</label>
+        <!-- Import automático de pasta -->
+        <div style="background:rgba(45,90,48,0.1);border:1px solid rgba(45,90,48,0.3);border-radius:8px;padding:12px;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">⚡ Import automático de pasta</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">Cole o link de uma pasta do Google Drive ou Drive de Pobre — o site importa as temporadas e episódios automaticamente.</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input class="form-input" id="f-folder-url" placeholder="https://drive.google.com/drive/folders/... ou https://drivedepobre.com/..." style="flex:1;font-size:12px;">
+            <button class="btn btn-primary btn-sm" onclick="importFolderUrl()" id="f-folder-btn">⬇ Importar</button>
+          </div>
+          <div id="f-folder-status" style="font-size:11px;color:var(--text2);margin-top:6px;display:none;"></div>
+        </div>
         <div class="form-row" style="align-items:center;margin-bottom:8px;">
           <div class="form-group" style="flex:0 0 160px;margin-bottom:0">
             <input class="form-input" id="f-seasons" type="number" min="1" max="50" value="1" placeholder="Nº de temporadas" oninput="buildSeasonInputs()">
@@ -1232,7 +1253,8 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
       <div style="display:flex;align-items:center;gap:10px;flex:1">
         <div class="modal-title" id="detail-title">—</div>
         <button class="fav-btn" id="detail-fav-btn" onclick="toggleFav()" title="Favoritar">☆</button>
-        <button class="btn btn-secondary btn-sm" onclick="openEditFromDetail()" style="margin-left:auto">✏ Editar</button>
+        <button class="btn btn-secondary btn-sm" id="detail-materials-btn" onclick="" style="display:none;margin-left:auto;">📎 Materiais</button>
+        <button class="btn btn-secondary btn-sm" onclick="openEditFromDetail()" style="margin-left:8px;">✏ Editar</button>
       </div>
       <button class="modal-close" onclick="closeDetailModal()" style="margin-left:10px;">✕</button>
     </div>
@@ -1284,6 +1306,7 @@ function init(){
   try{ const c=localStorage.getItem('mc_weather_data'); if(c){ const p=JSON.parse(c); if(!p.forecastHtml||!p.v||p.v<4){ localStorage.removeItem('mc_weather_data'); localStorage.removeItem('mc_weather_time'); } } }catch(e){ localStorage.removeItem('mc_weather_data'); }
   // Wallpaper
   preloadLevelupSound();
+  window._importedSeasonData = null; // dados de episódios importados
   handleGdriveCallback();
   initGoogleDrive();
   if(localStorage.getItem('mc_gdrive_token')){
@@ -2569,7 +2592,11 @@ function openAddModal(id){
 }
 function closeAddModal(){
   document.getElementById('add-modal').classList.remove('open');
-  editingId=null; tempCoverData=null; tempBannerData=null;
+  editingId=null;
+  window._importedMaterials=null;
+  window._importedSeasonData=null;
+  const folderUrl=document.getElementById('f-folder-url'); if(folderUrl) folderUrl.value='';
+  setFolderStatus(''); tempCoverData=null; tempBannerData=null;
 }
 function clearForm(){
   ['f-name','f-director','f-desc'].forEach(id=>document.getElementById(id).value='');
@@ -2645,6 +2672,9 @@ function saveSeries(){
 
   const totalEps = seasons.reduce((a,b)=>a+b,0);
 
+  // Usar dados importados se disponíveis
+  const importedData = window._importedSeasonData;
+
   if(editingId){
     const s=DB.series.find(x=>x.id===editingId);
     const oldTotal = getTotalEps(s);
@@ -2673,8 +2703,27 @@ function saveSeries(){
       ratings:new Array(totalEps).fill(0),
       fav:false, lastSeason:0, addedAt:Date.now()
     };
+    // Aplicar nomes e links importados
+    if(importedData){
+      s.epNames = [];
+      s.links = [];
+      let globalIdx = 0;
+      importedData.forEach(season=>{
+        season.episodes.forEach(ep=>{
+          s.epNames[globalIdx] = ep.name || '';
+          s.links[globalIdx] = ep.url || '';
+          globalIdx++;
+        });
+      });
+      window._importedSeasonData = null;
+    }
     DB.series.push(s);
     localStorage.setItem('mc_last_accessed', s.id);
+    // Salvar materiais importados
+    if(window._importedMaterials && window._importedMaterials.length){
+      s.materials = window._importedMaterials;
+      window._importedMaterials = null;
+    }
     showToast('Série adicionada!','success');
   }
   saveDB(); closeAddModal(); renderAll();
@@ -2807,21 +2856,50 @@ function extractNameFromUrl(url, cb){
           if(data.name){
             const name = data.name.replace(/\.[^.]+$/, '').trim();
             cb(name);
-          } else {
-            console.log('Drive API response:', data);
-            cb('');
-          }
-        }).catch(e=>{ console.log('Drive API error:', e); cb(''); });
-      } else {
-        console.log('Sem token Drive:', token, 'fileId:', fileId);
-        cb('');
-      }
+          } else { cb(''); }
+        }).catch(()=>cb(''));
+      } else cb('');
       return;
     }
     // Telegram — não tem nome
     if(url.includes('telegram.me') || url.includes('t.me')){ cb(''); return; }
+
+    // Drive de Pobre — nome está no parâmetro "name" da URL de download
+    if(url.includes('drivedepobre.com') || url.includes('drivedepobre.download')){
+      // Tenta extrair do parâmetro name= na URL
+      const nameParam = url.match(/[?&]name=([^&]+)/);
+      if(nameParam){
+        const name = decodeURIComponent(nameParam[1])
+          .replace(/\+/g,' ')
+          .replace(/\.[^.]+$/, '')
+          .trim();
+        cb(name); return;
+      }
+      // Busca via allorigins proxy para obter o título da página
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      fetch(proxyUrl)
+        .then(r=>r.json())
+        .then(data=>{
+          const titleMatch = data.contents && data.contents.match(/<title>([^<]+)<\/title>/i);
+          if(titleMatch){
+            const name = titleMatch[1]
+              .replace(/ - Drive de Pobre/i,'')
+              .replace(/\.[^.]+$/, '')
+              .trim();
+            cb(name);
+          } else cb('');
+        }).catch(()=>cb(''));
+      return;
+    }
+
     // URL comum — extrai do path
     const u = new URL(url);
+    // Tenta parâmetro name= primeiro
+    const nameParam = u.searchParams.get('name');
+    if(nameParam){
+      const name = decodeURIComponent(nameParam).replace(/\.[^.]+$/, '').trim();
+      cb(name); return;
+    }
     const parts = u.pathname.split('/');
     const filename = parts[parts.length-1];
     if(!filename){ cb(''); return; }
@@ -2831,7 +2909,7 @@ function extractNameFromUrl(url, cb){
       .replace(/\s+/g, ' ')
       .trim();
     cb(name);
-  }catch(e){ console.log('extractNameFromUrl error:', e); cb(''); }
+  }catch(e){ cb(''); }
 }
 
 function saveEpLink(sid, idx, url){
@@ -3957,6 +4035,249 @@ function refreshGdriveToken(cb){
   }
   // Tenta renovar silenciosamente (sem popup)
   gdriveTokenClient.requestAccessToken({prompt:''});
+}
+
+// ====================== IMPORT DE PASTA ======================
+function setFolderStatus(msg, color='var(--text2)'){
+  const el = document.getElementById('f-folder-status');
+  if(!el) return;
+  el.style.display = msg ? 'block' : 'none';
+  el.style.color = color;
+  el.textContent = msg;
+}
+
+async function importFolderUrl(){
+  const url = document.getElementById('f-folder-url').value.trim();
+  if(!url){ showToast('Cole o link da pasta primeiro.','error'); return; }
+  const btn = document.getElementById('f-folder-btn');
+  btn.textContent = '⏳ Importando...';
+  btn.disabled = true;
+  setFolderStatus('Analisando pasta...','#f0a500');
+  try{
+    if(url.includes('drive.google.com')){
+      await importGoogleDriveFolder(url);
+    } else if(url.includes('drivedepobre.com')){
+      await importDrivePebreFolder(url);
+    } else {
+      setFolderStatus('Link não reconhecido. Use Google Drive ou Drive de Pobre.','#e74c3c');
+    }
+  }catch(e){
+    setFolderStatus('Erro ao importar: '+e.message,'#e74c3c');
+  }
+  btn.textContent = '⬇ Importar';
+  btn.disabled = false;
+}
+
+function applyImportedSeasons(seasons, materials){
+  if(!seasons.length){ setFolderStatus('Nenhuma temporada encontrada.','#e74c3c'); return; }
+
+  // Guardar dados completos para usar no saveSeries
+  window._importedSeasonData = seasons;
+  window._importedMaterials = materials || [];
+
+  // Atualizar campos de número de temporadas e episódios
+  document.getElementById('f-seasons').value = seasons.length;
+  buildSeasonInputs();
+  setTimeout(()=>{
+    seasons.forEach((season, si)=>{
+      const epInput = document.getElementById('eps-'+si);
+      if(epInput) epInput.value = season.episodes.length;
+    });
+    const total = seasons.reduce((a,s)=>a+s.episodes.length,0);
+    const matMsg = materials && materials.length ? ` + ${materials.length} material(is)` : '';
+    setFolderStatus(`✅ ${seasons.length} temporada(s), ${total} episódios importados${matMsg}! Clique em Salvar.`,'#27ae60');
+  }, 100);
+}
+
+// ── Google Drive ──────────────────────────────────────────
+async function importGoogleDriveFolder(url){
+  const token = gdriveToken || localStorage.getItem('mc_gdrive_token');
+  if(!token){ setFolderStatus('Conecte o Google Drive primeiro em Configurações.','#e74c3c'); return; }
+
+  // Extrair folder ID
+  const m = url.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if(!m){ setFolderStatus('Link de pasta do Google Drive inválido.','#e74c3c'); return; }
+  const folderId = m[1];
+
+  setFolderStatus('Listando conteúdo da pasta...','#f0a500');
+
+  // Listar conteúdo da pasta raiz
+  const items = await gdrivListFolder(folderId, token);
+
+  // Separar subpastas (temporadas) e arquivos soltos (materiais)
+  const subfolders = items.filter(i=>i.mimeType==='application/vnd.google-apps.folder');
+  const looseFiles = items.filter(i=>i.mimeType!=='application/vnd.google-apps.folder' && isVideoOrDoc(i.name));
+
+  let seasons = [];
+  let materials = [];
+
+  if(subfolders.length > 0){
+    // Tem subpastas = tem estrutura de módulos/temporadas
+    // Ordenar por nome (Módulo 0, Módulo 1, etc.)
+    subfolders.sort((a,b)=>naturalSort(a.name, b.name));
+
+    setFolderStatus(`Encontrei ${subfolders.length} módulo(s). Buscando episódios...`,'#f0a500');
+
+    for(let i=0; i<subfolders.length; i++){
+      const folder = subfolders[i];
+      const eps = await gdrivListFolder(folder.id, token);
+      const videos = eps.filter(e=>e.mimeType!=='application/vnd.google-apps.folder' && isVideo(e.name));
+      videos.sort((a,b)=>naturalSort(a.name, b.name));
+      seasons.push({
+        name: `${i+1}ª Temporada`,
+        episodes: videos.map(v=>({
+          name: v.name.replace(/\.[^.]+$/,'').trim(),
+          url: `https://drive.google.com/file/d/${v.id}/view`
+        }))
+      });
+    }
+    // Arquivos soltos na raiz = materiais
+    materials = looseFiles.map(f=>({
+      name: f.name.replace(/\.[^.]+$/,'').trim(),
+      url: `https://drive.google.com/file/d/${f.id}/view`
+    }));
+  } else {
+    // Sem subpastas = todos arquivos são episódios de 1 temporada
+    const videos = looseFiles.filter(f=>isVideo(f.name));
+    const docs = looseFiles.filter(f=>!isVideo(f.name));
+    videos.sort((a,b)=>naturalSort(a.name, b.name));
+    seasons = [{
+      name: '1ª Temporada',
+      episodes: videos.map(v=>({
+        name: v.name.replace(/\.[^.]+$/,'').trim(),
+        url: `https://drive.google.com/file/d/${v.id}/view`
+      }))
+    }];
+    materials = docs.map(f=>({
+      name: f.name.replace(/\.[^.]+$/,'').trim(),
+      url: `https://drive.google.com/file/d/${f.id}/view`
+    }));
+  }
+
+  applyImportedSeasons(seasons, materials);
+}
+
+async function gdrivListFolder(folderId, token){
+  const url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=200`;
+  const r = await fetch(url, {headers:{'Authorization':'Bearer '+token}});
+  const data = await r.json();
+  return data.files || [];
+}
+
+// ── Drive de Pobre ────────────────────────────────────────
+async function importDrivePebreFolder(url){
+  setFolderStatus('Buscando conteúdo da pasta...','#f0a500');
+  const html = await fetchViaProxy(url);
+  if(!html){ setFolderStatus('Não foi possível acessar a pasta.','#e74c3c'); return; }
+
+  // Extrair links de subpastas e arquivos do HTML
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  // Pegar todos os links internos da página
+  const links = [...doc.querySelectorAll('a[href]')]
+    .map(a=>({
+      href: a.href || a.getAttribute('href'),
+      text: a.textContent.trim()
+    }))
+    .filter(l=>l.href && l.href.includes('drivedepobre.com/') && !l.href.includes('/entrar') && !l.href.includes('/registrar') && !l.href.includes('/premium'));
+
+  // Identificar a pasta atual para filtrar filhos diretos
+  const currentPath = new URL(url).pathname;
+  const children = links.filter(l=>{
+    try{
+      const lPath = new URL(l.href).pathname;
+      const parts = lPath.split('/').filter(Boolean);
+      const curParts = currentPath.split('/').filter(Boolean);
+      // Filho direto = um nível a mais que o atual
+      return parts.length === curParts.length + 1 && lPath.startsWith(currentPath);
+    }catch(e){ return false; }
+  });
+
+  if(!children.length){ setFolderStatus('Nenhum item encontrado na pasta.','#e74c3c'); return; }
+
+  // Verificar se são subpastas ou arquivos acessando cada um
+  // Para simplificar: buscar cada item e ver se tem sub-itens
+  setFolderStatus(`Analisando ${children.length} item(ns)...`,'#f0a500');
+
+  const seasons = [];
+  const materials = [];
+
+  for(let i=0; i<children.length; i++){
+    const child = children[i];
+    setFolderStatus(`Analisando ${i+1}/${children.length}: ${child.text.substring(0,30)}...`,'#f0a500');
+    const childHtml = await fetchViaProxy(child.href);
+    if(!childHtml) continue;
+
+    const childDoc = parser.parseFromString(childHtml, 'text/html');
+    const childPath = new URL(child.href).pathname;
+
+    // Ver se tem filhos (é pasta) ou é arquivo
+    const childLinks = [...childDoc.querySelectorAll('a[href]')]
+      .filter(a=>{
+        const h = a.getAttribute('href');
+        return h && h.includes('drivedepobre.com') && h.includes(childPath) && h !== child.href;
+      });
+
+    const isFolder = childLinks.length > 0;
+    const title = (childDoc.querySelector('title')||{}).textContent || child.text;
+    const cleanTitle = title.replace(/ - Drive de Pobre$/i,'').replace(/\.[^.]+$/,'').trim();
+
+    if(isFolder){
+      // É uma subpasta = temporada
+      const eps = childLinks.map(l=>({
+        name: l.textContent.trim().replace(/\.[^.]+$/,''),
+        url: l.href
+      })).filter(e=>e.name);
+      seasons.push({ name: `${seasons.length+1}ª Temporada`, episodes: eps });
+    } else {
+      // É arquivo — verificar se é vídeo ou material
+      const downloadLink = childDoc.querySelector('a[href*="drivedepobre.download"]');
+      const fileUrl = downloadLink ? downloadLink.href : child.href;
+      if(isVideo(cleanTitle+'.mp4')){
+        // Arquivo de vídeo solto — vai para 1ª temporada
+        if(!seasons.length) seasons.push({name:'1ª Temporada', episodes:[]});
+        seasons[0].episodes.push({name:cleanTitle, url:fileUrl});
+      } else {
+        materials.push({name:cleanTitle, url:fileUrl});
+      }
+    }
+  }
+
+  applyImportedSeasons(seasons, materials);
+}
+
+async function fetchViaProxy(url){
+  try{
+    const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+    const data = await r.json();
+    return data.contents || '';
+  }catch(e){ return ''; }
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function isVideo(name){
+  return /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i.test(name);
+}
+function isVideoOrDoc(name){
+  return /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v|pdf|zip|rar|docx?|pptx?|xlsx?)$/i.test(name);
+}
+function naturalSort(a, b){
+  return a.localeCompare(b, 'pt-BR', {numeric:true, sensitivity:'base'});
+}
+
+function openMaterialsModal(s){
+  const list = document.getElementById('materials-list');
+  if(!list) return;
+  list.innerHTML = (s.materials||[]).map(m=>`
+    <a href="${m.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;text-decoration:none;color:var(--text);transition:opacity 0.2s;" onmouseover="this.style.opacity=0.8" onmouseout="this.style.opacity=1">
+      <span style="font-size:20px">${m.name.match(/\.pdf$/i)?'📄':m.name.match(/\.(zip|rar)$/i)?'🗜️':m.name.match(/\.(docx?|pptx?|xlsx?)$/i)?'📋':'📎'}</span>
+      <div>
+        <div style="font-size:13px;font-weight:600">${m.name}</div>
+        <div style="font-size:10px;color:var(--text2)">Clique para abrir</div>
+      </div>
+    </a>`).join('');
+  document.getElementById('materials-modal').classList.add('open');
 }
 
 function scrollSkills(dir){
