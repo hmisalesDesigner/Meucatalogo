@@ -1124,6 +1124,27 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   </div>
 </div>
 
+<!-- TELEGRAM IMPORT MODAL -->
+<div class="modal-overlay" id="telegram-import-modal" style="z-index:2002;">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">📲 Import Telegram por Range</div>
+      <button class="modal-close" onclick="closeTelegramImportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        Informe o link do <strong>primeiro</strong> e do <strong>último</strong> episódio de cada temporada. O site gera todos os links intermediários automaticamente.
+      </p>
+      <div id="telegram-ranges" style="display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;padding-right:4px;"></div>
+      <button class="btn btn-secondary btn-sm" onclick="addTelegramRange()" style="margin-top:10px;width:100%;">+ Adicionar temporada</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeTelegramImportModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmTelegramImport()">✓ Gerar links</button>
+    </div>
+  </div>
+</div>
+
 <!-- GOOGLE DRIVE LINK MODAL -->
 <div class="modal-overlay" id="drive-link-modal" style="z-index:2000;">
   <div class="modal" style="max-width:460px;">
@@ -1204,11 +1225,12 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
         <label class="form-label">Temporadas e Episódios</label>
         <!-- Import automático de pasta -->
         <div style="background:rgba(45,90,48,0.1);border:1px solid rgba(45,90,48,0.3);border-radius:8px;padding:12px;margin-bottom:12px;">
-          <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">⚡ Import automático de pasta</div>
+          <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">⚡ Import automático</div>
           <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">Cole o link de uma pasta do Google Drive ou Drive de Pobre — o site importa as temporadas e episódios automaticamente.</div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input class="form-input" id="f-folder-url" placeholder="https://drive.google.com/drive/folders/... ou https://drivedepobre.com/..." style="flex:1;font-size:12px;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input class="form-input" id="f-folder-url" placeholder="https://drive.google.com/drive/folders/... ou https://drivedepobre.com/..." style="flex:1;font-size:12px;min-width:200px;">
             <button class="btn btn-primary btn-sm" onclick="importFolderUrl()" id="f-folder-btn">⬇ Importar</button>
+            <button class="btn btn-secondary btn-sm" onclick="openTelegramImportModal()" style="white-space:nowrap;">📲 Telegram</button>
           </div>
           <div id="f-folder-status" style="font-size:11px;color:var(--text2);margin-top:6px;display:none;"></div>
         </div>
@@ -3444,6 +3466,9 @@ document.getElementById('add-modal').addEventListener('mousedown',e=>{
 document.getElementById('detail-modal').addEventListener('mousedown',e=>{
   if(e.target===document.getElementById('detail-modal')) closeDetailModal();
 });
+document.getElementById('telegram-import-modal').addEventListener('mousedown',e=>{
+  if(e.target===document.getElementById('telegram-import-modal')) closeTelegramImportModal();
+});
 document.getElementById('drive-link-modal').addEventListener('mousedown',e=>{
   if(e.target===document.getElementById('drive-link-modal')) closeDriveLinkModal();
 });
@@ -4162,8 +4187,20 @@ async function importGoogleDriveFolder(url){
         subSubFolders.sort((a,b)=>naturalSort(a.name, b.name));
         for(const ssf of subSubFolders){
           const ssfEps = await gdrivListFolder(ssf.id, token);
+          console.log(`  Sub-subpasta (${ssf.name}):`, ssfEps.map(e=>e.name+'('+e.mimeType+')'));
           const ssfVideos = ssfEps.filter(e=>e.mimeType!=='application/vnd.google-apps.folder' && isVideo(e.name));
-          videos = videos.concat(ssfVideos);
+          // Tentar mais um nível se ainda não tem vídeos
+          if(ssfVideos.length === 0){
+            const ssfSubFolders = ssfEps.filter(e=>e.mimeType==='application/vnd.google-apps.folder');
+            for(const sssf of ssfSubFolders){
+              const sssfEps = await gdrivListFolder(sssf.id, token);
+              console.log(`    Sub-sub-subpasta (${sssf.name}):`, sssfEps.map(e=>e.name+'('+e.mimeType+')'));
+              const sssfVideos = sssfEps.filter(e=>e.mimeType!=='application/vnd.google-apps.folder' && isVideo(e.name));
+              videos = videos.concat(sssfVideos);
+            }
+          } else {
+            videos = videos.concat(ssfVideos);
+          }
         }
       }
 
@@ -4416,6 +4453,113 @@ async function importYouTubePlaylist(url){
   const seasons = [{name: '1ª Temporada', episodes: videos}];
   console.log(`YouTube: ${videos.length} vídeos da playlist "${playlistName}"`);
   applyImportedSeasons(seasons, []);
+}
+
+// ====================== TELEGRAM IMPORT ======================
+function openTelegramImportModal(){
+  // Pré-preencher com número de temporadas já definido
+  const nSeas = parseInt(document.getElementById('f-seasons').value)||1;
+  const rangesEl = document.getElementById('telegram-ranges');
+  rangesEl.innerHTML = '';
+  for(let i=0; i<nSeas; i++) addTelegramRange(i+1);
+  document.getElementById('telegram-import-modal').classList.add('open');
+}
+
+function closeTelegramImportModal(){
+  document.getElementById('telegram-import-modal').classList.remove('open');
+}
+
+function addTelegramRange(num){
+  const rangesEl = document.getElementById('telegram-ranges');
+  const idx = rangesEl.children.length + 1;
+  const label = num || idx;
+  const div = document.createElement('div');
+  div.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;';
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:600;color:var(--accent)">Temporada ${label}</span>
+      <button onclick="this.closest('div[data-range]').remove()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div style="flex:1;">
+        <div style="font-size:10px;color:var(--text2);margin-bottom:3px;">Primeiro episódio</div>
+        <input class="form-input tg-first" placeholder="https://telegram.me/c/.../3" style="font-size:11px;width:100%;box-sizing:border-box;">
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:10px;color:var(--text2);margin-bottom:3px;">Último episódio</div>
+        <input class="form-input tg-last" placeholder="https://telegram.me/c/.../12" style="font-size:11px;width:100%;box-sizing:border-box;">
+      </div>
+    </div>`;
+  div.setAttribute('data-range', '1');
+  rangesEl.appendChild(div);
+}
+
+function confirmTelegramImport(){
+  const ranges = document.querySelectorAll('#telegram-ranges [data-range]');
+  const seasons = [];
+
+  for(let i=0; i<ranges.length; i++){
+    const firstUrl = ranges[i].querySelector('.tg-first').value.trim();
+    const lastUrl = ranges[i].querySelector('.tg-last').value.trim();
+
+    // Pular temporadas sem link
+    if(!firstUrl && !lastUrl){ seasons.push(null); continue; }
+    if(!firstUrl){ showToast(`Temporada ${i+1}: cole o link do primeiro episódio.`,'error'); return; }
+
+    // Extrair base e número do link
+    const baseMatch = firstUrl.match(/^(https?:\/\/telegram\.me\/c\/\d+\/)(\d+)/);
+    if(!baseMatch){ showToast(`Temporada ${i+1}: link inválido. Use o formato telegram.me/c/ID/NUMERO`,'error'); return; }
+
+    const base = baseMatch[1];
+    const firstNum = parseInt(baseMatch[2]);
+    let lastNum = firstNum;
+
+    if(lastUrl){
+      const lastMatch = lastUrl.match(/(\d+)$/);
+      if(lastMatch) lastNum = parseInt(lastMatch[1]);
+    }
+
+    if(lastNum < firstNum){ showToast(`Temporada ${i+1}: o último deve ser maior que o primeiro.`,'error'); return; }
+
+    const episodes = [];
+    for(let n=firstNum; n<=lastNum; n++){
+      episodes.push({ name: `Episódio ${n-firstNum+1}`, url: `${base}${n}` });
+    }
+    seasons.push({ name: `${i+1}ª Temporada`, episodes });
+  }
+
+  if(!seasons.filter(s=>s).length){ showToast('Nenhuma temporada configurada.','error'); return; }
+
+  closeTelegramImportModal();
+
+  const hasNulls = seasons.some(s=>s===null);
+  if(hasNulls && editingId){
+    // Aplicar links diretamente na série existente no DB
+    const s = DB.series.find(x=>x.id===editingId);
+    if(s){
+      if(!s.links) s.links=[];
+      if(!s.epNames) s.epNames=[];
+      // Calcular offset global por temporada
+      let globalIdx = 0;
+      const seasonCounts = s.seasons || [];
+      seasons.forEach((season, si)=>{
+        const epCount = seasonCounts[si] || 0;
+        if(season !== null){
+          season.episodes.forEach((ep, ei)=>{
+            s.links[globalIdx+ei] = ep.url;
+            if(ep.name && ep.name !== `Episódio ${ei+1}`) s.epNames[globalIdx+ei] = ep.name;
+          });
+        }
+        globalIdx += epCount;
+      });
+      saveDB();
+      showToast(`Temporadas do Telegram salvas!`,'success');
+      setFolderStatus(`✅ Links do Telegram aplicados! Salvando...`,'#27ae60');
+    }
+  } else {
+    applyImportedSeasons(seasons.filter(s=>s), []);
+    showToast(`${seasons.filter(s=>s).length} temporada(s) importadas do Telegram!`,'success');
+  }
 }
 
 function scrollSkills(dir){
