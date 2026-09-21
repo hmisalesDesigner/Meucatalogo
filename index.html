@@ -4103,10 +4103,13 @@ async function importGoogleDriveFolder(url){
 
   // Listar conteúdo da pasta raiz
   const items = await gdrivListFolder(folderId, token);
+  console.log('Itens na pasta raiz:', items.map(i=>i.name+'('+i.mimeType+')'));
 
   // Separar subpastas (temporadas) e arquivos soltos (materiais)
   const subfolders = items.filter(i=>i.mimeType==='application/vnd.google-apps.folder');
   const looseFiles = items.filter(i=>i.mimeType!=='application/vnd.google-apps.folder' && isVideoOrDoc(i.name));
+  console.log('Subpastas:', subfolders.map(s=>s.name));
+  console.log('Arquivos soltos:', looseFiles.map(f=>f.name));
 
   let seasons = [];
   let materials = [];
@@ -4123,6 +4126,7 @@ async function importGoogleDriveFolder(url){
       const eps = await gdrivListFolder(folder.id, token);
       const videos = eps.filter(e=>e.mimeType!=='application/vnd.google-apps.folder' && isVideo(e.name));
       videos.sort((a,b)=>naturalSort(a.name, b.name));
+      console.log(`Temporada ${i+1} (${folder.name}): ${videos.length} vídeos`, videos.map(v=>v.name));
       seasons.push({
         name: `${i+1}ª Temporada`,
         episodes: videos.map(v=>({
@@ -4158,10 +4162,17 @@ async function importGoogleDriveFolder(url){
 }
 
 async function gdrivListFolder(folderId, token){
-  const url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType)&supportsAllDrives=true&includeItemsFromAllDrives=true&pageSize=200`;
-  const r = await fetch(url, {headers:{'Authorization':'Bearer '+token}});
-  const data = await r.json();
-  return data.files || [];
+  let allFiles = [];
+  let pageToken = '';
+  do {
+    const pageParam = pageToken ? `&pageToken=${pageToken}` : '';
+    const url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&fields=files(id,name,mimeType),nextPageToken&supportsAllDrives=true&includeItemsFromAllDrives=true&orderBy=name&pageSize=200${pageParam}`;
+    const r = await fetch(url, {headers:{'Authorization':'Bearer '+token}});
+    const data = await r.json();
+    allFiles = allFiles.concat(data.files || []);
+    pageToken = data.nextPageToken || '';
+  } while(pageToken);
+  return allFiles;
 }
 
 // ── Drive de Pobre ────────────────────────────────────────
