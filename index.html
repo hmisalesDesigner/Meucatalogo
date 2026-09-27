@@ -732,6 +732,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   <!-- TOP BAR -->
   <div id="topbar">
     <button id="sidebar-toggle" onclick="toggleSidebar()" title="Mostrar/ocultar menu" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text);padding:4px 8px 4px 0;line-height:1;flex-shrink:0">☰</button>
+    <button onclick="checkDriveVsCatalog()" title="Verificar cursos não cadastrados" style="background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;color:var(--text2);padding:4px 10px;line-height:1;flex-shrink:0;white-space:nowrap;transition:border-color 0.2s,color 0.2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">🔎 Drive</button>
     <div class="topbar-title" id="topbar-title">Dashboard</div>
     <div class="topbar-right">
       <div class="search-box" onclick="goTo('search-view')">🔍 Pesquisar...</div>
@@ -1122,6 +1123,20 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
       <button class="modal-close" onclick="document.getElementById('materials-modal').classList.remove('open')">✕</button>
     </div>
     <div class="modal-body" id="materials-list" style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- DRIVE VS CATALOG CHECK MODAL -->
+<div class="modal-overlay" id="drive-check-modal" style="z-index:2002;">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-header">
+      <div class="modal-title">🔎 Cursos no Drive não cadastrados</div>
+      <button class="modal-close" onclick="document.getElementById('drive-check-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="drive-check-summary" style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5;"></p>
+      <div id="drive-check-list" style="display:flex;flex-direction:column;gap:8px;max-height:420px;overflow-y:auto;padding-right:4px;"></div>
+    </div>
   </div>
 </div>
 
@@ -4498,6 +4513,108 @@ function clearWallpaper(){
   if(bg) bg.querySelectorAll('.wp-slide').forEach(el=>el.remove());
   clearInterval(wpTimer);
   showToast('Wallpaper removido.','success');
+}
+
+// ── Drive vs Catálogo ─────────────────────────────────────
+async function checkDriveVsCatalog(){
+  const token = gdriveToken || localStorage.getItem('mc_gdrive_token');
+  if(!token){
+    showToast('Conecte o Google Drive primeiro em Configurações.','error');
+    return;
+  }
+  const driveUrl = localStorage.getItem('mc_drive_url');
+  if(!driveUrl){
+    showToast('Configure a URL da pasta raiz do Drive em Configurações.','error');
+    return;
+  }
+  const m = driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if(!m){
+    showToast('URL do Drive inválida. Verifique em Configurações.','error');
+    return;
+  }
+  const rootId = m[1];
+
+  const modal = document.getElementById('drive-check-modal');
+  const summary = document.getElementById('drive-check-summary');
+  const list = document.getElementById('drive-check-list');
+  summary.textContent = '⏳ Buscando subpastas no Drive...';
+  list.innerHTML = '';
+  modal.classList.add('open');
+
+  let driveFolders;
+  try {
+    driveFolders = await gdrivListFolder(rootId, token);
+  } catch(e) {
+    summary.textContent = '❌ Erro ao acessar o Drive: ' + e.message;
+    return;
+  }
+
+  const subfolders = driveFolders.filter(i => i.mimeType === 'application/vnd.google-apps.folder');
+  if(!subfolders.length){
+    summary.textContent = '⚠️ Nenhuma subpasta encontrada na pasta raiz do Drive.';
+    return;
+  }
+
+  // Normaliza nome para comparação fuzzy
+  function normalize(str){
+    return str.toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'') // remove acentos
+      .replace(/[^a-z0-9\s]/g,'')                      // só letras/números/espaço
+      .replace(/\s+/g,' ').trim();
+  }
+
+  const catalogTitles = (DB.series||[]).map(s => normalize(s.title||''));
+
+  function isRegistered(folderName){
+    const n = normalize(folderName);
+    // Match exato ou um contém o outro (pelo menos 70% do comprimento menor)
+    return catalogTitles.some(t => {
+      if(t === n) return true;
+      const shorter = t.length < n.length ? t : n;
+      const longer  = t.length < n.length ? n : t;
+      if(shorter.length < 3) return false;
+      return longer.includes(shorter) && shorter.length / longer.length >= 0.6;
+    });
+  }
+
+  const notRegistered = subfolders.filter(f => !isRegistered(f.name));
+  const already = subfolders.length - notRegistered.length;
+
+  if(!notRegistered.length){
+    summary.innerHTML = `✅ Todos os <strong>${subfolders.length}</strong> cursos/pastas do Drive já estão cadastrados no catálogo!`;
+    return;
+  }
+
+  summary.innerHTML = `Encontrei <strong>${subfolders.length}</strong> pasta(s) no Drive. <strong style="color:var(--accent)">${notRegistered.length}</strong> não cadastrada(s) · <span style="color:var(--green)">${already} já cadastrada(s)</span>`;
+
+  list.innerHTML = notRegistered
+    .sort((a,b) => naturalSort(a.name, b.name))
+    .map(f => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;">
+        <span style="font-size:18px;flex-shrink:0">📁</span>
+        <span style="flex:1;font-size:13px;line-height:1.4;word-break:break-word">${f.name}</span>
+        <a href="https://drive.google.com/drive/folders/${f.id}" target="_blank"
+           style="font-size:11px;color:var(--blue);flex-shrink:0;text-decoration:none;border:1px solid var(--blue);border-radius:4px;padding:2px 7px;white-space:nowrap;"
+           title="Abrir pasta no Drive">↗ Drive</a>
+        <button onclick="prefillNewSeries('${f.name.replace(/'/g,"\\'")}', '${f.id}')"
+                style="font-size:11px;background:var(--accent);color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;flex-shrink:0;white-space:nowrap;">
+          + Cadastrar
+        </button>
+      </div>`).join('');
+}
+
+function prefillNewSeries(name, driveId){
+  // Fecha o modal de verificação
+  document.getElementById('drive-check-modal').classList.remove('open');
+  // Abre o modal de nova série pré-preenchido
+  openAddModal();
+  setTimeout(()=>{
+    const nameEl = document.getElementById('f-name');
+    if(nameEl){ nameEl.value = name; nameEl.dispatchEvent(new Event('input')); }
+    // Preenche o campo de URL de pasta do Drive se existir no form
+    const folderEl = document.getElementById('f-folder-url');
+    if(folderEl) folderEl.value = 'https://drive.google.com/drive/folders/' + driveId;
+  }, 150);
 }
 
 window.addEventListener('beforeunload', ()=>{ saveDB(); if(gistToken()&&gistId()) pushToGist(); });
