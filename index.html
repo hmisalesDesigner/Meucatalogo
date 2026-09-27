@@ -303,7 +303,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   cursor:pointer; transition:transform 0.3s, box-shadow 0.3s;
   position:relative; background:var(--card); border:1px solid var(--border);
 }
-.series-card:hover { transform:scale(1.06) translateY(-4px); box-shadow:0 12px 40px rgba(0,0,0,0.6); z-index:5; }
+.series-card:hover { transform:scale(1.08) translateY(-6px); box-shadow:0 16px 48px rgba(0,0,0,0.7), 0 0 0 2px rgba(229,9,20,0.6), 0 0 20px rgba(229,9,20,0.25); z-index:5; }
 .series-card img { width:100%; aspect-ratio:2/3; object-fit:cover; display:block; }
 .card-overlay {
   position:absolute; inset:0;
@@ -368,7 +368,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 .data-table th { padding:10px 14px; text-align:left; color:var(--text2); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); }
 .data-table td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
 .data-table tr:hover td { background:var(--hover); }
-.star { color:var(--gold); font-size:13px; }
+.star { color:var(--gold); font-size:16px; }
 .star.empty { color:var(--border); }
 
 /* MODAL */
@@ -543,10 +543,11 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 .ep-link-btn { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:4px; background:var(--accent); color:#fff; font-size:11px; text-decoration:none; flex-shrink:0; transition:opacity 0.2s; }
 .ep-link-btn:hover { opacity:0.8; }
 .ep-link-btn-empty { display:inline-block; width:24px; height:24px; flex-shrink:0; }
-.ep-stars { display:flex; gap:2px; }
-.ep-star { font-size:14px; color:var(--border); cursor:pointer; transition:color 0.15s; }
+.ep-stars { display:flex; gap:4px; }
+.ep-star { font-size:18px; color:var(--border); cursor:pointer; transition:color 0.15s, transform 0.15s; }
 .ep-star.lit { color:var(--gold); }
-.ep-star:hover { color:var(--gold); }
+.ep-star:hover { color:var(--gold); transform:scale(1.25); }
+.ep-star:active { transform:scale(0.9); }
 
 /* SEARCH */
 .search-area { padding:16px 28px; }
@@ -1489,8 +1490,10 @@ function saveDB(){
       pushToGist(()=>setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60'));
     }, 1500);
   }
-  // Sempre mostra banner de backup JSON independente do Gist
-  showBackupBanner();
+  // Mostra banner de backup JSON apenas se não tiver Drive conectado
+  if(!gdriveToken && !localStorage.getItem('mc_gdrive_token')){
+    showBackupBanner();
+  }
 }
 
 // ====================== NAVIGATION ======================
@@ -2591,7 +2594,7 @@ function getAvgRating(s){
   if(!r.length) return 0;
   return r.reduce((a,b)=>a+b,0)/r.length;
 }
-function starsHTML(rating, size=13){
+function starsHTML(rating, size=16){
   let h='';
   for(let i=1;i<=5;i++){
     h+=`<span style="font-size:${size}px;color:${i<=Math.round(rating)?'var(--gold)':'var(--border)'}">${i<=Math.round(rating)?'★':'☆'}</span>`;
@@ -2806,7 +2809,7 @@ function openDetail(id){
   if(s.director) meta.push(`<span>🎬 ${s.director}</span>`);
   if(s.seasons) meta.push(`<span>📺 ${s.seasons.length} temporada${s.seasons.length>1?'s':''}</span>`);
   const avg=getAvgRating(s);
-  if(avg) meta.push(`<span>${starsHTML(avg,12)} ${avg.toFixed(1)}</span>`);
+  if(avg) meta.push(`<span>${starsHTML(avg,15)} ${avg.toFixed(1)}</span>`);
   document.getElementById('detail-meta').innerHTML=meta.join('');
   document.getElementById('detail-desc').textContent=s.desc||'';
 
@@ -3343,13 +3346,14 @@ function exportData(){
 }
 function exportDataAndDismiss(){ exportData(); }
 function showBackupBanner(){
+  // Não mostra se Google Drive está conectado (dados já estão na nuvem)
+  if(gdriveToken || localStorage.getItem('mc_gdrive_token')) return;
   const b = document.getElementById('backup-banner');
   if(!b) return;
   const lastExport = parseInt(localStorage.getItem('mc_last_export')||'0');
   const lastSave   = parseInt(localStorage.getItem('mc_last_save')||'0');
   const dismissed  = parseInt(localStorage.getItem('mc_banner_dismissed')||'0');
   const now = Date.now();
-  // Mostra se: nunca exportou OU exportou há mais de 1h E não dispensou nos últimos 30min
   const needsExport = !lastExport || (lastSave > lastExport);
   const notDismissedRecently = (now - dismissed) > 30 * 60 * 1000;
   if(needsExport && notDismissedRecently){
@@ -4014,6 +4018,10 @@ function gdriveLoad(cb){
         if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
         if(!DB.history) DB.history=[];
         localStorage.setItem('mc_db', JSON.stringify(DB));
+        // Sincronizado com Drive = sem pendência de backup local
+        const now = Date.now();
+        localStorage.setItem('mc_last_save', now);
+        localStorage.setItem('mc_last_export', now);
         showToast('✅ Dados carregados do Google Drive!','success');
         if(cb) cb();
       }
@@ -4032,6 +4040,10 @@ function gdriveLoad(cb){
         if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
         if(!DB.history) DB.history=[];
         localStorage.setItem('mc_db', JSON.stringify(DB));
+        // Sincronizado com Drive = sem pendência de backup local
+        const now = Date.now();
+        localStorage.setItem('mc_last_save', now);
+        localStorage.setItem('mc_last_export', now);
         if(cb) cb();
       }
     }).catch(()=>{ if(cb) cb(); });
