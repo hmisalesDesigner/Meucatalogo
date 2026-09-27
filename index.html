@@ -1226,9 +1226,9 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
         <!-- Import automático de pasta -->
         <div style="background:rgba(45,90,48,0.1);border:1px solid rgba(45,90,48,0.3);border-radius:8px;padding:12px;margin-bottom:12px;">
           <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;">⚡ Import automático</div>
-          <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">Cole o link de uma pasta do Google Drive ou Drive de Pobre — o site importa as temporadas e episódios automaticamente.</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:8px;">Cole o link de uma pasta do Google Drive ou playlist do YouTube — o site importa as temporadas e episódios automaticamente.</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-            <input class="form-input" id="f-folder-url" placeholder="https://drive.google.com/drive/folders/... ou https://drivedepobre.com/..." style="flex:1;font-size:12px;min-width:200px;">
+            <input class="form-input" id="f-folder-url" placeholder="https://drive.google.com/drive/folders/... ou https://youtube.com/playlist?list=..." style="flex:1;font-size:12px;min-width:200px;">
             <button class="btn btn-primary btn-sm" onclick="importFolderUrl()" id="f-folder-btn">⬇ Importar</button>
             <button class="btn btn-secondary btn-sm" onclick="openTelegramImportModal()" style="white-space:nowrap;">📲 Telegram</button>
           </div>
@@ -2912,34 +2912,6 @@ function extractNameFromUrl(url, cb){
     // Telegram — não tem nome
     if(url.includes('telegram.me') || url.includes('t.me')){ cb(''); return; }
 
-    // Drive de Pobre — nome está no parâmetro "name" da URL de download
-    if(url.includes('drivedepobre.com') || url.includes('drivedepobre.download')){
-      // Tenta extrair do parâmetro name= na URL
-      const nameParam = url.match(/[?&]name=([^&]+)/);
-      if(nameParam){
-        const name = decodeURIComponent(nameParam[1])
-          .replace(/\+/g,' ')
-          .replace(/\.[^.]+$/, '')
-          .trim();
-        cb(name); return;
-      }
-      // Busca via allorigins proxy para obter o título da página
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-      fetch(proxyUrl)
-        .then(r=>r.json())
-        .then(data=>{
-          const titleMatch = data.contents && data.contents.match(/<title>([^<]+)<\/title>/i);
-          if(titleMatch){
-            const name = titleMatch[1]
-              .replace(/ - Drive de Pobre/i,'')
-              .replace(/\.[^.]+$/, '')
-              .trim();
-            cb(name);
-          } else cb('');
-        }).catch(()=>cb(''));
-      return;
-    }
-
     // URL comum — extrai do path
     const u = new URL(url);
     // Tenta parâmetro name= primeiro
@@ -4108,12 +4080,10 @@ async function importFolderUrl(){
   try{
     if(url.includes('drive.google.com')){
       await importGoogleDriveFolder(url);
-    } else if(url.includes('drivedepobre.com')){
-      await importDrivePebreFolder(url);
     } else if(url.includes('youtube.com') || url.includes('youtu.be')){
       await importYouTubePlaylist(url);
     } else {
-      setFolderStatus('Link não reconhecido. Use Google Drive, Drive de Pobre ou YouTube.','#e74c3c');
+      setFolderStatus('Link não reconhecido. Use Google Drive ou YouTube.','#e74c3c');
     }
   }catch(e){
     setFolderStatus('Erro ao importar: '+e.message,'#e74c3c');
@@ -4266,106 +4236,6 @@ async function gdrivListFolder(folderId, token){
     pageToken = data.nextPageToken || '';
   } while(pageToken);
   return allFiles;
-}
-
-// ── Drive de Pobre ────────────────────────────────────────
-async function importDrivePebreFolder(url){
-  setFolderStatus('Buscando conteúdo da pasta...','#f0a500');
-  const html = await fetchViaProxy(url);
-  if(!html){ setFolderStatus('Não foi possível acessar a pasta.','#e74c3c'); return; }
-
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const currentPath = new URL(url).pathname;
-  const pathParts = currentPath.split('/').filter(Boolean);
-
-  // Pegar filhos diretos (um nível abaixo do atual)
-  const children = [...new Set(
-    [...doc.querySelectorAll('a[href]')]
-      .map(a=>a.getAttribute('href'))
-      .filter(h=>{
-        if(!h || !h.includes('drivedepobre.com')) return false;
-        try{
-          const p = new URL(h).pathname.split('/').filter(Boolean);
-          return p.length === pathParts.length + 1 &&
-            p.slice(0, pathParts.length).join('/') === pathParts.join('/') &&
-            !h.includes('/entrar') && !h.includes('/registrar');
-        }catch(e){ return false; }
-      })
-  )];
-
-  if(!children.length){ setFolderStatus('Nenhum item encontrado. Verifique se é uma pasta.','#e74c3c'); return; }
-
-  setFolderStatus(`Encontrei ${children.length} item(ns). Analisando...`,'#f0a500');
-
-  const seasons = [];
-  const materials = [];
-
-  for(let i=0; i<children.length; i++){
-    const childUrl = children[i];
-    setFolderStatus(`Analisando ${i+1}/${children.length}...`,'#f0a500');
-    const childHtml = await fetchViaProxy(childUrl);
-    if(!childHtml) continue;
-
-    const childDoc = parser.parseFromString(childHtml, 'text/html');
-    const childPath = new URL(childUrl).pathname.split('/').filter(Boolean);
-
-    // Título da página = nome do item
-    const pageTitle = (childDoc.querySelector('title')||{}).textContent||'';
-    const cleanTitle = pageTitle.replace(/ - Drive de Pobre$/i,'').replace(/\.[^.]+$/,'').trim();
-
-    // Filhos do filho = subpastas (é pasta se tiver links filhos)
-    const grandChildren = [...new Set(
-      [...childDoc.querySelectorAll('a[href]')]
-        .map(a=>a.getAttribute('href'))
-        .filter(h=>{
-          if(!h || !h.includes('drivedepobre.com')) return false;
-          try{
-            const p = new URL(h).pathname.split('/').filter(Boolean);
-            return p.length === childPath.length + 1 &&
-              p.slice(0, childPath.length).join('/') === childPath.join('/');
-          }catch(e){ return false; }
-        })
-    )];
-
-    if(grandChildren.length > 0){
-      // É uma subpasta → temporada
-      setFolderStatus(`Buscando episódios de: ${cleanTitle}...`,'#f0a500');
-      const eps = [];
-      for(const gcUrl of grandChildren){
-        const gcHtml = await fetchViaProxy(gcUrl);
-        if(!gcHtml) continue;
-        const gcDoc = parser.parseFromString(gcHtml, 'text/html');
-        const gcTitle = ((gcDoc.querySelector('title')||{}).textContent||'')
-          .replace(/ - Drive de Pobre$/i,'').replace(/\.[^.]+$/,'').trim();
-        eps.push({name: gcTitle, url: gcUrl});
-      }
-      // Ordenar por nome
-      eps.sort((a,b)=>naturalSort(a.name, b.name));
-      if(eps.length > 0) seasons.push({name:`${seasons.length+1}ª Temporada`, episodes: eps});
-    } else {
-      // É um arquivo
-      const isVid = /\.(mp4|mkv|avi|mov|webm)$/i.test(pageTitle) || pageTitle.toLowerCase().includes('.mp4');
-      if(isVid){
-        if(!seasons.length) seasons.push({name:'1ª Temporada', episodes:[]});
-        seasons[0].episodes.push({name:cleanTitle, url:childUrl});
-      } else {
-        materials.push({name:cleanTitle, url:childUrl});
-      }
-    }
-  }
-
-  // Ordenar episódios das temporadas
-  seasons.forEach(s=>s.episodes.sort((a,b)=>naturalSort(a.name, b.name)));
-  applyImportedSeasons(seasons, materials);
-}
-
-async function fetchViaProxy(url){
-  try{
-    const r = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-    const data = await r.json();
-    return data.contents || '';
-  }catch(e){ return ''; }
 }
 
 // ── Helpers ───────────────────────────────────────────────
