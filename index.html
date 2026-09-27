@@ -303,7 +303,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   cursor:pointer; transition:transform 0.3s, box-shadow 0.3s;
   position:relative; background:var(--card); border:1px solid var(--border);
 }
-.series-card:hover { transform:scale(1.08) translateY(-6px); box-shadow:0 16px 48px rgba(0,0,0,0.7), 0 0 0 2px rgba(229,9,20,0.6), 0 0 20px rgba(229,9,20,0.25); z-index:5; }
+.series-card:hover { transform:scale(1.04) translateY(-3px); box-shadow:0 12px 32px rgba(0,0,0,0.6); z-index:5; }
 .series-card img { width:100%; aspect-ratio:2/3; object-fit:cover; display:block; }
 .card-overlay {
   position:absolute; inset:0;
@@ -731,8 +731,10 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 <div id="main">
   <!-- TOP BAR -->
   <div id="topbar">
-    <button id="sidebar-toggle" onclick="toggleSidebar()" title="Mostrar/ocultar menu" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text);padding:4px 8px 4px 0;line-height:1;flex-shrink:0">☰</button>
-    <button onclick="checkDriveVsCatalog()" title="Verificar cursos não cadastrados" style="background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;color:var(--text2);padding:4px 10px;line-height:1;flex-shrink:0;white-space:nowrap;transition:border-color 0.2s,color 0.2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">🔎 Drive</button>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <button id="sidebar-toggle" onclick="toggleSidebar()" title="Mostrar/ocultar menu" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--text);padding:4px 8px 4px 0;line-height:1;">☰</button>
+      <button onclick="checkDriveVsCatalog()" title="Verificar cursos não cadastrados" style="background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;color:var(--text2);padding:4px 10px;line-height:1;white-space:nowrap;transition:border-color 0.2s,color 0.2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">🔎 Drive</button>
+    </div>
     <div class="topbar-title" id="topbar-title">Dashboard</div>
     <div class="topbar-right">
       <div class="search-box" onclick="goTo('search-view')">🔍 Pesquisar...</div>
@@ -4558,12 +4560,12 @@ async function checkDriveVsCatalog(){
   // Normaliza nome para comparação fuzzy
   function normalize(str){
     return str.toLowerCase()
-      .normalize('NFD').replace(/[̀-ͯ]/g,'') // remove acentos
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // remove acentos
       .replace(/[^a-z0-9\s]/g,'')                      // só letras/números/espaço
       .replace(/\s+/g,' ').trim();
   }
 
-  const catalogTitles = (DB.series||[]).map(s => normalize(s.title||''));
+  const catalogTitles = (DB.series||[]).map(s => normalize(s.name||''));
 
   function isRegistered(folderName){
     const n = normalize(folderName);
