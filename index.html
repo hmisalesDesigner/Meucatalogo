@@ -1507,8 +1507,8 @@ function saveDB(){
       pushToGist(()=>setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60'));
     }, 1500);
   }
-  // Mostra banner de backup JSON apenas se não tiver Drive conectado
-  if(!gdriveToken && !localStorage.getItem('mc_gdrive_token')){
+  // Mostra banner de backup JSON apenas se Drive não estiver ativamente conectado
+  if(!gdriveToken){
     showBackupBanner();
   }
 }
@@ -3363,8 +3363,8 @@ function exportData(){
 }
 function exportDataAndDismiss(){ exportData(); }
 function showBackupBanner(){
-  // Não mostra se Google Drive está conectado (dados já estão na nuvem)
-  if(gdriveToken || localStorage.getItem('mc_gdrive_token')) return;
+  // Não mostra se Google Drive está ATIVAMENTE conectado (token em memória válido)
+  if(gdriveToken) return;
   const b = document.getElementById('backup-banner');
   if(!b) return;
   const lastExport = parseInt(localStorage.getItem('mc_last_export')||'0');
@@ -4025,30 +4025,23 @@ function gdriveSave(cb){
 
 function gdriveLoad(cb){
   if(!gdriveToken) return;
+
+  // Fallback local: usa mc_db do localStorage e avisa o usuário
+  function fallbackToLocal(reason){
+    loadDB();
+    showToast(reason || 'Drive indisponível. Usando dados locais.', 'error');
+    gdriveToken = null;
+    localStorage.removeItem('mc_gdrive_token');
+    updateGdriveUI();
+    if(cb) cb();
+  }
+
   const doLoad = (fileId)=>{
-    if(!fileId){ if(cb) cb(); return; }
-    fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{
-      headers:{'Authorization':'Bearer '+gdriveToken}
-    }).then(r=>r.json()).then(data=>{
-      if(data.series){
-        DB = data;
-        if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
-        if(!DB.history) DB.history=[];
-        localStorage.setItem('mc_db', JSON.stringify(DB));
-        // Sincronizado com Drive = sem pendência de backup local
-        const now = Date.now();
-        localStorage.setItem('mc_last_save', now);
-        localStorage.setItem('mc_last_export', now);
-        showToast('✅ Dados carregados do Google Drive!','success');
-        if(cb) cb();
-      }
-    }).catch(()=>{ if(cb) cb(); });
-  };
-  const doLoadWithRetry = (fileId)=>{
+    if(!fileId){ fallbackToLocal('Arquivo do Drive não encontrado.'); return; }
     fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{
       headers:{'Authorization':'Bearer '+gdriveToken}
     }).then(r=>{
-      if(r.status===401){ refreshGdriveToken(()=>doLoad(fileId)); return null; }
+      if(r.status===401){ fallbackToLocal('Sessão Google expirada. Reconecte o Drive em Configurações.'); return null; }
       return r.json();
     }).then(data=>{
       if(!data) return;
@@ -4057,27 +4050,72 @@ function gdriveLoad(cb){
         if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
         if(!DB.history) DB.history=[];
         localStorage.setItem('mc_db', JSON.stringify(DB));
-        // Sincronizado com Drive = sem pendência de backup local
+        const now = Date.now();
+        localStorage.setItem('mc_last_save', now);
+        localStorage.setItem('mc_last_export', now);
+        showToast('✅ Dados carregados do Google Drive!','success');
+        if(cb) cb();
+      } else {
+        // Arquivo existe mas não tem séries — carrega local
+        loadDB();
+        if(cb) cb();
+      }
+    }).catch(()=>{ fallbackToLocal('Erro de conexão com o Drive. Usando dados locais.'); });
+  };
+
+  const doLoadWithRetry = (fileId)=>{
+    fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{
+      headers:{'Authorization':'Bearer '+gdriveToken}
+    }).then(r=>{
+      if(r.status===401){
+        // Token expirado: tenta renovar silenciosamente
+        refreshGdriveToken(
+          ()=>doLoad(fileId),                                         // sucesso
+          ()=>fallbackToLocal('Sessão Google expirada. Reconecte o Drive em Configurações.') // falha
+        );
+        return null;
+      }
+      return r.json();
+    }).then(data=>{
+      if(!data) return;
+      if(data.series){
+        DB = data;
+        if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
+        if(!DB.history) DB.history=[];
+        localStorage.setItem('mc_db', JSON.stringify(DB));
         const now = Date.now();
         localStorage.setItem('mc_last_save', now);
         localStorage.setItem('mc_last_export', now);
         if(cb) cb();
+      } else {
+        loadDB();
+        if(cb) cb();
       }
-    }).catch(()=>{ if(cb) cb(); });
+    }).catch(()=>{ fallbackToLocal('Erro de conexão com o Drive. Usando dados locais.'); });
   };
   if(gdriveFileId) doLoadWithRetry(gdriveFileId);
   else gdriveFindOrCreateFile(doLoadWithRetry);
 }
 
-function refreshGdriveToken(cb){
+function refreshGdriveToken(cb, onFail){
+  // Timeout de segurança: se o GIS não responder em 8s, considera falha
+  const failTimer = setTimeout(()=>{
+    if(onFail) onFail();
+    else { showToast('Sessão Google expirada. Reconecte o Drive em Configurações.','error'); updateGdriveUI(); }
+  }, 8000);
+
   if(!gdriveTokenClient){
     gdriveTokenClient = google.accounts.oauth2.initTokenClient({
       client_id: GDRIVE_CLIENT_ID,
       scope: GDRIVE_SCOPE,
       callback: (resp)=>{
+        clearTimeout(failTimer);
         if(resp.error){
-          showToast('Sessão Google expirada. Reconecte o Drive em Configurações.','error');
+          gdriveToken = null;
+          localStorage.removeItem('mc_gdrive_token');
           updateGdriveUI();
+          if(onFail) onFail();
+          else showToast('Sessão Google expirada. Reconecte o Drive em Configurações.','error');
           return;
         }
         gdriveToken = resp.access_token;
@@ -4085,6 +4123,22 @@ function refreshGdriveToken(cb){
         if(cb) cb();
       }
     });
+  } else {
+    // Substitui callback no cliente existente
+    gdriveTokenClient.callback = (resp)=>{
+      clearTimeout(failTimer);
+      if(resp.error){
+        gdriveToken = null;
+        localStorage.removeItem('mc_gdrive_token');
+        updateGdriveUI();
+        if(onFail) onFail();
+        else showToast('Sessão Google expirada. Reconecte o Drive em Configurações.','error');
+        return;
+      }
+      gdriveToken = resp.access_token;
+      localStorage.setItem('mc_gdrive_token', gdriveToken);
+      if(cb) cb();
+    };
   }
   // Tenta renovar silenciosamente (sem popup)
   gdriveTokenClient.requestAccessToken({prompt:''});
