@@ -4551,7 +4551,12 @@ async function checkDriveVsCatalog(){
     return;
   }
 
-  const subfolders = driveFolders.filter(i => i.mimeType === 'application/vnd.google-apps.folder');
+  // Pastas do sistema — ignorar na comparação
+  const SYSTEM_FOLDERS = new Set(['badges-layout','wallpaper','badges layout']);
+  const subfolders = driveFolders.filter(i =>
+    i.mimeType === 'application/vnd.google-apps.folder' &&
+    !SYSTEM_FOLDERS.has(i.name.toLowerCase().trim())
+  );
   if(!subfolders.length){
     summary.textContent = '⚠️ Nenhuma subpasta encontrada na pasta raiz do Drive.';
     return;
@@ -4600,6 +4605,10 @@ async function checkDriveVsCatalog(){
 
   summary.innerHTML = `Encontrei <strong>${subfolders.length}</strong> pasta(s) no Drive. <strong style="color:var(--accent)">${notRegistered.length}</strong> não cadastrada(s) · <span style="color:var(--green)">${already} já cadastrada(s)</span>`;
 
+  // Guarda dados das pastas não cadastradas para uso no prefill
+  window._driveCheckFolders = {};
+  notRegistered.forEach(f => { window._driveCheckFolders[f.id] = f.name; });
+
   list.innerHTML = notRegistered
     .sort((a,b) => naturalSort(a.name, b.name))
     .map(f => `
@@ -4609,24 +4618,64 @@ async function checkDriveVsCatalog(){
         <a href="https://drive.google.com/drive/folders/${f.id}" target="_blank"
            style="font-size:11px;color:var(--blue);flex-shrink:0;text-decoration:none;border:1px solid var(--blue);border-radius:4px;padding:2px 7px;white-space:nowrap;"
            title="Abrir pasta no Drive">↗ Drive</a>
-        <button onclick="prefillNewSeries('${f.name.replace(/'/g,"\\'")}', '${f.id}')"
+        <button id="btn-cadastrar-${f.id}" onclick="prefillNewSeries('${f.name.replace(/'/g,"\\'")}', '${f.id}')"
                 style="font-size:11px;background:var(--accent);color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;flex-shrink:0;white-space:nowrap;">
           + Cadastrar
         </button>
       </div>`).join('');
 }
 
-function prefillNewSeries(name, driveId){
-  // Fecha o modal de verificação
+async function prefillNewSeries(name, driveId){
+  const btn = document.getElementById('btn-cadastrar-'+driveId);
+  if(btn){ btn.textContent = '⏳'; btn.disabled = true; }
+
+  // Busca CAPA.png e BANNER.png dentro da pasta
+  const token = gdriveToken || localStorage.getItem('mc_gdrive_token');
+  let coverUrl = '', bannerUrl = '';
+  try {
+    const files = await gdrivListFolder(driveId, token);
+    const capa   = files.find(f => /^capa\.(png|jpg|jpeg)$/i.test(f.name));
+    const banner = files.find(f => /^banner\.(png|jpg|jpeg)$/i.test(f.name));
+    if(capa)   coverUrl  = `https://drive.google.com/thumbnail?id=${capa.id}&sz=w800`;
+    if(banner) bannerUrl = `https://drive.google.com/thumbnail?id=${banner.id}&sz=w1600`;
+  } catch(e) {
+    console.warn('Erro ao buscar imagens na pasta:', e);
+  }
+
+  // Fecha o modal de verificação e abre o form
   document.getElementById('drive-check-modal').classList.remove('open');
-  // Abre o modal de nova série pré-preenchido
   openAddModal();
+
   setTimeout(()=>{
+    // Nome
     const nameEl = document.getElementById('f-name');
     if(nameEl){ nameEl.value = name; nameEl.dispatchEvent(new Event('input')); }
-    // Preenche o campo de URL de pasta do Drive se existir no form
+
+    // URL da pasta Drive
     const folderEl = document.getElementById('f-folder-url');
     if(folderEl) folderEl.value = 'https://drive.google.com/drive/folders/' + driveId;
+
+    // Capa
+    if(coverUrl){
+      tempCoverData = coverUrl;
+      const prev = document.getElementById('cover-preview');
+      const ph   = document.getElementById('cover-placeholder');
+      if(prev){ prev.src = coverUrl; prev.style.display = 'block'; }
+      if(ph)  ph.style.display = 'none';
+    }
+
+    // Banner
+    if(bannerUrl){
+      tempBannerData = bannerUrl;
+      const prev = document.getElementById('banner-preview');
+      const ph   = document.getElementById('banner-placeholder');
+      if(prev){ prev.src = bannerUrl; prev.style.display = 'block'; }
+      if(ph)  ph.style.display = 'none';
+    }
+
+    if(coverUrl || bannerUrl){
+      showToast(`🖼️ ${coverUrl?'Capa':''}${coverUrl&&bannerUrl?' e ':''}${bannerUrl?'Banner':''} vinculados automaticamente!`, 'success');
+    }
   }, 150);
 }
 
