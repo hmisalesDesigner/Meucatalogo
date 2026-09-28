@@ -4567,15 +4567,26 @@ async function checkDriveVsCatalog(){
 
   const catalogTitles = (DB.series||[]).map(s => normalize(s.name||''));
 
+  // Palavras genéricas que sozinhas não identificam um curso
+  const STOP_WORDS = new Set(['adobe','after','effects','com','para','de','do','da','dos','das','ao','aos','um','uma','por','the','and','pro','class','by','com']);
+
+  function sigWords(str){
+    return str.split(/\s+/).filter(w => w.length >= 4 && !STOP_WORDS.has(w));
+  }
+
   function isRegistered(folderName){
     const n = normalize(folderName);
-    // Match exato ou um contém o outro (pelo menos 70% do comprimento menor)
     return catalogTitles.some(t => {
+      if(!t || t.length < 3) return false;
+      // Match exato
       if(t === n) return true;
-      const shorter = t.length < n.length ? t : n;
-      const longer  = t.length < n.length ? n : t;
-      if(shorter.length < 3) return false;
-      return longer.includes(shorter) && shorter.length / longer.length >= 0.6;
+      // Nome do catálogo inteiro contido no nome da pasta do Drive
+      if(n.includes(t)) return true;
+      // Palavras significativas do catálogo presentes no nome da pasta (≥75%)
+      const tW = sigWords(t);
+      if(!tW.length) return false;
+      const matched = tW.filter(w => n.includes(w)).length;
+      return matched / tW.length >= 0.75;
     });
   }
 
