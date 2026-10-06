@@ -579,6 +579,71 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 .note-text { font-size:12px; color:var(--text2); line-height:1.6; }
 .note-stars { margin-top:8px; }
 
+/* SERIES LABEL TAGS */
+.series-label-chip {
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:11px; font-weight:700; letter-spacing:0.4px;
+  padding:3px 10px; border-radius:20px;
+  border:1.5px solid currentColor;
+}
+.series-label-chip.cinema   { color:#4a9dff; background:rgba(74,157,255,0.12); }
+.series-label-chip.incrivel { color:#27ae60; background:rgba(39,174,96,0.12); }
+.series-label-chip.otimo    { color:#2ecc71; background:rgba(46,204,113,0.12); }
+.series-label-chip.bom      { color:#f5c518; background:rgba(245,197,24,0.12); }
+.series-label-chip.media    { color:#e67e22; background:rgba(230,126,34,0.12); }
+.series-label-chip.ruim     { color:#e74c3c; background:rgba(231,76,60,0.12); }
+.series-label-chip.lixo     { color:#9b59b6; background:rgba(155,89,182,0.12); }
+
+/* Botões de seleção de label no modal */
+.label-picker { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 4px; }
+.label-btn {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:11px; font-weight:700; letter-spacing:0.3px;
+  padding:4px 11px; border-radius:20px; cursor:pointer;
+  border:1.5px solid currentColor; background:transparent;
+  opacity:0.5; transition:opacity 0.15s, background 0.15s;
+}
+.label-btn:hover { opacity:0.8; }
+.label-btn.selected { opacity:1; }
+.label-btn.cinema   { color:#4a9dff; }
+.label-btn.incrivel { color:#27ae60; }
+.label-btn.otimo    { color:#2ecc71; }
+.label-btn.bom      { color:#f5c518; }
+.label-btn.media    { color:#e67e22; }
+.label-btn.ruim     { color:#e74c3c; }
+.label-btn.lixo     { color:#9b59b6; }
+.label-btn.selected.cinema   { background:rgba(74,157,255,0.15); }
+.label-btn.selected.incrivel { background:rgba(39,174,96,0.15); }
+.label-btn.selected.otimo    { background:rgba(46,204,113,0.15); }
+.label-btn.selected.bom      { background:rgba(245,197,24,0.15); }
+.label-btn.selected.media    { background:rgba(230,126,34,0.15); }
+.label-btn.selected.ruim     { background:rgba(231,76,60,0.15); }
+.label-btn.selected.lixo     { background:rgba(155,89,182,0.15); }
+
+/* RATING GRID TABLE */
+.rating-grid-table {
+  border-collapse:separate; border-spacing:3px;
+  font-size:12px; min-width:100%;
+}
+.rating-grid-table thead th {
+  font-size:11px; font-weight:700; color:var(--text2);
+  padding:2px 6px; text-align:center; white-space:nowrap;
+}
+.rating-grid-table td {
+  text-align:center; border-radius:5px;
+  padding:4px 8px; min-width:38px;
+  font-size:12px; white-space:nowrap;
+}
+.rg-ep-label {
+  font-size:11px; color:var(--text2); font-weight:600;
+  text-align:left !important; padding-right:10px !important;
+  background:transparent !important; min-width:42px;
+}
+.rg-empty { color:var(--text2); background:var(--card) !important; font-size:11px; }
+.rg-na    { background:transparent !important; }
+.rg-avg-row td { border-top:2px solid var(--border); font-weight:800; }
+.rg-avg-row .rg-ep-label { color:var(--text); }
+
 /* HISTORY */
 .history-item {
   display:flex; align-items:center; gap:12px;
@@ -1305,7 +1370,14 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
       <div class="detail-meta" id="detail-meta"></div>
     </div>
     <div class="detail-body">
-      <div id="detail-desc" style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6;"></div>
+      <div id="detail-desc" style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.6;"></div>
+      <!-- LABEL -->
+      <div id="detail-label-section" style="margin-bottom:14px;">
+        <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Classificação</div>
+        <div class="label-picker" id="detail-label-picker"></div>
+      </div>
+      <!-- RATING GRID -->
+      <div id="detail-rating-grid-wrap" style="display:none;margin-bottom:16px;"></div>
       <!-- PROGRESS -->
       <div style="margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
@@ -2524,12 +2596,15 @@ function renderHistory(){
 
 function renderNotes(){
   const cont = document.getElementById('notes-list');
-  const hasnotes = DB.series.filter(s=>s.desc||(s.ratings&&s.ratings.some(r=>r)));
+  const hasnotes = DB.series.filter(s=>s.label||s.desc||(s.ratings&&s.ratings.some(r=>r)));
   if(!hasnotes.length){ cont.innerHTML='<div class="empty-state"><div class="ei">📝</div><p>Nenhuma nota registrada.</p></div>'; return; }
   cont.innerHTML = hasnotes.map(s=>{
     const avg = getAvgRating(s);
     return `<div class="note-card" onclick="openDetail('${s.id}')">
-      <div class="note-title">${s.name} <span style="font-size:11px;color:var(--text2)">${s.cat}</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+        <div class="note-title" style="margin-bottom:0">${s.name} <span style="font-size:11px;color:var(--text2);font-weight:400">${s.cat}</span></div>
+        ${s.label ? labelChipHTML(s.label, true) : ''}
+      </div>
       ${avg?`<div class="note-stars">${starsHTML(avg)} <span style="font-size:11px;color:var(--text2)">${avg.toFixed(1)}/5</span></div>`:''}
       ${s.desc?`<div class="note-text">${s.desc}</div>`:''}
     </div>`;
@@ -2611,6 +2686,153 @@ function getAvgRating(s){
   if(!r.length) return 0;
   return r.reduce((a,b)=>a+b,0)/r.length;
 }
+// ====================== SERIES LABELS ======================
+const SERIES_LABELS = [
+  { key:'cinema',   dot:'🔵', label:'Absolute Cinema' },
+  { key:'incrivel', dot:'🟢', label:'Incrível'  },
+  { key:'otimo',    dot:'🟢', label:'Ótimo'     },
+  { key:'bom',      dot:'🟡', label:'Bom'       },
+  { key:'media',    dot:'🟠', label:'Média'     },
+  { key:'ruim',     dot:'🔴', label:'Ruim'      },
+  { key:'lixo',     dot:'🟣', label:'Lixo'      },
+];
+
+function labelChipHTML(key, small=false){
+  const def = SERIES_LABELS.find(l=>l.key===key);
+  if(!def) return '';
+  return `<span class="series-label-chip ${key}" style="${small?'font-size:10px;padding:2px 8px;':''}">
+    ${def.dot} ${def.label}
+  </span>`;
+}
+
+function renderDetailLabelPicker(s){
+  const picker = document.getElementById('detail-label-picker');
+  if(!picker) return;
+  picker.innerHTML = SERIES_LABELS.map(l=>`
+    <button class="label-btn ${l.key}${s.label===l.key?' selected':''}"
+      onclick="setSeriesLabel('${s.id}','${l.key}',this)"
+      title="${l.label}">
+      ${l.dot} ${l.label}
+    </button>`).join('');
+  // Botão limpar (só aparece se tiver label)
+  if(s.label){
+    picker.innerHTML += `<button class="label-btn" style="color:var(--text2);border-color:var(--border);font-weight:400;font-size:11px;" onclick="setSeriesLabel('${s.id}','',this)">✕ Remover</button>`;
+  }
+}
+
+// Converte estrela (1-5) → nota visual (0–10) e cor da tabela
+function starToScore(star){
+  // 1★=2.0  2★=4.0  3★=6.0  4★=8.0  5★=10.0
+  return star ? (star * 2).toFixed(1) : null;
+}
+function ratingGridColor(star){
+  if(!star) return 'transparent';
+  // Mesmas cores dos labels: 5=cinema(azul), 4-4.5=incrível/ótimo(verde escuro),
+  // 3-3.5=bom(verde claro/amarelo), 2-2.5=média(laranja), 1-1.5=ruim/lixo(vermelho/roxo)
+  if(star >= 5)   return { bg:'#1a4fa0', text:'#fff', bold:true };
+  if(star >= 4.5) return { bg:'#1a7a40', text:'#fff', bold:true };
+  if(star >= 4)   return { bg:'#27ae60', text:'#fff', bold:false };
+  if(star >= 3.5) return { bg:'#2ecc71', text:'#111', bold:false };
+  if(star >= 3)   return { bg:'#f5c518', text:'#111', bold:false };
+  if(star >= 2.5) return { bg:'#e67e22', text:'#fff', bold:false };
+  if(star >= 2)   return { bg:'#c0392b', text:'#fff', bold:false };
+  return           { bg:'#7d3c98', text:'#fff', bold:false };
+}
+
+function renderRatingGrid(s){
+  const wrap = document.getElementById('detail-rating-grid-wrap');
+  if(!wrap) return;
+
+  if(!s.seasons || !s.seasons.length || !s.ratings || !s.ratings.some(r=>r)){
+    wrap.style.display='none'; return;
+  }
+  wrap.style.display='block';
+
+  const seasons = s.seasons.map(n=>parseInt(n)||0);
+  const maxEps = Math.max(...seasons);
+  if(!maxEps){ wrap.style.display='none'; return; }
+
+  // Calcula médias por temporada
+  const seasonAvgs = seasons.map((epCount, si)=>{
+    let off=0; for(let x=0;x<si;x++) off+=seasons[x];
+    const vals = [];
+    for(let e=0;e<epCount;e++){
+      const r = s.ratings[off+e];
+      if(r) vals.push(r);
+    }
+    return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+  });
+
+  // Cabeçalho de colunas (temporadas)
+  let html = `<div style="overflow-x:auto;margin-top:4px;">
+  <table class="rating-grid-table">
+    <thead><tr>
+      <th></th>
+      ${seasons.map((_,i)=>`<th>T${i+1}</th>`).join('')}
+    </tr></thead>
+    <tbody>`;
+
+  // Linhas de episódios
+  for(let ep=0; ep<maxEps; ep++){
+    html += `<tr><td class="rg-ep-label">Ep ${ep+1}</td>`;
+    let off=0;
+    seasons.forEach((epCount, si)=>{
+      if(ep < epCount){
+        const star = s.ratings[off+ep] || 0;
+        if(star){
+          const score = starToScore(star);
+          const c = ratingGridColor(star);
+          html += `<td style="background:${c.bg};color:${c.text};font-weight:${c.bold?'800':'600'}">${score}</td>`;
+        } else {
+          html += `<td class="rg-empty">—</td>`;
+        }
+      } else {
+        html += `<td class="rg-na"></td>`;
+      }
+      off += epCount;
+    });
+    html += '</tr>';
+  }
+
+  // Linha de média
+  html += `<tr class="rg-avg-row"><td class="rg-ep-label">Média</td>`;
+  seasonAvgs.forEach(avg=>{
+    if(avg !== null){
+      const c = ratingGridColor(avg);
+      html += `<td style="background:${c.bg};color:${c.text};font-weight:800">${starToScore(avg)}</td>`;
+    } else {
+      html += `<td class="rg-empty">—</td>`;
+    }
+  });
+  html += `</tr></tbody></table></div>`;
+
+  wrap.innerHTML = `<div style="font-size:11px;color:var(--text2);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px;">Tabela de Notas</div>` + html;
+}
+
+function setSeriesLabel(id, key, btn){
+  const s = DB.series.find(x=>x.id===id);
+  if(!s) return;
+  s.label = key || undefined;
+  if(!s.label) delete s.label;
+  saveDB();
+  renderDetailLabelPicker(s);
+  // Atualiza chip no detail-meta
+  renderDetailMeta(s);
+  renderNotes();
+}
+
+function renderDetailMeta(s){
+  const meta=[];
+  if(s.cat) meta.push(`<span>📂 ${s.cat}</span>`);
+  if(s.year) meta.push(`<span>📅 ${s.year}</span>`);
+  if(s.director) meta.push(`<span>🎬 ${s.director}</span>`);
+  if(s.seasons) meta.push(`<span>📺 ${s.seasons.length} temporada${s.seasons.length>1?'s':''}</span>`);
+  const avg=getAvgRating(s);
+  if(avg) meta.push(`<span>${starsHTML(avg,15)} ${avg.toFixed(1)}</span>`);
+  if(s.label) meta.push(labelChipHTML(s.label));
+  document.getElementById('detail-meta').innerHTML=meta.join('');
+}
+
 function starsHTML(rating, size=16){
   let h='';
   for(let i=1;i<=5;i++){
@@ -2820,15 +3042,10 @@ function openDetail(id){
   if(s.banner){ bannerImg.src=s.banner; bannerImg.style.display='block'; }
   else bannerImg.style.display='none';
 
-  const meta=[];
-  if(s.cat) meta.push(`<span>📂 ${s.cat}</span>`);
-  if(s.year) meta.push(`<span>📅 ${s.year}</span>`);
-  if(s.director) meta.push(`<span>🎬 ${s.director}</span>`);
-  if(s.seasons) meta.push(`<span>📺 ${s.seasons.length} temporada${s.seasons.length>1?'s':''}</span>`);
-  const avg=getAvgRating(s);
-  if(avg) meta.push(`<span>${starsHTML(avg,15)} ${avg.toFixed(1)}</span>`);
-  document.getElementById('detail-meta').innerHTML=meta.join('');
+  renderDetailMeta(s);
   document.getElementById('detail-desc').textContent=s.desc||'';
+  renderDetailLabelPicker(s);
+  renderRatingGrid(s);
 
   const p=getProgress(s);
   const pc=progressColor(p);
@@ -3047,6 +3264,8 @@ function rateEp(sid, idx, stars){
   saveDB();
   const starEl=document.getElementById('epstars-'+idx);
   if(starEl) starEl.innerHTML=epStarsHTML(idx,stars);
+  // Atualiza tabela de notas
+  renderRatingGrid(s);
   // Update progress bar
   const p=getProgress(s);
   const pc=progressColor(p);
