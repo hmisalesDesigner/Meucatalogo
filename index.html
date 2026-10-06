@@ -386,6 +386,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   animation:slideUp 0.3s ease;
 }
 @keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+@keyframes slideUpIn { from{transform:translateX(-50%) translateY(20px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
 .modal-header {
   padding:18px 22px 14px;
   border-bottom:1px solid var(--border);
@@ -3256,7 +3257,7 @@ function toggleEp(sid, idx){
   }
 }
 
-function rateEp(sid, idx, stars){
+function applyRateEp(sid, idx, stars){
   const s=DB.series.find(x=>x.id===sid);
   if(!s) return;
   if(!s.ratings) s.ratings=new Array(getTotalEps(s)).fill(0);
@@ -3264,15 +3265,60 @@ function rateEp(sid, idx, stars){
   saveDB();
   const starEl=document.getElementById('epstars-'+idx);
   if(starEl) starEl.innerHTML=epStarsHTML(idx,stars);
-  // Atualiza tabela de notas
   renderRatingGrid(s);
-  // Update progress bar
   const p=getProgress(s);
   const pc=progressColor(p);
   document.getElementById('detail-pct').textContent=p+'%';
   document.getElementById('detail-pct').style.color=pc;
   document.getElementById('detail-prog-fill').style.width=p+'%';
   document.getElementById('detail-prog-fill').style.background=pc;
+}
+
+function rateEp(sid, idx, stars){
+  if(stars === 5){
+    showCinemaConfirm(sid, idx);
+  } else {
+    applyRateEp(sid, idx, stars);
+  }
+}
+
+function showCinemaConfirm(sid, idx){
+  // Remove qualquer confirmação anterior
+  const old = document.getElementById('cinema-confirm-toast');
+  if(old) old.remove();
+
+  const toast = document.createElement('div');
+  toast.id = 'cinema-confirm-toast';
+  toast.style.cssText = `
+    position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+    background:#0d1b2e; border:2px solid #4a9dff;
+    border-radius:12px; padding:14px 20px; z-index:9999;
+    box-shadow:0 8px 32px rgba(74,157,255,0.3);
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+    min-width:280px; max-width:340px; text-align:center;
+    animation:slideUpIn 0.2s ease;
+  `;
+  toast.innerHTML = `
+    <div style="font-size:22px">🔵</div>
+    <div style="font-size:14px;font-weight:700;color:#e5e5e5;line-height:1.4">
+      Este episódio é <span style="color:#4a9dff">Absolute Cinema</span>?
+    </div>
+    <div style="font-size:11px;color:#a0a0b0">A nota mais alta — reserve para o excepcional.</div>
+    <div style="display:flex;gap:8px;margin-top:2px;">
+      <button onclick="applyRateEp('${sid}',${idx},5); document.getElementById('cinema-confirm-toast').remove();"
+        style="background:#4a9dff;color:#fff;border:none;border-radius:7px;padding:7px 18px;font-size:13px;font-weight:700;cursor:pointer;">
+        🔵 Sim, é Absolute Cinema
+      </button>
+      <button onclick="document.getElementById('cinema-confirm-toast').remove();"
+        style="background:transparent;color:#a0a0b0;border:1px solid #2a2a3d;border-radius:7px;padding:7px 14px;font-size:13px;cursor:pointer;">
+        Cancelar
+      </button>
+    </div>
+  `;
+  document.body.appendChild(toast);
+
+  // Fecha automaticamente após 8s
+  setTimeout(()=>{ const t=document.getElementById('cinema-confirm-toast'); if(t) t.remove(); }, 8000);
 }
 
 function toggleFav(){
