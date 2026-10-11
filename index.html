@@ -1440,6 +1440,9 @@ function init(){
     document.getElementById('sidebar-toggle').textContent='☰';
     document.body.classList.add('sidebar-collapsed');
   }
+  // Checa periodicamente se é hora de lembrar o backup (intervalo curto, não depende de salvar/abrir)
+  clearInterval(window._backupBannerTimer);
+  window._backupBannerTimer = setInterval(showBackupBanner, 5*60*1000);
   // Drive URL
   const drive = localStorage.getItem('mc_drive_url');
   if(drive) document.getElementById('drive-url-settings').value = drive;
@@ -3632,17 +3635,15 @@ function showBackupBanner(){
   const lastExport = parseInt(localStorage.getItem('mc_last_export')||'0');
   const dismissed  = parseInt(localStorage.getItem('mc_banner_dismissed')||'0');
   const now = Date.now();
-  // Com Google Drive conectado seus dados já ficam salvos na nuvem a cada alteração,
-  // então o lembrete de exportar um JSON extra é só periódico (semanal) e não a cada save.
-  // Sem Drive conectado, o JSON é a única cópia — lembra com mais frequência (diário).
-  const thresholdMs = gdriveToken ? 7*24*60*60*1000 : 24*60*60*1000;
-  const cooldownMs  = gdriveToken ? 24*60*60*1000   : 2*60*60*1000;
-  const daysSince = lastExport ? (now-lastExport)/(24*60*60*1000) : null;
+  // Lembrete de exportar um JSON extra a cada 40min, mesmo com Google Drive conectado.
+  const thresholdMs = 40*60*1000;
+  const cooldownMs  = 40*60*1000;
+  const minsSince = lastExport ? Math.round((now-lastExport)/60000) : null;
   const needsExport = !lastExport || (now - lastExport) >= thresholdMs;
   const notDismissedRecently = (now - dismissed) > cooldownMs;
   if(needsExport && notDismissedRecently){
     const msg = lastExport
-      ? `Já faz ${Math.floor(daysSince)} dia${Math.floor(daysSince)!==1?'s':''} desde o último backup${gdriveToken?' (além do Google Drive)':''}. Exporte um JSON para ter uma cópia extra!`
+      ? `Já fazem ${minsSince} min desde o último backup${gdriveToken?' (além do Google Drive)':''}. Exporte um JSON para ter uma cópia extra!`
       : 'Você ainda não fez nenhum backup. Exporte agora para proteger seus dados!';
     document.getElementById('backup-banner-msg').textContent = msg;
     b.style.display='flex';
