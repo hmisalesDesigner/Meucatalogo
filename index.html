@@ -4588,7 +4588,7 @@ async function gdrivListFolder(folderId, token){
 
 // ── Helpers ───────────────────────────────────────────────
 function isVideo(name){
-  return /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i.test(name);
+  return /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v|ts|mts|m2ts)$/i.test(name);
 }
 function cleanEpName(name, fallbackIndex){
   if(!name) return `Episódio ${fallbackIndex+1}`;
@@ -4600,7 +4600,7 @@ function cleanEpName(name, fallbackIndex){
   return cleaned;
 }
 function isVideoOrDoc(name){
-  return /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v|pdf|zip|rar|docx?|pptx?|xlsx?)$/i.test(name);
+  return /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v|ts|mts|m2ts|pdf|zip|rar|docx?|pptx?|xlsx?)$/i.test(name);
 }
 function naturalSort(a, b){
   return a.localeCompare(b, 'pt-BR', {numeric:true, sensitivity:'base'});
