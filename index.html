@@ -1456,6 +1456,7 @@ function init(){
       renderAll(); updateBadges();
       setLoadingProgress(100, 'Pronto!');
       setTimeout(()=>showLoadingOverlay(false), 500);
+      showBackupBanner();
     });
   } else {
     // Sem banco de dados — mostra tela de boas vindas
@@ -1580,10 +1581,8 @@ function saveDB(){
       pushToGist(()=>setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60'));
     }, 1500);
   }
-  // Mostra banner de backup JSON apenas se Drive não estiver ativamente conectado
-  if(!gdriveToken){
-    showBackupBanner();
-  }
+  // Verifica se é hora de lembrar de exportar um backup JSON
+  showBackupBanner();
 }
 
 // ====================== NAVIGATION ======================
@@ -3628,20 +3627,22 @@ function exportData(){
 }
 function exportDataAndDismiss(){ exportData(); }
 function showBackupBanner(){
-  // Não mostra se Google Drive está ATIVAMENTE conectado (token em memória válido)
-  if(gdriveToken) return;
   const b = document.getElementById('backup-banner');
   if(!b) return;
   const lastExport = parseInt(localStorage.getItem('mc_last_export')||'0');
-  const lastSave   = parseInt(localStorage.getItem('mc_last_save')||'0');
   const dismissed  = parseInt(localStorage.getItem('mc_banner_dismissed')||'0');
   const now = Date.now();
-  const needsExport = !lastExport || (lastSave > lastExport);
-  const notDismissedRecently = (now - dismissed) > 30 * 60 * 1000;
+  // Com Google Drive conectado seus dados já ficam salvos na nuvem a cada alteração,
+  // então o lembrete de exportar um JSON extra é só periódico (semanal) e não a cada save.
+  // Sem Drive conectado, o JSON é a única cópia — lembra com mais frequência (diário).
+  const thresholdMs = gdriveToken ? 7*24*60*60*1000 : 24*60*60*1000;
+  const cooldownMs  = gdriveToken ? 24*60*60*1000   : 2*60*60*1000;
+  const daysSince = lastExport ? (now-lastExport)/(24*60*60*1000) : null;
+  const needsExport = !lastExport || (now - lastExport) >= thresholdMs;
+  const notDismissedRecently = (now - dismissed) > cooldownMs;
   if(needsExport && notDismissedRecently){
-    const mins = lastExport ? Math.round((now-lastExport)/60000) : null;
     const msg = lastExport
-      ? `Último backup há ${mins < 60 ? mins+'min' : Math.round(mins/60)+'h'}. Exporte para não perder seus dados!`
+      ? `Já faz ${Math.floor(daysSince)} dia${Math.floor(daysSince)!==1?'s':''} desde o último backup${gdriveToken?' (além do Google Drive)':''}. Exporte um JSON para ter uma cópia extra!`
       : 'Você ainda não fez nenhum backup. Exporte agora para proteger seus dados!';
     document.getElementById('backup-banner-msg').textContent = msg;
     b.style.display='flex';
