@@ -799,6 +799,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
     <div class="nav-item active" onclick="goTo('dashboard')"><span class="icon">🏠</span>Dashboard</div>
     <div class="nav-item" onclick="goTo('stats-view')"><span class="icon">📊</span>Estatísticas</div>
     <div class="nav-item" onclick="goTo('search-view')"><span class="icon">🔍</span>Pesquisa</div>
+    <div class="nav-item" onclick="goTo('skilltree-view')"><span class="icon">🌳</span>Árvore de Habilidades</div>
     <div class="nav-item" onclick="openAddModal()" style="color:var(--accent);font-weight:700;margin-top:2px"><span class="icon">➕</span>Adicionar Série</div>
   </div>
 
@@ -825,11 +826,6 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
     <div class="nav-item" onclick="goTo('progress-view')"><span class="icon">📈</span>Progresso</div>
     <div class="nav-item" onclick="goTo('history-view')"><span class="icon">🕐</span>Histórico</div>
     <div class="nav-item" onclick="goTo('notes-view')"><span class="icon">📝</span>Notas</div>
-  </div>
-
-  <div class="nav-section">
-    <div class="nav-label">Evolução</div>
-    <div class="nav-item" onclick="goTo('skilltree-view')"><span class="icon">🌳</span>Árvore de Habilidades</div>
   </div>
 
   <div class="nav-section">
@@ -2735,7 +2731,7 @@ function renderStats(){
   const done = DB.series.filter(s=>getProgress(s)===100).length;
   let eps=0; DB.series.forEach(s=>{ if(s.watched) s.watched.forEach(w=>{ if(w) eps++; }); });
   let totalRating=0, rCount=0;
-  DB.series.forEach(s=>{ if(s.ratings) s.ratings.forEach(r=>{ if(r){ totalRating+=r; rCount++; } }); });
+  DB.series.forEach(s=>{ if(s.ratings) s.ratings.forEach((r,i)=>{ if(r && s.watched && s.watched[i]){ totalRating+=r; rCount++; } }); });
   const avg = rCount?(totalRating/rCount).toFixed(1):'-';
 
   const cats={};
@@ -2799,9 +2795,28 @@ function getProgress(s){
 }
 function getAvgRating(s){
   if(!s.ratings) return 0;
-  const r = s.ratings.filter(Boolean);
-  if(!r.length) return 0;
-  return r.reduce((a,b)=>a+b,0)/r.length;
+  const vals = [];
+  s.ratings.forEach((r,i)=>{ if(r && s.watched && s.watched[i]) vals.push(r); });
+  if(!vals.length) return 0;
+  return vals.reduce((a,b)=>a+b,0)/vals.length;
+}
+// Classificação geral do curso: calculada automaticamente pela média das notas dos episódios
+// realmente assistidos (nunca manual) — "Fica a critério da somatória de notas que dou".
+function getAutoClassificationKey(s){
+  const avg = getAvgRating(s);
+  if(!avg) return '';
+  const hasCinema = s.cinemaEps && s.watched && s.cinemaEps.some((c,i)=>c && s.watched[i]);
+  if(avg>=5)   return hasCinema ? 'cinema' : 'incrivel';
+  if(avg>=4.5) return 'incrivel';
+  if(avg>=4)   return 'otimo';
+  if(avg>=3)   return 'bom';
+  if(avg>=2)   return 'media';
+  if(avg>=1)   return 'ruim';
+  return 'lixo';
+}
+function updateAutoLabel(s){
+  const key = getAutoClassificationKey(s);
+  if(key) s.label = key; else delete s.label;
 }
 // ====================== SERIES LABELS ======================
 const SERIES_LABELS = [
@@ -2825,16 +2840,13 @@ function labelChipHTML(key, small=false){
 function renderDetailLabelPicker(s){
   const picker = document.getElementById('detail-label-picker');
   if(!picker) return;
-  picker.innerHTML = SERIES_LABELS.map(l=>`
-    <button class="label-btn ${l.key}${s.label===l.key?' selected':''}"
-      onclick="setSeriesLabel('${s.id}','${l.key}',this)"
-      title="${l.label}">
-      ${l.dot} ${l.label}
-    </button>`).join('');
-  // Botão limpar (só aparece se tiver label)
-  if(s.label){
-    picker.innerHTML += `<button class="label-btn" style="color:var(--text2);border-color:var(--border);font-weight:400;font-size:11px;" onclick="setSeriesLabel('${s.id}','',this)">✕ Remover</button>`;
+  updateAutoLabel(s);
+  if(!s.label){
+    picker.innerHTML = `<span style="font-size:12px;color:var(--text2)">Avalie episódios assistidos para gerar a classificação.</span>`;
+    return;
   }
+  picker.innerHTML = labelChipHTML(s.label) +
+    `<span style="font-size:10px;color:var(--text2);margin-left:10px;">calculada automaticamente pela média das notas</span>`;
 }
 
 // Converte estrela (1-5) → nota visual (0–10) e cor da tabela
@@ -2864,7 +2876,8 @@ function renderRatingGrid(s){
   const wrap = document.getElementById('detail-rating-grid-wrap');
   if(!wrap) return;
 
-  if(!s.seasons || !s.seasons.length || !s.ratings || !s.ratings.some(r=>r)){
+  const hasRatedWatched = s.ratings && s.ratings.some((r,i)=> r && s.watched && s.watched[i]);
+  if(!s.seasons || !s.seasons.length || !hasRatedWatched){
     wrap.style.display='none'; return;
   }
   wrap.style.display='block';
@@ -2873,13 +2886,14 @@ function renderRatingGrid(s){
   const maxEps = Math.max(...seasons);
   if(!maxEps){ wrap.style.display='none'; return; }
 
-  // Calcula médias por temporada
+  // Calcula médias por temporada (só episódios realmente assistidos contam)
   const seasonAvgs = seasons.map((epCount, si)=>{
     let off=0; for(let x=0;x<si;x++) off+=seasons[x];
     const vals = [];
     for(let e=0;e<epCount;e++){
+      const watched = s.watched && s.watched[off+e];
       const r = s.ratings[off+e];
-      if(r) vals.push(r);
+      if(watched && r) vals.push(r);
     }
     return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
   });
@@ -2899,7 +2913,8 @@ function renderRatingGrid(s){
     let off=0;
     seasons.forEach((epCount, si)=>{
       if(ep < epCount){
-        const star = s.ratings[off+ep] || 0;
+        const watchedEp = s.watched && s.watched[off+ep];
+        const star = watchedEp ? (s.ratings[off+ep] || 0) : 0;
         if(star){
           const score = starToScore(star);
           const isCinema = !!(s.cinemaEps && s.cinemaEps[off+ep]);
@@ -3414,6 +3429,8 @@ function applyRateEp(sid, idx, stars, isCinema){
   const starEl=document.getElementById('epstars-'+idx);
   if(starEl) starEl.innerHTML=epStarsHTML(idx,stars,s.cinemaEps[idx]);
   renderRatingGrid(s);
+  renderDetailLabelPicker(s);
+  renderDetailMeta(s);
   awardXP(s.cat, stars||1);
   const p=getProgress(s);
   const pc=progressColor(p);
@@ -3445,6 +3462,8 @@ function toggleCinemaEp(sid, idx){
   const starEl=document.getElementById('epstars-'+idx);
   if(starEl) starEl.innerHTML=epStarsHTML(idx,current,s.cinemaEps[idx]);
   renderRatingGrid(s);
+  renderDetailLabelPicker(s);
+  renderDetailMeta(s);
   if(s.cinemaEps[idx]) awardXP(s.cat, 3); // bônus de XP pelo selo especial
 }
 
@@ -3907,14 +3926,19 @@ const ST_NODES = {
   'Vida Pessoal': ['Lavar Louça','Lavar o Carro','Organizar a Bagunça','Tirar o Pó','Café da Manhã Caprichado','Lavar as Roupas','Cashback nas Notinhas','Musculação Caseira','Alongamento','Varrer o Quintal','Tomar Sol','Solarizar a Água','Guardar Roupas Espalhadas','Pequenos Consertos em Casa','Boa Noite de Sono','Aprender a se Vender como Designer'],
 };
 
+// Poucas pontes, só as conexões mais relevantes — são puramente visuais (não puxam
+// fisicamente as categorias uma pra outra), pra não virar um emaranhado de linhas.
 const ST_BRIDGES = [
-  ['Photoshop','Illustrator'],['Photoshop','Lightroom'],['After Effects','Premiere Pro'],
-  ['After Effects','Som'],['Premiere Pro','Som'],['Illustrator','Tipografia'],
-  ['Modelagem 3D','After Effects'],['Programação','IA'],['IA','Photoshop'],['IA','After Effects'],
-  ['Marketing','Investimentos'],['Marketing','Autoconhecimento'],['Investimentos','Programação'],
-  ['Autoconhecimento','Saúde e Bem-estar'],['Saúde e Bem-estar','Gastronomia'],
-  ['Documentários','Premiere Pro'],['Documentários','Som'],['Tipografia','Marketing'],
-  ['Lightroom','Documentários'],['Autoconhecimento','Vida Pessoal'],['Saúde e Bem-estar','Vida Pessoal'],
+  ['Photoshop','Illustrator'],
+  ['After Effects','Premiere Pro'],
+  ['After Effects','Som'],
+  ['Programação','IA'],
+  ['IA','Photoshop'],
+  ['Marketing','Investimentos'],
+  ['Autoconhecimento','Saúde e Bem-estar'],
+  ['Saúde e Bem-estar','Gastronomia'],
+  ['Documentários','Premiere Pro'],
+  ['Autoconhecimento','Vida Pessoal'],
 ];
 
 const PT_STOPWORDS = new Set(['de','da','do','das','dos','e','a','o','as','os','em','para','com','por','um','uma','no','na','nos','nas','ao','aos',
@@ -4009,20 +4033,23 @@ function stBuildCategoryNodes(cat){
 let ST = null;
 
 function stBuildModel(){
+  // Preserva pan/zoom/filtro entre reconstruções (ex: reabrir a aba, confirmar scan de nós)
+  const prev = ST ? {panX:ST.panX, panY:ST.panY, zoom:ST.zoom, filter:ST.filter} : {panX:0,panY:0,zoom:0.5,filter:''};
   const cats = stAllCatMeta();
   const catCount = cats.length;
-  const HUB_R = 170;
-  const model = { categories:{}, allNodes:[], nodeById:{}, edges:[], panX:0, panY:0, zoom:1 };
+  const HUB_R = 230;
+  const model = { categories:{}, allNodes:[], nodeById:{}, edges:[], wedges:[], panX:prev.panX, panY:prev.panY, zoom:prev.zoom, filter:prev.filter };
 
-  // Núcleo central
-  const core = { id:'__core__', cat:null, label:'Você', isCore:true, x:0, y:0, homeX:0, homeY:0, vx:0, vy:0, unlocked:true, pulse:0 };
+  // Núcleo central — fixo, nunca se move (âncora de todo o layout)
+  const core = { id:'__core__', cat:null, label:'Você', isCore:true, x:0, y:0, homeX:0, homeY:0, vx:0, vy:0, unlocked:true, pulse:0, pinned:true };
   model.allNodes.push(core);
   model.nodeById[core.id] = core;
 
+  const wedgeFull = Math.PI*2/catCount;
   cats.forEach((meta, ci)=>{
     const angle = (ci/catCount) * Math.PI*2 - Math.PI/2;
     const hasContent = stHasContent(meta.name);
-    const hubRadius = hasContent ? HUB_R : HUB_R*1.7;
+    const hubRadius = hasContent ? HUB_R : HUB_R*1.55;
     const hub = {
       id:'hub::'+meta.name, cat:meta.name, label:meta.name, icon:meta.icon, color:meta.color,
       isHub:true, hasContent,
@@ -4032,16 +4059,20 @@ function stBuildModel(){
     hub.homeX = hub.x; hub.homeY = hub.y;
     model.allNodes.push(hub);
     model.nodeById[hub.id] = hub;
-    model.edges.push([core.id, hub.id, 150, 'hub']);
+    model.edges.push([core.id, hub.id, hubRadius, 'hub']);
 
     const built = stBuildCategoryNodes(meta.name);
     model.categories[meta.name] = built;
 
-    const wedge = (Math.PI*2/catCount) * 0.72;
+    // Leque mais estreito que o setor inteiro: mantém a área de cada categoria
+    // claramente separada da vizinha, sem se misturar.
+    const wedge = wedgeFull * 0.58;
+    let maxR = hubRadius;
     built.ordered.forEach((n, rank)=>{
       const spread = built.ordered.length>1 ? (rank/(built.ordered.length-1) - 0.5) : 0;
       const a = angle + spread*wedge;
-      const r = hubRadius + 85 + rank*58;
+      const r = hubRadius + 95 + rank*62;
+      maxR = Math.max(maxR, r);
       n.color = meta.color;
       n.x = Math.cos(a)*r; n.y = Math.sin(a)*r;
       n.homeX = n.x; n.homeY = n.y;
@@ -4051,16 +4082,18 @@ function stBuildModel(){
     });
     for(let i=0;i<built.ordered.length;i++){
       const prevId = i===0 ? hub.id : built.ordered[i-1].id;
-      model.edges.push([prevId, built.ordered[i].id, 70, 'chain']);
+      model.edges.push([prevId, built.ordered[i].id, 66, 'chain']);
     }
+    model.wedges.push({ name:meta.name, icon:meta.icon, color:meta.color, angle, half:wedgeFull*0.47, innerR:hubRadius-65, outerR:maxR+60, hasContent });
   });
 
+  // Pontes entre categorias: só aparecem como linha fina no desenho (ver stLoop/stRender),
+  // nunca exercem força física — assim elas não "puxam" uma área pra dentro da outra.
   ST_BRIDGES.forEach(([a,b])=>{
     const ha = model.nodeById['hub::'+a], hb = model.nodeById['hub::'+b];
-    if(ha && hb) model.edges.push(['hub::'+a, 'hub::'+b, 240, 'bridge']);
+    if(ha && hb) model.edges.push(['hub::'+a, 'hub::'+b, 0, 'bridge']);
   });
 
-  if(ST){ model.panX=ST.panX; model.panY=ST.panY; model.zoom=ST.zoom; model.filter=ST.filter; model.pinned=ST.pinned||{}; }
   ST = model;
   // Reaplica pinos salvos
   const pinned = (DB.skillTree && DB.skillTree.pinned) || {};
@@ -4105,19 +4138,22 @@ function stInitCanvas(){
   const canvas = document.getElementById('st-canvas');
   if(!canvas || canvas._stBound) return;
   canvas._stBound = true;
-  let lastX=0, lastY=0, draggingNode=null, panning=false, moved=false, lastClickTime=0, lastClickNode=null;
+  // downX/downY ficam fixos no momento do mousedown — "moved" mede o deslocamento
+  // TOTAL a partir dali (não um delta frame-a-frame), senão um tremor de 1-2px do
+  // mouse já classificava um clique parado como "arrasto" e quebrava o clique/duplo-clique.
+  let downX=0, downY=0, draggingNode=null, panning=false, moved=false, lastClickId=null, lastClickTime=0;
 
   function toWorld(e){
     const rect = canvas.getBoundingClientRect();
     const sx = e.clientX-rect.left, sy = e.clientY-rect.top;
-    return { x:(sx - rect.width/2 - ST.panX)/ST.zoom, y:(sy - rect.height/2 - ST.panY)/ST.zoom, sx, sy };
+    return { x:(sx - rect.width/2 - ST.panX)/ST.zoom, y:(sy - rect.height/2 - ST.panY)/ST.zoom };
   }
   function nodeAt(wx, wy){
     let found=null, bestD=1e9;
     for(const n of ST.allNodes){
       const r = n.isCore?22:(n.isHub?15:(n.isMystery?12:9));
       const dx=n.x-wx, dy=n.y-wy, d=Math.sqrt(dx*dx+dy*dy);
-      if(d<=r+4 && d<bestD){ bestD=d; found=n; }
+      if(d<=r+6 && d<bestD){ bestD=d; found=n; }
     }
     return found;
   }
@@ -4138,7 +4174,7 @@ function stInitCanvas(){
     const w = toWorld(e);
     const n = nodeAt(w.x, w.y);
     moved = false;
-    lastX = e.clientX; lastY = e.clientY;
+    downX = e.clientX; downY = e.clientY;
     if(n && !n.isCore){
       draggingNode = n; n.dragging = true;
     } else {
@@ -4146,19 +4182,16 @@ function stInitCanvas(){
     }
   });
   window.addEventListener('mousemove', e=>{
-    const dx = e.clientX-lastX, dy = e.clientY-lastY;
-    if(Math.abs(dx)+Math.abs(dy) > 2) moved = true;
+    if(Math.hypot(e.clientX-downX, e.clientY-downY) > 6) moved = true;
     if(draggingNode){
       const w = toWorld(e);
       draggingNode.x = w.x; draggingNode.y = w.y; draggingNode.vx=0; draggingNode.vy=0;
     } else if(panning){
-      ST.panX += dx; ST.panY += dy;
+      ST.panX += (e.movementX||0); ST.panY += (e.movementY||0);
     } else {
       const w = toWorld(e);
-      const hover = nodeAt(w.x, w.y);
-      stShowTooltip(hover, e.clientX, e.clientY);
+      stShowTooltip(nodeAt(w.x, w.y), e.clientX, e.clientY);
     }
-    lastX = e.clientX; lastY = e.clientY;
   });
   window.addEventListener('mouseup', e=>{
     if(draggingNode){
@@ -4169,12 +4202,13 @@ function stInitCanvas(){
       }
       if(!moved){
         const now = Date.now();
-        if(lastClickNode===draggingNode && (now-lastClickTime)<380){
+        if(lastClickId===draggingNode.id && (now-lastClickTime)<450){
           stTogglePin(draggingNode);
+          lastClickId = null; // não deixa um 3º clique rápido alternar de novo sozinho
         } else {
           stShowNodePanel(draggingNode);
+          lastClickId = draggingNode.id; lastClickTime = now;
         }
-        lastClickTime = now; lastClickNode = draggingNode;
       }
       draggingNode = null;
     }
@@ -4186,7 +4220,6 @@ function stInitCanvas(){
   window.addEventListener('keydown', e=>{
     const view = document.getElementById('skilltree-view');
     if(!view || !view.classList.contains('active')) return;
-    const step = 45/ST.zoom;
     if(e.key==='ArrowLeft'){ ST.panX += 45; e.preventDefault(); }
     if(e.key==='ArrowRight'){ ST.panX -= 45; e.preventDefault(); }
     if(e.key==='ArrowUp'){ ST.panY += 45; e.preventDefault(); }
@@ -4341,9 +4374,10 @@ function stRenderNextPanel(){
 
 function stLoop(){
   if(!ST) return;
-  // física
+  // física — repulsão mais forte ENTRE categorias diferentes (separa as "ilhas")
+  // e mais fraca DENTRO da mesma categoria (deixa o cluster compacto e legível).
   const nodes = ST.allNodes;
-  const REPEL = 2600, SPRING = 0.02, HOME = 0.006, DAMP = 0.86;
+  const REPEL_SAME = 650, REPEL_DIFF = 5200, SPRING = 0.035, HOME = 0.013, DAMP = 0.8;
   for(let i=0;i<nodes.length;i++){
     const a = nodes[i];
     if(a.dragging || a.pinned) continue;
@@ -4354,18 +4388,23 @@ function stLoop(){
       let dx=a.x-b.x, dy=a.y-b.y;
       let d2=dx*dx+dy*dy; if(d2<1) d2=1;
       const d=Math.sqrt(d2);
+      const sameCluster = a.cat && a.cat===b.cat;
+      const REPEL = sameCluster ? REPEL_SAME : REPEL_DIFF;
       const f = REPEL/d2;
       fx += (dx/d)*f; fy += (dy/d)*f;
     }
-    if(!a.isCore){ fx += (a.homeX-a.x)*HOME; fy += (a.homeY-a.y)*HOME; }
+    fx += (a.homeX-a.x)*HOME; fy += (a.homeY-a.y)*HOME;
     a.vx = (a.vx+fx)*DAMP; a.vy = (a.vy+fy)*DAMP;
   }
   ST.edges.forEach(e=>{
+    // Pontes entre categorias (bridges) são só um desenho — não exercem força física,
+    // senão ficariam puxando uma área pra dentro da outra e misturando tudo de novo.
+    if(e[3]==='bridge') return;
     const a = ST.nodeById[e[0]], b = ST.nodeById[e[1]];
     if(!a||!b) return;
     const dx=b.x-a.x, dy=b.y-a.y;
     const d=Math.sqrt(dx*dx+dy*dy)||1;
-    const ideal = e[2]||100;
+    const ideal = e[2]||70;
     const f=(d-ideal)*SPRING;
     const fx=(dx/d)*f, fy=(dy/d)*f;
     if(!a.dragging && !a.pinned){ a.vx+=fx; a.vy+=fy; }
@@ -4375,6 +4414,24 @@ function stLoop(){
     if(!n.dragging && !n.pinned){ n.x+=n.vx; n.y+=n.vy; }
     if(n.pulse>0) n.pulse = Math.max(0, n.pulse-0.025);
   });
+  // Resolução de colisão (evita círculos sobrepostos virando um emaranhado visual)
+  for(let i=0;i<nodes.length;i++){
+    const a = nodes[i];
+    const ra = a.isCore?22:(a.isHub?15:(a.isMystery?12:9));
+    for(let j=i+1;j<nodes.length;j++){
+      const b = nodes[j];
+      const rb = b.isCore?22:(b.isHub?15:(b.isMystery?12:9));
+      const minDist = ra+rb+6;
+      const dx=b.x-a.x, dy=b.y-a.y;
+      const d=Math.sqrt(dx*dx+dy*dy)||0.01;
+      if(d<minDist){
+        const overlap=(minDist-d)/2;
+        const ux=dx/d, uy=dy/d;
+        if(!a.dragging && !a.pinned){ a.x-=ux*overlap; a.y-=uy*overlap; }
+        if(!b.dragging && !b.pinned){ b.x+=ux*overlap; b.y+=uy*overlap; }
+      }
+    }
+  }
 
   stRender();
   requestAnimationFrame(stLoop);
@@ -4394,18 +4451,44 @@ function stRender(){
   const filter = ST.filter;
   function dim(n){ return filter && n.cat && n.cat!==filter && !n.isCore; }
 
+  // 0) setores de fundo por categoria — cada área fica visualmente óbvia à primeira vista
+  (ST.wedges||[]).forEach(wd=>{
+    let alpha = wd.hasContent ? 0.09 : 0.035;
+    if(filter && wd.name!==filter) alpha *= 0.3;
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0, 0, wd.outerR, wd.angle-wd.half, wd.angle+wd.half);
+    ctx.closePath();
+    ctx.fillStyle = wd.color;
+    ctx.globalAlpha = alpha;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
   // edges
   ST.edges.forEach(e=>{
     const a = ST.nodeById[e[0]], b = ST.nodeById[e[1]];
     if(!a||!b) return;
+    const isBridge = e[3]==='bridge';
     const bothLocked = !a.unlocked && !b.unlocked;
-    let alpha = bothLocked ? 0.06 : (a.unlocked && b.unlocked ? 0.55 : 0.25);
+    let alpha = isBridge ? 0.16 : (bothLocked ? 0.08 : (a.unlocked && b.unlocked ? 0.55 : 0.28));
     if(dim(a)||dim(b)) alpha *= 0.15;
     ctx.beginPath();
-    ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+    if(isBridge){
+      // Curva pro lado de fora do centro — evita cruzar o núcleo e as outras áreas
+      const midX=(a.x+b.x)/2, midY=(a.y+b.y)/2;
+      const dc = Math.hypot(midX,midY)||1;
+      const cx = midX + (midX/dc)*70, cy = midY + (midY/dc)*70;
+      ctx.moveTo(a.x,a.y);
+      ctx.quadraticCurveTo(cx,cy,b.x,b.y);
+      ctx.setLineDash([4,5]);
+    } else {
+      ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+    }
     ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
-    ctx.lineWidth = e[3]==='bridge' ? 1 : 1.4;
+    ctx.lineWidth = isBridge ? 1 : 1.5;
     ctx.stroke();
+    ctx.setLineDash([]);
   });
 
   // nodes
@@ -4447,8 +4530,14 @@ function stRender(){
     if(n.isHub || n.isCore){
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.font = '11px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#ccc';
-      ctx.fillText(n.label, n.x, n.y + r + 13);
+      ctx.font = n.isCore ? '700 13px sans-serif' : '700 12px sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      const ly = n.y + r + 14;
+      const tw = ctx.measureText(n.label).width;
+      ctx.fillStyle = 'rgba(5,8,10,0.78)';
+      ctx.fillRect(n.x-tw/2-5, ly-8, tw+10, 16);
+      ctx.fillStyle = n.isHub ? (n.hasContent?'#fff':'#999') : '#fff';
+      ctx.fillText(n.label, n.x, ly);
       ctx.restore();
     }
   });
