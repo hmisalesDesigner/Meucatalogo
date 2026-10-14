@@ -544,11 +544,17 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 .ep-link-btn { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:4px; background:var(--accent); color:#fff; font-size:11px; text-decoration:none; flex-shrink:0; transition:opacity 0.2s; }
 .ep-link-btn:hover { opacity:0.8; }
 .ep-link-btn-empty { display:inline-block; width:24px; height:24px; flex-shrink:0; }
-.ep-stars { display:flex; gap:4px; }
-.ep-star { font-size:18px; color:var(--border); cursor:pointer; transition:color 0.15s, transform 0.15s; }
-.ep-star.lit { color:var(--gold); }
-.ep-star:hover { color:var(--gold); transform:scale(1.25); }
-.ep-star:active { transform:scale(0.9); }
+.ep-stars { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.ep-stars-row { display:flex; gap:2px; }
+.ep-star-wrap { position:relative; display:inline-block; width:18px; height:18px; font-size:18px; line-height:18px; cursor:pointer; transition:transform 0.15s; }
+.ep-star-wrap:hover { transform:scale(1.2); }
+.ep-star-wrap:active { transform:scale(0.92); }
+.ep-star-bg { position:absolute; inset:0; color:var(--border); }
+.ep-star-fill { position:absolute; inset:0; color:var(--gold); overflow:hidden; white-space:nowrap; }
+.cinema-toggle-btn { font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; border:1px solid rgba(74,157,255,0.4); color:#6fb3ff; cursor:pointer; background:rgba(74,157,255,0.08); transition:var(--transition); white-space:nowrap; }
+.cinema-toggle-btn:hover { background:rgba(74,157,255,0.18); }
+.cinema-toggle-btn.on { background:#1a4fa0; border-color:#4a9dff; color:#fff; box-shadow:0 0 10px rgba(74,157,255,0.5); }
+.cinema-toggle-btn.disabled { opacity:0.35; cursor:not-allowed; }
 
 /* SEARCH */
 .search-area { padding:16px 28px; }
@@ -723,6 +729,40 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   #main { margin-left:0; }
   .series-card { flex:0 0 calc(33% - 8px); }
 }
+
+/* ===================== SKILL TREE ===================== */
+#skilltree-view { height:calc(100vh - 56px); display:flex; flex-direction:column; padding:0 !important; }
+#st-toolbar { display:flex; align-items:center; gap:10px; padding:10px 20px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.st-badge { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:5px 12px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px; white-space:nowrap; }
+#st-stage { position:relative; flex:1; overflow:hidden; background:radial-gradient(ellipse at center, #10151a 0%, #05070a 100%); }
+#st-canvas { position:absolute; inset:0; width:100%; height:100%; cursor:grab; }
+#st-canvas.dragging { cursor:grabbing; }
+#st-tooltip { position:fixed; z-index:50; background:rgba(8,10,16,0.96); border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:8px 12px; font-size:12px; color:#eee; max-width:240px; pointer-events:none; box-shadow:0 6px 20px rgba(0,0,0,0.5); }
+#st-tooltip b { display:block; margin-bottom:3px; font-size:13px; }
+#st-legend { position:absolute; left:16px; bottom:14px; display:flex; gap:14px; align-items:center; background:rgba(8,10,16,0.7); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:6px 14px; font-size:11px; color:#ccc; backdrop-filter:blur(6px); flex-wrap:wrap; max-width:calc(100% - 32px); }
+#st-legend span { display:flex; align-items:center; gap:5px; white-space:nowrap; }
+#st-legend i { width:9px; height:9px; border-radius:50%; display:inline-block; }
+#st-next-panel { position:absolute; right:16px; top:16px; width:230px; background:rgba(8,10,16,0.85); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px 14px; font-size:12px; color:#ddd; backdrop-filter:blur(6px); }
+#st-next-panel h4 { font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#8fa; margin-bottom:8px; }
+.st-next-item { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+.st-next-item:last-child { border-bottom:none; }
+.st-next-bar-bg { flex:1; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
+.st-next-bar-fill { height:100%; border-radius:2px; background:#4ddb6e; }
+#st-node-panel { position:absolute; left:16px; top:16px; width:260px; background:rgba(8,10,16,0.92); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:14px 16px; font-size:12px; color:#eee; backdrop-filter:blur(6px); box-shadow:0 8px 24px rgba(0,0,0,0.5); }
+#st-node-panel .st-np-close { position:absolute; top:8px; right:10px; cursor:pointer; color:#999; }
+#st-node-panel h3 { font-size:15px; margin-bottom:4px; }
+#st-node-panel .st-np-cat { font-size:11px; color:#8fa; margin-bottom:8px; }
+#st-node-panel .st-np-row { display:flex; justify-content:space-between; font-size:11px; color:#aaa; margin:4px 0; }
+.habit-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; }
+.habit-row.checked { border-color:#4ddb6e; background:rgba(77,219,110,0.08); }
+.habit-row .habit-label { flex:1; font-size:13px; }
+.habit-tier { font-size:11px; padding:3px 8px; border-radius:12px; border:1px solid var(--border); cursor:pointer; color:var(--text2); background:transparent; }
+.habit-tier.active { background:#4ddb6e; border-color:#4ddb6e; color:#000; font-weight:700; }
+.kw-row { display:flex; align-items:center; gap:10px; padding:7px 10px; border:1px solid var(--border); border-radius:8px; }
+.kw-row input[type=checkbox] { width:16px; height:16px; flex-shrink:0; }
+.kw-row .kw-cat { font-size:10px; color:var(--text2); background:var(--bg); border-radius:10px; padding:2px 8px; flex-shrink:0; }
+.kw-row .kw-label { flex:1; font-size:13px; font-weight:600; }
+.kw-row .kw-ex { font-size:10px; color:var(--text2); }
 </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -785,6 +825,11 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
     <div class="nav-item" onclick="goTo('progress-view')"><span class="icon">📈</span>Progresso</div>
     <div class="nav-item" onclick="goTo('history-view')"><span class="icon">🕐</span>Histórico</div>
     <div class="nav-item" onclick="goTo('notes-view')"><span class="icon">📝</span>Notas</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Evolução</div>
+    <div class="nav-item" onclick="goTo('skilltree-view')"><span class="icon">🌳</span>Árvore de Habilidades</div>
   </div>
 
   <div class="nav-section">
@@ -1111,6 +1156,33 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
     <div class="library-grid" id="cat-filter-grid"></div>
   </div>
 
+  <!-- ======= SKILL TREE VIEW ======= -->
+  <div class="content-area" id="skilltree-view">
+    <div id="st-toolbar">
+      <div id="st-overall-badge" class="st-badge"></div>
+      <div id="st-streak-badge" class="st-badge"></div>
+      <select id="st-cat-filter" class="form-input" style="width:auto;max-width:180px;" onchange="stSetFilter(this.value)">
+        <option value="">🌐 Todas as categorias</option>
+      </select>
+      <div style="flex:1"></div>
+      <button class="btn btn-secondary btn-sm" onclick="stOpenHabits()">✅ Hábitos de hoje</button>
+      <button class="btn btn-secondary btn-sm" onclick="stScanKeywords()">🔍 Escanear novos nós</button>
+      <button class="btn btn-secondary btn-sm" title="Centralizar visão" onclick="stResetView()">🎯 Centralizar</button>
+    </div>
+    <div id="st-stage">
+      <canvas id="st-canvas"></canvas>
+      <div id="st-tooltip" style="display:none;"></div>
+      <div id="st-next-panel"></div>
+      <div id="st-node-panel" style="display:none;"></div>
+      <div id="st-legend">
+        <span><i style="background:#f5c518"></i>Desbloqueado</span>
+        <span><i style="background:#2a2a3d"></i>Bloqueado</span>
+        <span><i style="background:#4a9dff"></i>❓ Mistério</span>
+        <span style="color:var(--text2);font-size:10px;">scroll = zoom · arraste o fundo = pan · setas = pan · arraste nó = mover · duplo-clique = fixar 📌</span>
+      </div>
+    </div>
+  </div>
+
 </div><!-- end main -->
 
 <!-- TOAST -->
@@ -1158,6 +1230,42 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   <span id="backup-banner-msg">Você tem alterações não exportadas. Faça um backup para não perder seus dados!</span>
   <button onclick="exportDataAndDismiss()" style="margin-left:auto;background:#000;color:#fff;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:700;font-size:12px;white-space:nowrap;">⬇ Exportar agora</button>
   <button onclick="dismissBackupBanner()" style="background:rgba(0,0,0,0.2);color:#000;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;white-space:nowrap;">Lembrar depois</button>
+</div>
+
+<!-- HABITS MODAL (Vida Pessoal) -->
+<div class="modal-overlay" id="habits-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title">🧘 Hábitos de Hoje — Vida Pessoal</div>
+      <button class="modal-close" onclick="document.getElementById('habits-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:11px;color:var(--text2);margin-bottom:12px;">Marque o que você fez hoje e escolha o quanto valeu (5 / 15 / 30). Isso alimenta o ramo <strong>Vida Pessoal</strong> da árvore de habilidades — sem relação com os cursos.</p>
+      <div id="habits-list" style="display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <div style="font-size:12px;color:var(--text2);margin-right:auto;" id="habits-today-total">Hoje: 0 pts</div>
+      <button class="btn btn-secondary" onclick="document.getElementById('habits-modal').classList.remove('open')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- KEYWORD SCAN MODAL -->
+<div class="modal-overlay" id="keyword-scan-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title">🔍 Novos nós sugeridos</div>
+      <button class="modal-close" onclick="document.getElementById('keyword-scan-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:11px;color:var(--text2);margin-bottom:12px;">Encontrei estas palavras-chave recorrentes nos nomes dos seus cursos/aulas que ainda não viram nó na árvore. Escolha quais adicionar — a base curada continua intacta, isso só complementa.</p>
+      <div id="keyword-scan-list" style="display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('keyword-scan-modal').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-primary" onclick="stConfirmScanNodes()">+ Adicionar selecionados</button>
+    </div>
+  </div>
 </div>
 
 <!-- CATEGORIES MODAL -->
@@ -1377,8 +1485,6 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
         <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">Classificação</div>
         <div class="label-picker" id="detail-label-picker"></div>
       </div>
-      <!-- RATING GRID -->
-      <div id="detail-rating-grid-wrap" style="display:none;margin-bottom:16px;"></div>
       <!-- PROGRESS -->
       <div style="margin-bottom:14px;">
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
@@ -1393,6 +1499,8 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
       <div class="seasons-tabs" id="detail-season-tabs"></div>
       <!-- EPISODES -->
       <div class="ep-list" id="detail-ep-list"></div>
+      <!-- RATING GRID -->
+      <div id="detail-rating-grid-wrap" style="display:none;margin-top:16px;"></div>
     </div>
   </div>
 </div>
@@ -1510,6 +1618,8 @@ function fetchGistPrimary(){
       DB = parsed;
       if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
       if(!DB.history) DB.history=[];
+      if(!DB.skillTree) DB.skillTree={customNodes:[],pinned:{}};
+      if(!DB.personalHabits) DB.personalHabits={log:{}};
       fixTelegramLinks();
       localStorage.setItem('mc_db', JSON.stringify(DB));
       renderAll(); updateBadges();
@@ -1568,6 +1678,8 @@ function loadDB(){
   try{ const d = localStorage.getItem('mc_db'); if(d) DB=JSON.parse(d); } catch(e){}
   if(!DB.cats || !DB.cats.length) DB.cats = [...DEFAULT_CATS];
   if(!DB.history) DB.history = [];
+  if(!DB.skillTree) DB.skillTree = { customNodes:[], pinned:{} };
+  if(!DB.personalHabits) DB.personalHabits = { log:{} };
 }
 function saveDB(){
   localStorage.setItem('mc_db', JSON.stringify(DB));
@@ -1598,7 +1710,8 @@ function goTo(view){
     dashboard:'Dashboard', library:'Biblioteca', watching:'Assistindo',
     completed:'Concluídos', favorites:'Favoritos', 'progress-view':'Progresso',
     'history-view':'Histórico', 'notes-view':'Notas', 'stats-view':'Estatísticas',
-    'search-view':'Pesquisa', settings:'Configurações', 'cat-filter-view':'Categoria'
+    'search-view':'Pesquisa', settings:'Configurações', 'cat-filter-view':'Categoria',
+    'skilltree-view':'Árvore de Habilidades'
   };
   document.getElementById('topbar-title').textContent = titles[view]||view;
 
@@ -1613,6 +1726,7 @@ function goTo(view){
   if(view==='stats-view') renderStats();
     if(view==='settings') detectBase64Images();
   if(view==='search-view'){ document.getElementById('search-input').focus(); doSearch(); }
+  if(view==='skilltree-view') initSkillTree();
 }
 
 function filterCat(cat){
@@ -2728,11 +2842,15 @@ function starToScore(star){
   // 1★=2.0  2★=4.0  3★=6.0  4★=8.0  5★=10.0
   return star ? (star * 2).toFixed(1) : null;
 }
-function ratingGridColor(star){
+function ratingGridColor(star, isCinema){
   if(!star) return 'transparent';
-  // Mesmas cores dos labels: 5=cinema(azul), 4-4.5=incrível/ótimo(verde escuro),
-  // 3-3.5=bom(verde claro/amarelo), 2-2.5=média(laranja), 1-1.5=ruim/lixo(vermelho/roxo)
-  if(star >= 5)   return { bg:'#1a4fa0', text:'#fff', bold:true };
+  // Mesmas cores dos labels: 5=cinema(azul) SÓ quando confirmado como Absolute Cinema,
+  // 4-4.5=incrível/ótimo(verde escuro), 3-3.5=bom(verde claro/amarelo),
+  // 2-2.5=média(laranja), 1-1.5=ruim/lixo(vermelho/roxo)
+  if(star >= 5){
+    if(isCinema) return { bg:'#1a4fa0', text:'#fff', bold:true };
+    return { bg:'#1a7a40', text:'#fff', bold:true }; // nota máxima, mas sem o selo Absolute Cinema
+  }
   if(star >= 4.5) return { bg:'#1a7a40', text:'#fff', bold:true };
   if(star >= 4)   return { bg:'#27ae60', text:'#fff', bold:false };
   if(star >= 3.5) return { bg:'#2ecc71', text:'#111', bold:false };
@@ -2784,7 +2902,8 @@ function renderRatingGrid(s){
         const star = s.ratings[off+ep] || 0;
         if(star){
           const score = starToScore(star);
-          const c = ratingGridColor(star);
+          const isCinema = !!(s.cinemaEps && s.cinemaEps[off+ep]);
+          const c = ratingGridColor(star, isCinema);
           html += `<td style="background:${c.bg};color:${c.text};font-weight:${c.bold?'800':'600'}">${score}</td>`;
         } else {
           html += `<td class="rg-empty">—</td>`;
@@ -2801,7 +2920,7 @@ function renderRatingGrid(s){
   html += `<tr class="rg-avg-row"><td class="rg-ep-label">Média</td>`;
   seasonAvgs.forEach(avg=>{
     if(avg !== null){
-      const c = ratingGridColor(avg);
+      const c = ratingGridColor(avg, false); // média nunca recebe o selo Absolute Cinema
       html += `<td style="background:${c.bg};color:${c.text};font-weight:800">${starToScore(avg)}</td>`;
     } else {
       html += `<td class="rg-empty">—</td>`;
@@ -3095,6 +3214,7 @@ function renderDetailSeasons(s, activeSeason){
     const idx=offset+ep;
     const watched=s.watched&&s.watched[idx];
     const rating=s.ratings&&s.ratings[idx]?s.ratings[idx]:0;
+    const isCinemaEp = !!(s.cinemaEps && s.cinemaEps[idx]);
     const isNext = idx===nextEpIdx;
     const row=document.createElement('div');
     row.className='ep-row'+(isNext?' next-ep':'');
@@ -3107,7 +3227,7 @@ function renderDetailSeasons(s, activeSeason){
         onchange="saveEpName('${s.id}',${idx},this.value)"
         onclick="event.stopPropagation()" title="Clique para renomear">
       ${isNext ? '<span class="next-ep-badge">▶ Próximo</span>' : ''}
-      <div class="ep-stars" id="epstars-${idx}">${epStarsHTML(idx,rating)}</div>
+      <div class="ep-stars" id="epstars-${idx}">${epStarsHTML(idx,rating,isCinemaEp)}</div>
       <input class="ep-link-input" id="eplink-${idx}" type="url" value="${epLink}"
         placeholder="🔗 Link (opcional)"
         onchange="saveEpLink('${s.id}',${idx},this.value)"
@@ -3217,10 +3337,34 @@ function saveEpName(sid, idx, name){
   saveDB();
 }
 
-function epStarsHTML(idx, rating){
-  let h='';
-  for(let i=1;i<=5;i++) h+=`<span class="ep-star ${i<=rating?'lit':''}" onclick="rateEp('${detailId}',${idx},${i})">${i<=rating?'★':'☆'}</span>`;
+function epStarsHTML(idx, rating, isCinema){
+  rating = rating || 0;
+  let h = '<span class="ep-stars-row">';
+  for(let i=1;i<=5;i++){
+    const fillPct = Math.max(0, Math.min(1, rating - (i-1))) * 100;
+    h += `<span class="ep-star-wrap" onclick="handleStarClick(event,'${detailId}',${idx},${i})" title="Clique na metade esquerda para meia estrela, direita para estrela cheia">
+      <span class="ep-star-bg">★</span>
+      <span class="ep-star-fill" style="width:${fillPct}%">★</span>
+    </span>`;
+  }
+  h += '</span>';
+  const cinemaOn = !!isCinema;
+  const cinemaEnabled = rating >= 5;
+  h += `<span class="cinema-toggle-btn ${cinemaOn?'on':''} ${cinemaEnabled?'':'disabled'}"
+      onclick="${cinemaEnabled ? `toggleCinemaEp('${detailId}',${idx})` : `showToast('Dê nota 5.0 completa para liberar o Absolute Cinema.','error')`}"
+      title="${cinemaEnabled ? 'Marcar/desmarcar como Absolute Cinema (selo especial, nota 10.0 azul)' : 'Disponível com nota 5.0 completa'}">
+      🔵 ${cinemaOn?'Absolute Cinema':'Cinema'}
+    </span>`;
   return h;
+}
+
+function handleStarClick(e, sid, idx, starNum){
+  const wrap = e.currentTarget;
+  const rect = wrap.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  const isRightHalf = clickX > rect.width/2;
+  const value = isRightHalf ? starNum : (starNum - 0.5);
+  rateEp(sid, idx, value);
 }
 
 function switchSeason(i){
@@ -3259,15 +3403,18 @@ function toggleEp(sid, idx){
   }
 }
 
-function applyRateEp(sid, idx, stars){
+function applyRateEp(sid, idx, stars, isCinema){
   const s=DB.series.find(x=>x.id===sid);
   if(!s) return;
   if(!s.ratings) s.ratings=new Array(getTotalEps(s)).fill(0);
+  if(!s.cinemaEps) s.cinemaEps=new Array(getTotalEps(s)).fill(false);
   s.ratings[idx]=stars;
+  s.cinemaEps[idx] = (stars>=5 && isCinema) ? true : false;
   saveDB();
   const starEl=document.getElementById('epstars-'+idx);
-  if(starEl) starEl.innerHTML=epStarsHTML(idx,stars);
+  if(starEl) starEl.innerHTML=epStarsHTML(idx,stars,s.cinemaEps[idx]);
   renderRatingGrid(s);
+  awardXP(s.cat, stars||1);
   const p=getProgress(s);
   const pc=progressColor(p);
   document.getElementById('detail-pct').textContent=p+'%';
@@ -3277,50 +3424,28 @@ function applyRateEp(sid, idx, stars){
 }
 
 function rateEp(sid, idx, stars){
-  if(stars === 5){
-    showCinemaConfirm(sid, idx);
-  } else {
-    applyRateEp(sid, idx, stars);
-  }
+  // Nota de estrelas é totalmente independente do selo Absolute Cinema.
+  // 5 estrelas cheias = nota alta (verde, 8-9), nunca vira 10 azul sozinha.
+  const s=DB.series.find(x=>x.id===sid);
+  const wasCinema = s && s.cinemaEps && s.cinemaEps[idx];
+  applyRateEp(sid, idx, stars, stars>=5 ? wasCinema : false);
 }
 
-function showCinemaConfirm(sid, idx){
-  // Remove qualquer confirmação anterior
-  const old = document.getElementById('cinema-confirm-toast');
-  if(old) old.remove();
-
-  const toast = document.createElement('div');
-  toast.id = 'cinema-confirm-toast';
-  toast.style.cssText = `
-    position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
-    background:#0d1b2e; border:2px solid #4a9dff;
-    border-radius:12px; padding:14px 20px; z-index:9999;
-    box-shadow:0 8px 32px rgba(74,157,255,0.3);
-    display:flex; flex-direction:column; align-items:center; gap:10px;
-    min-width:280px; max-width:340px; text-align:center;
-    animation:slideUpIn 0.2s ease;
-  `;
-  toast.innerHTML = `
-    <div style="font-size:22px">🔵</div>
-    <div style="font-size:14px;font-weight:700;color:#e5e5e5;line-height:1.4">
-      Este episódio é <span style="color:#4a9dff">Absolute Cinema</span>?
-    </div>
-    <div style="font-size:11px;color:#a0a0b0">A nota mais alta — reserve para o excepcional.</div>
-    <div style="display:flex;gap:8px;margin-top:2px;">
-      <button onclick="applyRateEp('${sid}',${idx},5); document.getElementById('cinema-confirm-toast').remove();"
-        style="background:#4a9dff;color:#fff;border:none;border-radius:7px;padding:7px 18px;font-size:13px;font-weight:700;cursor:pointer;">
-        🔵 Sim, é Absolute Cinema
-      </button>
-      <button onclick="document.getElementById('cinema-confirm-toast').remove();"
-        style="background:transparent;color:#a0a0b0;border:1px solid #2a2a3d;border-radius:7px;padding:7px 14px;font-size:13px;cursor:pointer;">
-        Cancelar
-      </button>
-    </div>
-  `;
-  document.body.appendChild(toast);
-
-  // Fecha automaticamente após 8s
-  setTimeout(()=>{ const t=document.getElementById('cinema-confirm-toast'); if(t) t.remove(); }, 8000);
+function toggleCinemaEp(sid, idx){
+  const s=DB.series.find(x=>x.id===sid);
+  if(!s) return;
+  if(!s.cinemaEps) s.cinemaEps=new Array(getTotalEps(s)).fill(false);
+  const current = s.ratings && s.ratings[idx];
+  if(!current || current < 5){
+    showToast('Dê nota 5.0 completa antes de marcar como Absolute Cinema.','error');
+    return;
+  }
+  s.cinemaEps[idx] = !s.cinemaEps[idx];
+  saveDB();
+  const starEl=document.getElementById('epstars-'+idx);
+  if(starEl) starEl.innerHTML=epStarsHTML(idx,current,s.cinemaEps[idx]);
+  renderRatingGrid(s);
+  if(s.cinemaEps[idx]) awardXP(s.cat, 3); // bônus de XP pelo selo especial
 }
 
 function toggleFav(){
@@ -3461,6 +3586,8 @@ function syncFromGist(silent){
         DB = parsed;
         if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
         if(!DB.history) DB.history=[];
+        if(!DB.skillTree) DB.skillTree={customNodes:[],pinned:{}};
+        if(!DB.personalHabits) DB.personalHabits={log:{}};
         localStorage.setItem('mc_db', JSON.stringify(DB));
         renderAll();
         setGistStatus('✅ Sincronizado — '+new Date().toLocaleTimeString('pt-BR'),'#27ae60');
@@ -3684,6 +3811,8 @@ function importData(e){
       DB=data;
       if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
       if(!DB.history) DB.history=[];
+      if(!DB.skillTree) DB.skillTree={customNodes:[],pinned:{}};
+      if(!DB.personalHabits) DB.personalHabits={log:{}};
       saveDB(); renderAll();
       applyTheme(localStorage.getItem('mc_theme')||'dark');
       applyStoredAccent();
@@ -3735,6 +3864,712 @@ document.getElementById('drive-link-modal').addEventListener('mousedown',e=>{
 document.getElementById('cat-modal').addEventListener('mousedown',e=>{
   if(e.target===document.getElementById('cat-modal')) closeCatModal();
 });
+
+// ====================== ÁRVORE DE HABILIDADES (SKILL TREE) ======================
+const ST_XP_PER_NODE = 18;
+const ST_CATS = [
+  {name:'Photoshop',       icon:'🖼️', color:'#31a8de'},
+  {name:'Premiere Pro',    icon:'🎞️', color:'#9999ff'},
+  {name:'After Effects',   icon:'✨',  color:'#b388ff'},
+  {name:'Illustrator',     icon:'🖊️', color:'#ff9a00'},
+  {name:'Lightroom',       icon:'🎨',  color:'#ff6ec7'},
+  {name:'Tipografia',      icon:'📝',  color:'#ffd54f'},
+  {name:'Modelagem 3D',    icon:'🧊',  color:'#4fc3f7'},
+  {name:'Som',             icon:'🎵',  color:'#9b59b6'},
+  {name:'Marketing',       icon:'📢',  color:'#e74c3c'},
+  {name:'Investimentos',   icon:'💹',  color:'#f0a500'},
+  {name:'Programação',     icon:'💻',  color:'#4ddb6e'},
+  {name:'IA',              icon:'🤖',  color:'#5aab6a'},
+  {name:'Saúde e Bem-estar',icon:'💙', color:'#4a90e2'},
+  {name:'Autoconhecimento',icon:'🧠',  color:'#ff7043'},
+  {name:'Gastronomia',     icon:'🍳',  color:'#ffb300'},
+  {name:'Documentários',   icon:'🎬',  color:'#90a4ae'},
+];
+const ST_PERSONAL = {name:'Vida Pessoal', icon:'🧘', color:'#8bc34a'};
+
+const ST_NODES = {
+  'Photoshop': ['Camadas e Máscaras','Seleções Avançadas','Retoque de Pele','Composição Fotográfica','Camadas de Ajuste','Efeitos de Luz','Texturas e Padrões','Automação (Actions)','Color Grading','Mockups 3D'],
+  'Premiere Pro': ['Corte e Ritmo','Transições','Correção de Cor','Multicâmera','Mixagem de Áudio','Motion Graphics Templates','Proxy e Performance','Storytelling no Corte','Entrega e Exportação'],
+  'After Effects': ['Keyframes e Easing','Máscaras e Rotoscopia','Expressions Básicas','Tipografia Cinética','Tracking e Estabilização','Partículas','3D Camera Tracking','Plugins Essenciais','Renderização'],
+  'Illustrator': ['Caneta e Curvas de Bézier','Formas Vetoriais','Tipografia Vetorial','Ilustração Flat','Paleta e Harmonia de Cor','Ícones e Pictogramas','Padrões (Patterns)','Mapas e Diagramas','Preparação p/ Impressão'],
+  'Lightroom': ['Organização de Catálogo','Exposição e Contraste','Curva de Cor','Tratamento de Pele','Presets Próprios','Color Grading Cinematográfico','Máscaras Locais com IA','Fluxo em Lote'],
+  'Tipografia': ['Anatomia da Letra','Pareamento de Fontes','Hierarquia Tipográfica','Grid e Espaçamento','Tipografia Editorial','Tipografia em Movimento','Lettering'],
+  'Modelagem 3D': ['Modelagem Low Poly','Topologia e Edge Flow','UV Mapping','Texturização PBR','Iluminação 3D','Rigging Básico','Render e Materiais','Simulações Físicas'],
+  'Som': ['Teoria Básica de Áudio','Edição e Limpeza de Ruído','Mixagem','Masterização','Design de Som (SFX)','Locução e Dublagem','Trilhas e Direitos Autorais'],
+  'Marketing': ['Copywriting','Mídias Sociais','Funil de Vendas','Tráfego Pago','Branding Pessoal','Calendário Editorial','Métricas e Analytics','Vendas e Persuasão'],
+  'Investimentos': ['Educação Financeira Básica','Renda Fixa','Ações e Fundamentalista','Fundos Imobiliários','Análise Gráfica','Gestão de Risco','Avaliação de Imóveis','Independência Financeira'],
+  'Programação': ['Lógica de Programação','Excel Avançado','Planilhas e Dashboards','Automação de Tarefas','Banco de Dados Básico','Front-end Básico','APIs e Integrações','Versionamento (Git)'],
+  'IA': ['Prompt Engineering','Geração de Imagem com IA','IA para Vídeo','Automação com IA','Modelos de Linguagem (LLMs)','IA Aplicada ao Design','Ética e Limites da IA'],
+  'Saúde e Bem-estar': ['Sono de Qualidade','Alongamento Diário','Alimentação Consciente','Hidratação','Respiração e Relaxamento','Postura e Ergonomia','Atividade Física Regular'],
+  'Autoconhecimento': ['Reflexão Diária','Gestão do Tempo','Inteligência Emocional','Definição de Metas','Hábitos Atômicos','Foco e Produtividade','Comunicação Assertiva'],
+  'Gastronomia': ['Técnicas Básicas de Corte','Temperos e Combinações','Ponto do Arroz e Feijão','Grelhados e Carnes','Massas do Zero','Molhos Base','Confeitaria Simples','Harmonização de Pratos'],
+  'Documentários': ['Linguagem Documental','Pesquisa e Roteiro','Entrevista e Depoimento','Edição Narrativa','Som Direto','Color Grading Documental','Distribuição e Divulgação'],
+  'Vida Pessoal': ['Lavar Louça','Lavar o Carro','Organizar a Bagunça','Tirar o Pó','Café da Manhã Caprichado','Lavar as Roupas','Cashback nas Notinhas','Musculação Caseira','Alongamento','Varrer o Quintal','Tomar Sol','Solarizar a Água','Guardar Roupas Espalhadas','Pequenos Consertos em Casa','Boa Noite de Sono','Aprender a se Vender como Designer'],
+};
+
+const ST_BRIDGES = [
+  ['Photoshop','Illustrator'],['Photoshop','Lightroom'],['After Effects','Premiere Pro'],
+  ['After Effects','Som'],['Premiere Pro','Som'],['Illustrator','Tipografia'],
+  ['Modelagem 3D','After Effects'],['Programação','IA'],['IA','Photoshop'],['IA','After Effects'],
+  ['Marketing','Investimentos'],['Marketing','Autoconhecimento'],['Investimentos','Programação'],
+  ['Autoconhecimento','Saúde e Bem-estar'],['Saúde e Bem-estar','Gastronomia'],
+  ['Documentários','Premiere Pro'],['Documentários','Som'],['Tipografia','Marketing'],
+  ['Lightroom','Documentários'],['Autoconhecimento','Vida Pessoal'],['Saúde e Bem-estar','Vida Pessoal'],
+];
+
+const PT_STOPWORDS = new Set(['de','da','do','das','dos','e','a','o','as','os','em','para','com','por','um','uma','no','na','nos','nas','ao','aos',
+  'curso','cursos','aula','aulas','parte','partes','modulo','módulo','completo','avancado','avançado','basico','básico','vol','volume',
+  'como','criar','fazer','usando','todo','toda','pelo','pela','online','gratis','grátis','pro','zero','recursos','mais','business','class',
+  'mestre','turbo','modo','treinamento','treinamentos','masterclass','hashtag','impressionador','adobe','youtube','definitivo','oficial',
+  'mab','may','jack']);
+
+function stNormalize(str){
+  return (str||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+function stTokenize(str){
+  return stNormalize(str).replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w.length>=4 && !PT_STOPWORDS.has(w));
+}
+
+function stAllCatMeta(){ return [...ST_CATS, ST_PERSONAL]; }
+function stCatMeta(name){ return stAllCatMeta().find(c=>c.name===name) || {name, icon:'📁', color:'#5aab6a'}; }
+function stHasContent(cat){ if(cat===ST_PERSONAL.name) return true; return DB.series.some(s=>s.cat===cat); }
+
+function stCategoryXP(cat){
+  let total=0;
+  DB.series.filter(s=>s.cat===cat).forEach(s=>{
+    const watched=s.watched||[], ratings=s.ratings||[], cinema=s.cinemaEps||[];
+    for(let i=0;i<watched.length;i++){
+      if(watched[i]){
+        const r = ratings[i]||0;
+        total += r>0 ? r*2 : 1;
+        if(cinema[i]) total += 3;
+      }
+    }
+  });
+  return total;
+}
+function stPersonalXP(){
+  const log = (DB.personalHabits && DB.personalHabits.log) || {};
+  let total=0;
+  Object.values(log).forEach(day=>Object.values(day).forEach(v=>{ total += (v||0)/3; })); // escala compatível com XP de categoria
+  return total;
+}
+function stXPFor(cat){ return cat===ST_PERSONAL.name ? stPersonalXP() : stCategoryXP(cat); }
+
+function stGetCategoryLabels(cat){
+  const base = ST_NODES[cat] || [];
+  const custom = ((DB.skillTree && DB.skillTree.customNodes) || []).filter(n=>n.cat===cat).map(n=>n.label);
+  return [...base, ...custom, '❓'];
+}
+
+function stRecentTokensForCat(cat){
+  const cutoff = Date.now() - 1000*60*60*24*21;
+  const tokens = new Set();
+  (DB.history||[]).forEach(h=>{
+    if(h.action!=='watched') return;
+    const parts=(h.date||'').split('/');
+    if(parts.length!==3) return;
+    const dt = new Date(+parts[2], +parts[1]-1, +parts[0]).getTime();
+    if(isNaN(dt) || dt < cutoff) return;
+    const s = DB.series.find(x=>x.name===h.seriesName);
+    if(!s || s.cat!==cat) return;
+    let off=0; for(let i=0;i<(h.season-1);i++) off+=(parseInt(s.seasons[i])||0);
+    const idx = off+h.ep;
+    const epName = (s.epNames&&s.epNames[idx]) || '';
+    stTokenize(s.name+' '+epName).forEach(t=>tokens.add(t));
+  });
+  return tokens;
+}
+
+function stBuildCategoryNodes(cat){
+  const labels = stGetCategoryLabels(cat);
+  const recentTokens = cat===ST_PERSONAL.name ? new Set() : stRecentTokensForCat(cat);
+  const nodes = labels.map((label,i)=>{
+    const isMystery = label==='❓';
+    const recencyHit = !isMystery && stTokenize(label).some(t=>recentTokens.has(t));
+    return { id:cat+'::'+i, cat, label, baseOrder:i, isMystery, recencyHit, unlocked:false };
+  });
+  const ordered = [...nodes].sort((a,b)=>{
+    if(a.isMystery) return 1;
+    if(b.isMystery) return -1;
+    const ra = a.recencyHit?-1000:0, rb = b.recencyHit?-1000:0;
+    return (a.baseOrder+ra)-(b.baseOrder+rb);
+  });
+  const xp = stXPFor(cat);
+  const real = ordered.filter(n=>!n.isMystery);
+  let unlockCount = Math.min(Math.floor(xp/ST_XP_PER_NODE), real.length);
+  const mysteryUnlocked = unlockCount>=real.length && real.length>0 && xp >= real.length*ST_XP_PER_NODE*1.3;
+  ordered.forEach((n,i)=>{
+    if(n.isMystery) n.unlocked = mysteryUnlocked;
+    else n.unlocked = i < unlockCount;
+  });
+  return { nodes, ordered, xp, unlockCount, mysteryUnlocked, real };
+}
+
+let ST = null;
+
+function stBuildModel(){
+  const cats = stAllCatMeta();
+  const catCount = cats.length;
+  const HUB_R = 170;
+  const model = { categories:{}, allNodes:[], nodeById:{}, edges:[], panX:0, panY:0, zoom:1 };
+
+  // Núcleo central
+  const core = { id:'__core__', cat:null, label:'Você', isCore:true, x:0, y:0, homeX:0, homeY:0, vx:0, vy:0, unlocked:true, pulse:0 };
+  model.allNodes.push(core);
+  model.nodeById[core.id] = core;
+
+  cats.forEach((meta, ci)=>{
+    const angle = (ci/catCount) * Math.PI*2 - Math.PI/2;
+    const hasContent = stHasContent(meta.name);
+    const hubRadius = hasContent ? HUB_R : HUB_R*1.7;
+    const hub = {
+      id:'hub::'+meta.name, cat:meta.name, label:meta.name, icon:meta.icon, color:meta.color,
+      isHub:true, hasContent,
+      x: Math.cos(angle)*hubRadius, y: Math.sin(angle)*hubRadius,
+      vx:0, vy:0, unlocked:true, pulse:0
+    };
+    hub.homeX = hub.x; hub.homeY = hub.y;
+    model.allNodes.push(hub);
+    model.nodeById[hub.id] = hub;
+    model.edges.push([core.id, hub.id, 150, 'hub']);
+
+    const built = stBuildCategoryNodes(meta.name);
+    model.categories[meta.name] = built;
+
+    const wedge = (Math.PI*2/catCount) * 0.72;
+    built.ordered.forEach((n, rank)=>{
+      const spread = built.ordered.length>1 ? (rank/(built.ordered.length-1) - 0.5) : 0;
+      const a = angle + spread*wedge;
+      const r = hubRadius + 85 + rank*58;
+      n.color = meta.color;
+      n.x = Math.cos(a)*r; n.y = Math.sin(a)*r;
+      n.homeX = n.x; n.homeY = n.y;
+      n.vx=0; n.vy=0; n.pulse=0;
+      model.allNodes.push(n);
+      model.nodeById[n.id] = n;
+    });
+    for(let i=0;i<built.ordered.length;i++){
+      const prevId = i===0 ? hub.id : built.ordered[i-1].id;
+      model.edges.push([prevId, built.ordered[i].id, 70, 'chain']);
+    }
+  });
+
+  ST_BRIDGES.forEach(([a,b])=>{
+    const ha = model.nodeById['hub::'+a], hb = model.nodeById['hub::'+b];
+    if(ha && hb) model.edges.push(['hub::'+a, 'hub::'+b, 240, 'bridge']);
+  });
+
+  if(ST){ model.panX=ST.panX; model.panY=ST.panY; model.zoom=ST.zoom; model.filter=ST.filter; model.pinned=ST.pinned||{}; }
+  ST = model;
+  // Reaplica pinos salvos
+  const pinned = (DB.skillTree && DB.skillTree.pinned) || {};
+  Object.keys(pinned).forEach(id=>{
+    const n = ST.nodeById[id];
+    if(n){ n.pinned=true; n.x=pinned[id].x; n.y=pinned[id].y; n.homeX=pinned[id].x; n.homeY=pinned[id].y; }
+  });
+}
+
+function stRecomputeUnlocks(){
+  if(!ST) return;
+  stAllCatMeta().forEach(meta=>{
+    const built = stBuildCategoryNodes(meta.name);
+    const prevBuilt = ST.categories[meta.name];
+    built.ordered.forEach(n=>{
+      const old = ST.nodeById[n.id];
+      if(old){
+        if(!old.unlocked && n.unlocked){ old.pulse = 1; stPulseCategory(meta.name); }
+        old.unlocked = n.unlocked;
+      }
+    });
+    ST.categories[meta.name] = built;
+  });
+  stRenderNextPanel();
+  stRenderOverallBadges();
+}
+
+function stPulseCategory(cat){
+  const hub = ST.nodeById['hub::'+cat];
+  if(hub) hub.pulse = 1;
+  const core = ST.nodeById['__core__'];
+  if(core) core.pulse = 1;
+}
+
+function awardXP(cat, amount){
+  if(!ST) return;
+  stRecomputeUnlocks();
+}
+
+// ---------- Canvas / física / interação ----------
+function stInitCanvas(){
+  const canvas = document.getElementById('st-canvas');
+  if(!canvas || canvas._stBound) return;
+  canvas._stBound = true;
+  let lastX=0, lastY=0, draggingNode=null, panning=false, moved=false, lastClickTime=0, lastClickNode=null;
+
+  function toWorld(e){
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX-rect.left, sy = e.clientY-rect.top;
+    return { x:(sx - rect.width/2 - ST.panX)/ST.zoom, y:(sy - rect.height/2 - ST.panY)/ST.zoom, sx, sy };
+  }
+  function nodeAt(wx, wy){
+    let found=null, bestD=1e9;
+    for(const n of ST.allNodes){
+      const r = n.isCore?22:(n.isHub?15:(n.isMystery?12:9));
+      const dx=n.x-wx, dy=n.y-wy, d=Math.sqrt(dx*dx+dy*dy);
+      if(d<=r+4 && d<bestD){ bestD=d; found=n; }
+    }
+    return found;
+  }
+
+  canvas.addEventListener('wheel', e=>{
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX-rect.left, my = e.clientY-rect.top;
+    const beforeX = (mx-rect.width/2-ST.panX)/ST.zoom;
+    const beforeY = (my-rect.height/2-ST.panY)/ST.zoom;
+    const factor = e.deltaY<0 ? 1.1 : 0.9;
+    ST.zoom = Math.max(0.3, Math.min(2.5, ST.zoom*factor));
+    ST.panX = mx-rect.width/2-beforeX*ST.zoom;
+    ST.panY = my-rect.height/2-beforeY*ST.zoom;
+  }, {passive:false});
+
+  canvas.addEventListener('mousedown', e=>{
+    const w = toWorld(e);
+    const n = nodeAt(w.x, w.y);
+    moved = false;
+    lastX = e.clientX; lastY = e.clientY;
+    if(n && !n.isCore){
+      draggingNode = n; n.dragging = true;
+    } else {
+      panning = true; canvas.classList.add('dragging');
+    }
+  });
+  window.addEventListener('mousemove', e=>{
+    const dx = e.clientX-lastX, dy = e.clientY-lastY;
+    if(Math.abs(dx)+Math.abs(dy) > 2) moved = true;
+    if(draggingNode){
+      const w = toWorld(e);
+      draggingNode.x = w.x; draggingNode.y = w.y; draggingNode.vx=0; draggingNode.vy=0;
+    } else if(panning){
+      ST.panX += dx; ST.panY += dy;
+    } else {
+      const w = toWorld(e);
+      const hover = nodeAt(w.x, w.y);
+      stShowTooltip(hover, e.clientX, e.clientY);
+    }
+    lastX = e.clientX; lastY = e.clientY;
+  });
+  window.addEventListener('mouseup', e=>{
+    if(draggingNode){
+      draggingNode.dragging = false;
+      if(draggingNode.pinned){
+        draggingNode.homeX = draggingNode.x; draggingNode.homeY = draggingNode.y;
+        stSavePin(draggingNode);
+      }
+      if(!moved){
+        const now = Date.now();
+        if(lastClickNode===draggingNode && (now-lastClickTime)<380){
+          stTogglePin(draggingNode);
+        } else {
+          stShowNodePanel(draggingNode);
+        }
+        lastClickTime = now; lastClickNode = draggingNode;
+      }
+      draggingNode = null;
+    }
+    panning = false;
+    canvas.classList.remove('dragging');
+  });
+  canvas.addEventListener('mouseleave', ()=>{ stShowTooltip(null); });
+
+  window.addEventListener('keydown', e=>{
+    const view = document.getElementById('skilltree-view');
+    if(!view || !view.classList.contains('active')) return;
+    const step = 45/ST.zoom;
+    if(e.key==='ArrowLeft'){ ST.panX += 45; e.preventDefault(); }
+    if(e.key==='ArrowRight'){ ST.panX -= 45; e.preventDefault(); }
+    if(e.key==='ArrowUp'){ ST.panY += 45; e.preventDefault(); }
+    if(e.key==='ArrowDown'){ ST.panY -= 45; e.preventDefault(); }
+  });
+}
+
+function stTogglePin(n){
+  n.pinned = !n.pinned;
+  if(n.pinned){ n.homeX=n.x; n.homeY=n.y; stSavePin(n); }
+  else { stRemovePin(n); }
+  stShowNodePanel(n);
+}
+function stSavePin(n){
+  if(!DB.skillTree) DB.skillTree={customNodes:[],pinned:{}};
+  if(!DB.skillTree.pinned) DB.skillTree.pinned={};
+  DB.skillTree.pinned[n.id] = {x:n.x, y:n.y};
+  saveDB();
+}
+function stRemovePin(n){
+  if(DB.skillTree && DB.skillTree.pinned) delete DB.skillTree.pinned[n.id];
+  saveDB();
+}
+
+function stShowTooltip(n, x, y){
+  const tt = document.getElementById('st-tooltip');
+  if(!tt) return;
+  if(!n || n.isCore){ tt.style.display='none'; return; }
+  const catLabel = n.isHub ? 'Categoria' : n.cat;
+  const status = n.unlocked ? '✅ Desbloqueado' : '🔒 Bloqueado';
+  tt.innerHTML = `<b>${n.isHub? (n.icon+' '+n.label) : n.label}</b>${catLabel}<br>${status}`;
+  tt.style.left = (x+16)+'px'; tt.style.top = (y+12)+'px';
+  tt.style.display = 'block';
+}
+
+function stShowNodePanel(n){
+  const panel = document.getElementById('st-node-panel');
+  if(!panel) return;
+  if(!n || n.isCore){ panel.style.display='none'; return; }
+  const meta = stCatMeta(n.cat);
+  let xpInfo = '';
+  if(!n.isHub){
+    const built = ST.categories[n.cat];
+    const xp = built.xp;
+    const needed = n.isMystery ? Math.ceil(built.real.length*ST_XP_PER_NODE*1.3) : (built.ordered.findIndex(x=>x.id===n.id)+1)*ST_XP_PER_NODE;
+    xpInfo = `<div class="st-np-row"><span>XP na categoria</span><strong>${Math.round(xp)}</strong></div>
+      <div class="st-np-row"><span>XP p/ este nó</span><strong>${needed}</strong></div>`;
+  }
+  // Cursos que contribuem (match por palavra-chave no nome)
+  let courses = '';
+  if(!n.isHub && !n.isMystery && n.cat!==ST_PERSONAL.name){
+    const labelTokens = new Set(stTokenize(n.label));
+    const matches = DB.series.filter(s=>s.cat===n.cat && stTokenize(s.name).some(t=>labelTokens.has(t)));
+    const list = matches.length ? matches : DB.series.filter(s=>s.cat===n.cat);
+    if(list.length) courses = `<div style="margin-top:8px;font-size:11px;color:#9ab;">📚 ${list.slice(0,3).map(s=>s.name).join(', ')}</div>`;
+  }
+  panel.innerHTML = `
+    <span class="st-np-close" onclick="document.getElementById('st-node-panel').style.display='none'">✕</span>
+    <h3>${n.isHub?(n.icon+' '+n.label):n.label}</h3>
+    <div class="st-np-cat">${n.isHub?'Categoria':meta.name}</div>
+    <div class="st-np-row"><span>Status</span><strong style="color:${n.unlocked?'#4ddb6e':'#e67e22'}">${n.unlocked?'Desbloqueado':'Bloqueado'}</strong></div>
+    ${xpInfo}
+    ${courses}
+    ${!n.isHub ? `<button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%" onclick="stTogglePinFromPanel('${n.id}')">${n.pinned?'📌 Desafixar':'📌 Fixar posição'}</button>` : ''}
+  `;
+  panel.style.display='block';
+}
+function stTogglePinFromPanel(id){
+  const n = ST.nodeById[id];
+  if(n) stTogglePin(n);
+}
+
+function stSetFilter(cat){
+  ST.filter = cat;
+  stRenderNextPanel();
+}
+
+function stResetView(){
+  if(!ST) return;
+  ST.panX=0; ST.panY=0; ST.zoom=1;
+}
+
+function stPopulateFilter(){
+  const sel = document.getElementById('st-cat-filter');
+  if(!sel || sel._stFilled) return;
+  sel._stFilled = true;
+  stAllCatMeta().forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.name; opt.textContent = c.icon+' '+c.name;
+    sel.appendChild(opt);
+  });
+}
+
+function stRenderOverallBadges(){
+  const ob = document.getElementById('st-overall-badge');
+  const sb = document.getElementById('st-streak-badge');
+  if(!ob || !sb) return;
+  let totalXP = 0;
+  stAllCatMeta().forEach(c=>{ totalXP += stXPFor(c.name); });
+  let lv=0; while((lv+1)*(lv+1)*ST_XP_PER_NODE <= totalXP) lv++;
+  ob.innerHTML = `🌟 Nível geral <strong>${lv}</strong>`;
+  const dates = new Set((DB.history||[]).filter(h=>h.action==='watched').map(h=>h.date));
+  let streak=0; let d=new Date();
+  if(!dates.has(d.toLocaleDateString('pt-BR'))) d.setDate(d.getDate()-1);
+  while(dates.has(d.toLocaleDateString('pt-BR'))){ streak++; d.setDate(d.getDate()-1); }
+  sb.innerHTML = `🔥 ${streak} dia(s) seguidos`;
+}
+
+function stRenderNextPanel(){
+  const panel = document.getElementById('st-next-panel');
+  if(!panel || !ST) return;
+  const filter = ST.filter;
+  if(filter){
+    const built = ST.categories[filter];
+    if(!built){ panel.innerHTML=''; return; }
+    const meta = stCatMeta(filter);
+    const rows = built.ordered.map((n,i)=>{
+      const pct = n.unlocked ? 100 : 0;
+      return `<div class="st-next-item">
+        <span style="width:16px;text-align:center">${n.unlocked?'✅':'🔒'}</span>
+        <span style="flex:1;${n.unlocked?'':'opacity:0.5'}">${n.label}</span>
+      </div>`;
+    }).join('');
+    panel.innerHTML = `<h4>${meta.icon} ${meta.name} · ${Math.round(built.xp)} XP</h4>
+      <div style="max-height:320px;overflow-y:auto;">${rows}</div>`;
+    return;
+  }
+  // Sem filtro: top 3 nós mais próximos de desbloquear, entre todas as categorias
+  const candidates = [];
+  stAllCatMeta().forEach(meta=>{
+    const built = ST.categories[meta.name];
+    if(!built) return;
+    const nextLocked = built.ordered.find(n=>!n.unlocked && !n.isMystery);
+    if(!nextLocked) return;
+    const rank = built.ordered.findIndex(n=>n.id===nextLocked.id);
+    const neededTotal = (rank+1)*ST_XP_PER_NODE;
+    const missing = Math.max(0, neededTotal - built.xp);
+    const havePct = Math.max(0, Math.min(100, (built.xp - rank*ST_XP_PER_NODE)/ST_XP_PER_NODE*100));
+    candidates.push({meta, node:nextLocked, missing, havePct});
+  });
+  candidates.sort((a,b)=>a.missing-b.missing);
+  const top = candidates.slice(0,3);
+  panel.innerHTML = `<h4>🎯 Próximos passos</h4>` + (top.length ? top.map(c=>`
+    <div class="st-next-item" style="flex-direction:column;align-items:stretch;gap:4px;">
+      <div style="display:flex;justify-content:space-between;">
+        <span>${c.meta.icon} ${c.node.label}</span>
+        <span style="color:#9ab">faltam ${Math.ceil(c.missing)} XP</span>
+      </div>
+      <div class="st-next-bar-bg"><div class="st-next-bar-fill" style="width:${c.havePct}%;background:${c.meta.color}"></div></div>
+    </div>`).join('') : '<div style="color:#789;font-size:11px;">Tudo desbloqueado por aqui — hora de somar mais categorias!</div>');
+}
+
+function stLoop(){
+  if(!ST) return;
+  // física
+  const nodes = ST.allNodes;
+  const REPEL = 2600, SPRING = 0.02, HOME = 0.006, DAMP = 0.86;
+  for(let i=0;i<nodes.length;i++){
+    const a = nodes[i];
+    if(a.dragging || a.pinned) continue;
+    let fx=0, fy=0;
+    for(let j=0;j<nodes.length;j++){
+      if(i===j) continue;
+      const b = nodes[j];
+      let dx=a.x-b.x, dy=a.y-b.y;
+      let d2=dx*dx+dy*dy; if(d2<1) d2=1;
+      const d=Math.sqrt(d2);
+      const f = REPEL/d2;
+      fx += (dx/d)*f; fy += (dy/d)*f;
+    }
+    if(!a.isCore){ fx += (a.homeX-a.x)*HOME; fy += (a.homeY-a.y)*HOME; }
+    a.vx = (a.vx+fx)*DAMP; a.vy = (a.vy+fy)*DAMP;
+  }
+  ST.edges.forEach(e=>{
+    const a = ST.nodeById[e[0]], b = ST.nodeById[e[1]];
+    if(!a||!b) return;
+    const dx=b.x-a.x, dy=b.y-a.y;
+    const d=Math.sqrt(dx*dx+dy*dy)||1;
+    const ideal = e[2]||100;
+    const f=(d-ideal)*SPRING;
+    const fx=(dx/d)*f, fy=(dy/d)*f;
+    if(!a.dragging && !a.pinned){ a.vx+=fx; a.vy+=fy; }
+    if(!b.dragging && !b.pinned){ b.vx-=fx; b.vy-=fy; }
+  });
+  nodes.forEach(n=>{
+    if(!n.dragging && !n.pinned){ n.x+=n.vx; n.y+=n.vy; }
+    if(n.pulse>0) n.pulse = Math.max(0, n.pulse-0.025);
+  });
+
+  stRender();
+  requestAnimationFrame(stLoop);
+}
+
+function stRender(){
+  const canvas = document.getElementById('st-canvas');
+  if(!canvas || !ST) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.clientWidth;
+  const h = canvas.height = canvas.clientHeight;
+  ctx.clearRect(0,0,w,h);
+  ctx.save();
+  ctx.translate(w/2+ST.panX, h/2+ST.panY);
+  ctx.scale(ST.zoom, ST.zoom);
+
+  const filter = ST.filter;
+  function dim(n){ return filter && n.cat && n.cat!==filter && !n.isCore; }
+
+  // edges
+  ST.edges.forEach(e=>{
+    const a = ST.nodeById[e[0]], b = ST.nodeById[e[1]];
+    if(!a||!b) return;
+    const bothLocked = !a.unlocked && !b.unlocked;
+    let alpha = bothLocked ? 0.06 : (a.unlocked && b.unlocked ? 0.55 : 0.25);
+    if(dim(a)||dim(b)) alpha *= 0.15;
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+    ctx.lineWidth = e[3]==='bridge' ? 1 : 1.4;
+    ctx.stroke();
+  });
+
+  // nodes
+  ST.allNodes.forEach(n=>{
+    const r = n.isCore?22:(n.isHub?15:(n.isMystery?12:9));
+    let alpha = 1;
+    if(!n.isCore && !n.isHub && !n.unlocked) alpha = 0.14;
+    if(!n.isCore && n.isHub && !n.hasContent) alpha = 0.5;
+    if(dim(n)) alpha *= 0.2;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const col = n.isCore ? '#ffffff' : (n.unlocked ? (n.color||'#4ddb6e') : '#2a2a3d');
+    if(n.pulse>0){
+      ctx.beginPath();
+      ctx.arc(n.x,n.y, r + n.pulse*18, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(255,255,255,${n.pulse*0.6})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    if(n.unlocked){ ctx.shadowBlur = n.isCore?24:14; ctx.shadowColor = col; }
+    ctx.beginPath();
+    if(n.isMystery) ctx.setLineDash([3,3]);
+    ctx.arc(n.x, n.y, r, 0, Math.PI*2);
+    ctx.fillStyle = col;
+    ctx.fill();
+    ctx.lineWidth = n.pinned ? 2.5 : 1;
+    ctx.strokeStyle = n.pinned ? '#fff' : 'rgba(255,255,255,0.3)';
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+    ctx.font = (n.isCore?'20px':(n.isHub?'16px':'11px'))+' sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle = n.unlocked||n.isCore ? '#07140a' : '#555';
+    const icon = n.isCore?'🌱':(n.isHub?n.icon:(n.isMystery?'❓':''));
+    if(icon) ctx.fillText(icon, n.x, n.y);
+    ctx.restore();
+
+    // rótulo abaixo do nó (hub e núcleo sempre; demais só quando desbloqueado ou com hover)
+    if(n.isHub || n.isCore){
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = '11px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#ccc';
+      ctx.fillText(n.label, n.x, n.y + r + 13);
+      ctx.restore();
+    }
+  });
+
+  ctx.restore();
+}
+
+function stStartLoop(){
+  if(window._stLoopRunning) return;
+  window._stLoopRunning = true;
+  stLoop();
+}
+
+function initSkillTree(){
+  stBuildModel();
+  stInitCanvas();
+  stPopulateFilter();
+  stRenderOverallBadges();
+  stRenderNextPanel();
+  stStartLoop();
+}
+
+// ---------- Hábitos (Vida Pessoal) ----------
+function stTodayKey(){ return new Date().toLocaleDateString('pt-BR'); }
+function stOpenHabits(){
+  stRenderHabitsList();
+  document.getElementById('habits-modal').classList.add('open');
+}
+function stRenderHabitsList(){
+  const el = document.getElementById('habits-list');
+  if(!el) return;
+  const labels = ST_NODES['Vida Pessoal'];
+  const todayKey = stTodayKey();
+  const log = (DB.personalHabits.log[todayKey]) || {};
+  let total = 0; Object.values(log).forEach(v=>total+=(v||0));
+  el.innerHTML = labels.map((label,i)=>{
+    const id = 'Vida Pessoal::'+i;
+    const val = log[id]||0;
+    return `<div class="habit-row ${val?'checked':''}">
+      <span class="habit-label">${label}</span>
+      ${[5,15,30].map(t=>`<span class="habit-tier ${val===t?'active':''}" onclick="stSetHabit('${id}',${t})">${t}</span>`).join('')}
+    </div>`;
+  }).join('');
+  document.getElementById('habits-today-total').textContent = `Hoje: ${total} pts`;
+}
+function stSetHabit(id, tier){
+  const todayKey = stTodayKey();
+  if(!DB.personalHabits.log[todayKey]) DB.personalHabits.log[todayKey]={};
+  const current = DB.personalHabits.log[todayKey][id];
+  DB.personalHabits.log[todayKey][id] = current===tier ? 0 : tier;
+  saveDB();
+  stRenderHabitsList();
+  if(ST) stRecomputeUnlocks();
+}
+
+// ---------- Escaneamento de palavras-chave ----------
+let stScanSuggestions = [];
+function stScanKeywords(){
+  // Vocabulário global "já conhecido": nome de todas as categorias + rótulos de todos os nós
+  const globalKnown = new Set();
+  stAllCatMeta().forEach(c=>stTokenize(c.name).forEach(t=>globalKnown.add(t)));
+  const known = {};
+  stAllCatMeta().forEach(c=>{
+    known[c.name] = new Set(globalKnown);
+    stGetCategoryLabels(c.name).forEach(l=>stTokenize(l).forEach(t=>known[c.name].add(t)));
+  });
+  const freq = {}; // cat -> token -> {count (nº de séries distintas), example}
+  DB.series.forEach(s=>{
+    if(!known[s.cat]) return;
+    // conta por SÉRIE (não por episódio), para uma palavra repetida em todas as aulas de 1 curso não inflar o número
+    const tokensInSeries = new Set();
+    stTokenize(s.name).forEach(t=>tokensInSeries.add(t));
+    (s.epNames||[]).forEach(name=>stTokenize(name).forEach(t=>tokensInSeries.add(t)));
+    tokensInSeries.forEach(t=>{
+      if(known[s.cat].has(t)) return;
+      if(!freq[s.cat]) freq[s.cat]={};
+      if(!freq[s.cat][t]) freq[s.cat][t]={count:0, example:s.name};
+      freq[s.cat][t].count++;
+    });
+  });
+  stScanSuggestions = [];
+  Object.keys(freq).forEach(cat=>{
+    const entries = Object.entries(freq[cat]).sort((a,b)=>b[1].count-a[1].count).slice(0,2);
+    entries.forEach(([token,d])=>{
+      stScanSuggestions.push({cat, token, label: token.charAt(0).toUpperCase()+token.slice(1), example:d.example, count:d.count});
+    });
+  });
+  const list = document.getElementById('keyword-scan-list');
+  if(!stScanSuggestions.length){
+    list.innerHTML = '<p style="font-size:12px;color:var(--text2)">Nenhuma palavra-chave nova encontrada agora — a base curada já cobre bem seus cursos atuais.</p>';
+  } else {
+    list.innerHTML = stScanSuggestions.map((s,i)=>{
+      const meta = stCatMeta(s.cat);
+      return `<label class="kw-row">
+        <input type="checkbox" data-idx="${i}" checked>
+        <span class="kw-cat">${meta.icon} ${s.cat}</span>
+        <span class="kw-label">${s.label}</span>
+        <span class="kw-ex">${s.example}</span>
+      </label>`;
+    }).join('');
+  }
+  document.getElementById('keyword-scan-modal').classList.add('open');
+}
+function stConfirmScanNodes(){
+  const checks = document.querySelectorAll('#keyword-scan-list input[type=checkbox]:checked');
+  let added = 0;
+  checks.forEach(chk=>{
+    const s = stScanSuggestions[+chk.dataset.idx];
+    if(!s) return;
+    if(!DB.skillTree.customNodes) DB.skillTree.customNodes=[];
+    DB.skillTree.customNodes.push({cat:s.cat, label:s.label, source:'scan'});
+    added++;
+  });
+  if(added){
+    saveDB();
+    stBuildModel();
+    stRenderNextPanel();
+    showToast(`${added} novo(s) nó(s) adicionados à árvore.`,'success');
+  }
+  document.getElementById('keyword-scan-modal').classList.remove('open');
+}
 
 // ====================== START ======================
 function toggleSidebar(){
@@ -4316,6 +5151,8 @@ function gdriveLoad(cb){
         DB = data;
         if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
         if(!DB.history) DB.history=[];
+        if(!DB.skillTree) DB.skillTree={customNodes:[],pinned:{}};
+        if(!DB.personalHabits) DB.personalHabits={log:{}};
         localStorage.setItem('mc_db', JSON.stringify(DB));
         const now = Date.now();
         localStorage.setItem('mc_last_save', now);
@@ -4349,6 +5186,8 @@ function gdriveLoad(cb){
         DB = data;
         if(!DB.cats||!DB.cats.length) DB.cats=[...DEFAULT_CATS];
         if(!DB.history) DB.history=[];
+        if(!DB.skillTree) DB.skillTree={customNodes:[],pinned:{}};
+        if(!DB.personalHabits) DB.personalHabits={log:{}};
         localStorage.setItem('mc_db', JSON.stringify(DB));
         const now = Date.now();
         localStorage.setItem('mc_last_save', now);
