@@ -4037,12 +4037,16 @@ let ST = null;
 // zigue-zague reto e constante — nada de física, nada se move sozinho.
 const ST_RING_INNER = 92;
 const ST_RING_OUTER = 142;
-const ST_STEP_R = 58;
 const ST_ZIGZAG_DEG = 10; // ângulo do zigue-zague de cada nó pro próximo
+// Alcance radial da cadeia a partir do anel: cresce rápido no início e depois converge,
+// então mesmo uma categoria com muitos nós (ex: Vida Pessoal) fica compacta — sem cadeias
+// esticando até o infinito e virando um emaranhado distante.
+const ST_MAX_REACH = 230;
+function stChainRadius(rank){ return ST_RING_OUTER + 30 + ST_MAX_REACH*(1 - 1/(1+rank*0.4)); }
 
 function stBuildModel(){
   // Preserva pan/zoom/filtro entre reconstruções (ex: reabrir a aba, confirmar scan de nós)
-  const prev = ST ? {panX:ST.panX, panY:ST.panY, zoom:ST.zoom, filter:ST.filter} : {panX:0,panY:0,zoom:0.62,filter:''};
+  const prev = ST ? {panX:ST.panX, panY:ST.panY, zoom:ST.zoom, filter:ST.filter} : {panX:0,panY:0,zoom:1,filter:''};
   const cats = stAllCatMeta();
   const catCount = cats.length;
   const model = { categories:{}, allNodes:[], nodeById:{}, edges:[], wedges:[], panX:prev.panX, panY:prev.panY, zoom:prev.zoom, filter:prev.filter };
@@ -4080,7 +4084,7 @@ function stBuildModel(){
     built.ordered.forEach((n, rank)=>{
       const zig = (rank%2===0) ? 1 : -1;
       curAngle = angle + zig*zigzagRad;
-      const r = ST_RING_OUTER + 46 + rank*ST_STEP_R;
+      const r = stChainRadius(rank);
       maxR = Math.max(maxR, r);
       n.color = meta.color;
       n.x = Math.cos(curAngle)*r; n.y = Math.sin(curAngle)*r;
@@ -4254,7 +4258,7 @@ function stSetFilter(cat){
 
 function stResetView(){
   if(!ST) return;
-  ST.panX=0; ST.panY=0; ST.zoom=0.62;
+  ST.panX=0; ST.panY=0; ST.zoom=1;
 }
 
 function stPopulateFilter(){
@@ -4371,7 +4375,7 @@ function stRender(){
     if(!a||!b) return;
     const isBridge = e[3]==='bridge';
     const bothLocked = !a.unlocked && !b.unlocked;
-    let alpha = isBridge ? 0.18 : (bothLocked ? 0.12 : (a.unlocked && b.unlocked ? 0.75 : 0.32));
+    let alpha = isBridge ? 0.14 : (bothLocked ? 0.05 : (a.unlocked && b.unlocked ? 0.8 : 0.3));
     if(dim(a)||dim(b)) alpha *= 0.15;
     ctx.beginPath();
     if(isBridge){
@@ -4442,18 +4446,27 @@ function stRender(){
     if(icon) ctx.fillText(icon, n.x, n.y);
     ctx.restore();
 
-    // rótulo só pro hub (nome da categoria) — os demais nós têm tooltip no hover
+    // rótulo só pro hub (nome da categoria) — os demais nós têm tooltip no hover.
+    // Texto alinhado na direção radial do próprio hub (não horizontal), pra não
+    // empilhar/sobrepor com os vizinhos quando há muitas categorias no anel.
     if(n.isHub){
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.font = '700 12px sans-serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      const ly = n.y + Math.sign(n.y||1)*(r + 14);
+      const hubAngle = Math.atan2(n.y, n.x);
+      let rot = hubAngle, flip = false;
+      if(rot > Math.PI/2 || rot < -Math.PI/2){ rot += Math.PI; flip = true; }
+      ctx.translate(n.x, n.y);
+      ctx.rotate(rot);
+      ctx.font = '700 11px sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = flip ? 'right' : 'left';
+      const labelR = r + 12;
+      const tx = flip ? -labelR : labelR;
       const tw = ctx.measureText(n.label).width;
       ctx.fillStyle = 'rgba(5,8,10,0.78)';
-      ctx.fillRect(n.x-tw/2-5, ly-8, tw+10, 16);
+      ctx.fillRect(flip ? tx-tw-4 : tx-4, -9, tw+8, 18);
       ctx.fillStyle = n.hasContent ? '#fff' : '#999';
-      ctx.fillText(n.label, n.x, ly);
+      ctx.fillText(n.label, tx, 0);
       ctx.restore();
     }
   });
