@@ -799,7 +799,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
     <div class="nav-item active" onclick="goTo('dashboard')"><span class="icon">🏠</span>Dashboard</div>
     <div class="nav-item" onclick="goTo('stats-view')"><span class="icon">📊</span>Estatísticas</div>
     <div class="nav-item" onclick="goTo('search-view')"><span class="icon">🔍</span>Pesquisa</div>
-    <div class="nav-item" onclick="goTo('skilltree-view')"><span class="icon">🌳</span>Árvore de Habilidades</div>
+    <div class="nav-item" onclick="goTo('skilltree-view')"><span class="icon">☸️</span>Grid de Habilidades</div>
     <div class="nav-item" onclick="openAddModal()" style="color:var(--accent);font-weight:700;margin-top:2px"><span class="icon">➕</span>Adicionar Série</div>
   </div>
 
@@ -1174,7 +1174,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
         <span><i style="background:#f5c518"></i>Desbloqueado</span>
         <span><i style="background:#2a2a3d"></i>Bloqueado</span>
         <span><i style="background:#4a9dff"></i>❓ Mistério</span>
-        <span style="color:var(--text2);font-size:10px;">scroll = zoom · arraste o fundo = pan · setas = pan · arraste nó = mover · duplo-clique = fixar 📌</span>
+        <span style="color:var(--text2);font-size:10px;">scroll = zoom · arraste o fundo = navegar · setas = navegar · clique no nó = detalhes</span>
       </div>
     </div>
   </div>
@@ -1707,7 +1707,7 @@ function goTo(view){
     completed:'Concluídos', favorites:'Favoritos', 'progress-view':'Progresso',
     'history-view':'Histórico', 'notes-view':'Notas', 'stats-view':'Estatísticas',
     'search-view':'Pesquisa', settings:'Configurações', 'cat-filter-view':'Categoria',
-    'skilltree-view':'Árvore de Habilidades'
+    'skilltree-view':'Grid de Habilidades'
   };
   document.getElementById('topbar-title').textContent = titles[view]||view;
 
@@ -4032,75 +4032,76 @@ function stBuildCategoryNodes(cat){
 
 let ST = null;
 
+// Layout FIXO estilo roda de habilidades (Watch Dogs): um anel central dividido em
+// fatias coloridas por categoria, com os nós em cadeia saindo de cada fatia num
+// zigue-zague reto e constante — nada de física, nada se move sozinho.
+const ST_RING_INNER = 92;
+const ST_RING_OUTER = 142;
+const ST_STEP_R = 58;
+const ST_ZIGZAG_DEG = 10; // ângulo do zigue-zague de cada nó pro próximo
+
 function stBuildModel(){
   // Preserva pan/zoom/filtro entre reconstruções (ex: reabrir a aba, confirmar scan de nós)
-  const prev = ST ? {panX:ST.panX, panY:ST.panY, zoom:ST.zoom, filter:ST.filter} : {panX:0,panY:0,zoom:0.5,filter:''};
+  const prev = ST ? {panX:ST.panX, panY:ST.panY, zoom:ST.zoom, filter:ST.filter} : {panX:0,panY:0,zoom:0.62,filter:''};
   const cats = stAllCatMeta();
   const catCount = cats.length;
-  const HUB_R = 230;
   const model = { categories:{}, allNodes:[], nodeById:{}, edges:[], wedges:[], panX:prev.panX, panY:prev.panY, zoom:prev.zoom, filter:prev.filter };
 
-  // Núcleo central — fixo, nunca se move (âncora de todo o layout)
-  const core = { id:'__core__', cat:null, label:'Você', isCore:true, x:0, y:0, homeX:0, homeY:0, vx:0, vy:0, unlocked:true, pulse:0, pinned:true };
+  // Núcleo central — o "miolo" do anel, sempre fixo em (0,0)
+  const core = { id:'__core__', cat:null, label:'Grid', isCore:true, x:0, y:0, unlocked:true, pulse:0 };
   model.allNodes.push(core);
   model.nodeById[core.id] = core;
 
   const wedgeFull = Math.PI*2/catCount;
+  const gap = wedgeFull*0.06; // frestas escuras entre as fatias do anel, como na referência
+  const wedgeHalf = wedgeFull/2 - gap;
+  // O zigue-zague nunca pode abrir mais que a própria fatia da categoria — calculado
+  // dinamicamente a partir da quantidade de categorias, com uma margem de segurança,
+  // em vez de um grau fixo que poderia vazar para a fatia vizinha.
+  const zigzagRad = Math.min(ST_ZIGZAG_DEG*Math.PI/180, wedgeHalf*0.82);
   cats.forEach((meta, ci)=>{
     const angle = (ci/catCount) * Math.PI*2 - Math.PI/2;
     const hasContent = stHasContent(meta.name);
-    const hubRadius = hasContent ? HUB_R : HUB_R*1.55;
     const hub = {
       id:'hub::'+meta.name, cat:meta.name, label:meta.name, icon:meta.icon, color:meta.color,
       isHub:true, hasContent,
-      x: Math.cos(angle)*hubRadius, y: Math.sin(angle)*hubRadius,
-      vx:0, vy:0, unlocked:true, pulse:0
+      x: Math.cos(angle)*ST_RING_OUTER, y: Math.sin(angle)*ST_RING_OUTER,
+      unlocked:true, pulse:0
     };
-    hub.homeX = hub.x; hub.homeY = hub.y;
     model.allNodes.push(hub);
     model.nodeById[hub.id] = hub;
-    model.edges.push([core.id, hub.id, hubRadius, 'hub']);
+    model.edges.push([core.id, hub.id, 0, 'hub']);
 
     const built = stBuildCategoryNodes(meta.name);
     model.categories[meta.name] = built;
 
-    // Leque mais estreito que o setor inteiro: mantém a área de cada categoria
-    // claramente separada da vizinha, sem se misturar.
-    const wedge = wedgeFull * 0.58;
-    let maxR = hubRadius;
+    // Zigue-zague reto e fixo saindo do anel — mesma ideia visual da árvore do Watch Dogs
+    let curAngle = angle, maxR = ST_RING_OUTER;
     built.ordered.forEach((n, rank)=>{
-      const spread = built.ordered.length>1 ? (rank/(built.ordered.length-1) - 0.5) : 0;
-      const a = angle + spread*wedge;
-      const r = hubRadius + 95 + rank*62;
+      const zig = (rank%2===0) ? 1 : -1;
+      curAngle = angle + zig*zigzagRad;
+      const r = ST_RING_OUTER + 46 + rank*ST_STEP_R;
       maxR = Math.max(maxR, r);
       n.color = meta.color;
-      n.x = Math.cos(a)*r; n.y = Math.sin(a)*r;
-      n.homeX = n.x; n.homeY = n.y;
-      n.vx=0; n.vy=0; n.pulse=0;
+      n.x = Math.cos(curAngle)*r; n.y = Math.sin(curAngle)*r;
+      n.pulse = 0;
       model.allNodes.push(n);
       model.nodeById[n.id] = n;
     });
     for(let i=0;i<built.ordered.length;i++){
       const prevId = i===0 ? hub.id : built.ordered[i-1].id;
-      model.edges.push([prevId, built.ordered[i].id, 66, 'chain']);
+      model.edges.push([prevId, built.ordered[i].id, 0, 'chain']);
     }
-    model.wedges.push({ name:meta.name, icon:meta.icon, color:meta.color, angle, half:wedgeFull*0.47, innerR:hubRadius-65, outerR:maxR+60, hasContent });
+    model.wedges.push({ name:meta.name, icon:meta.icon, color:meta.color, angle, half:wedgeHalf, hasContent });
   });
 
-  // Pontes entre categorias: só aparecem como linha fina no desenho (ver stLoop/stRender),
-  // nunca exercem força física — assim elas não "puxam" uma área pra dentro da outra.
+  // Pontes entre categorias: puramente visuais (linha fina tracejada), nunca mexem no layout.
   ST_BRIDGES.forEach(([a,b])=>{
     const ha = model.nodeById['hub::'+a], hb = model.nodeById['hub::'+b];
     if(ha && hb) model.edges.push(['hub::'+a, 'hub::'+b, 0, 'bridge']);
   });
 
   ST = model;
-  // Reaplica pinos salvos
-  const pinned = (DB.skillTree && DB.skillTree.pinned) || {};
-  Object.keys(pinned).forEach(id=>{
-    const n = ST.nodeById[id];
-    if(n){ n.pinned=true; n.x=pinned[id].x; n.y=pinned[id].y; n.homeX=pinned[id].x; n.homeY=pinned[id].y; }
-  });
 }
 
 function stRecomputeUnlocks(){
@@ -4138,10 +4139,8 @@ function stInitCanvas(){
   const canvas = document.getElementById('st-canvas');
   if(!canvas || canvas._stBound) return;
   canvas._stBound = true;
-  // downX/downY ficam fixos no momento do mousedown — "moved" mede o deslocamento
-  // TOTAL a partir dali (não um delta frame-a-frame), senão um tremor de 1-2px do
-  // mouse já classificava um clique parado como "arrasto" e quebrava o clique/duplo-clique.
-  let downX=0, downY=0, draggingNode=null, panning=false, moved=false, lastClickId=null, lastClickTime=0;
+  // Layout é fixo — não dá pra arrastar nó. Só navegação (pan/zoom) e clique p/ detalhes.
+  let downX=0, downY=0, panning=false, moved=false;
 
   function toWorld(e){
     const rect = canvas.getBoundingClientRect();
@@ -4151,7 +4150,7 @@ function stInitCanvas(){
   function nodeAt(wx, wy){
     let found=null, bestD=1e9;
     for(const n of ST.allNodes){
-      const r = n.isCore?22:(n.isHub?15:(n.isMystery?12:9));
+      const r = n.isCore?(ST_RING_INNER-6):(n.isHub?16:(n.isMystery?12:9));
       const dx=n.x-wx, dy=n.y-wy, d=Math.sqrt(dx*dx+dy*dy);
       if(d<=r+6 && d<bestD){ bestD=d; found=n; }
     }
@@ -4165,28 +4164,19 @@ function stInitCanvas(){
     const beforeX = (mx-rect.width/2-ST.panX)/ST.zoom;
     const beforeY = (my-rect.height/2-ST.panY)/ST.zoom;
     const factor = e.deltaY<0 ? 1.1 : 0.9;
-    ST.zoom = Math.max(0.3, Math.min(2.5, ST.zoom*factor));
+    ST.zoom = Math.max(0.25, Math.min(2.5, ST.zoom*factor));
     ST.panX = mx-rect.width/2-beforeX*ST.zoom;
     ST.panY = my-rect.height/2-beforeY*ST.zoom;
   }, {passive:false});
 
   canvas.addEventListener('mousedown', e=>{
-    const w = toWorld(e);
-    const n = nodeAt(w.x, w.y);
     moved = false;
     downX = e.clientX; downY = e.clientY;
-    if(n && !n.isCore){
-      draggingNode = n; n.dragging = true;
-    } else {
-      panning = true; canvas.classList.add('dragging');
-    }
+    panning = true; canvas.classList.add('dragging');
   });
   window.addEventListener('mousemove', e=>{
     if(Math.hypot(e.clientX-downX, e.clientY-downY) > 6) moved = true;
-    if(draggingNode){
-      const w = toWorld(e);
-      draggingNode.x = w.x; draggingNode.y = w.y; draggingNode.vx=0; draggingNode.vy=0;
-    } else if(panning){
+    if(panning){
       ST.panX += (e.movementX||0); ST.panY += (e.movementY||0);
     } else {
       const w = toWorld(e);
@@ -4194,23 +4184,10 @@ function stInitCanvas(){
     }
   });
   window.addEventListener('mouseup', e=>{
-    if(draggingNode){
-      draggingNode.dragging = false;
-      if(draggingNode.pinned){
-        draggingNode.homeX = draggingNode.x; draggingNode.homeY = draggingNode.y;
-        stSavePin(draggingNode);
-      }
-      if(!moved){
-        const now = Date.now();
-        if(lastClickId===draggingNode.id && (now-lastClickTime)<450){
-          stTogglePin(draggingNode);
-          lastClickId = null; // não deixa um 3º clique rápido alternar de novo sozinho
-        } else {
-          stShowNodePanel(draggingNode);
-          lastClickId = draggingNode.id; lastClickTime = now;
-        }
-      }
-      draggingNode = null;
+    if(panning && !moved){
+      const w = toWorld(e);
+      const n = nodeAt(w.x, w.y);
+      if(n && !n.isCore) stShowNodePanel(n);
     }
     panning = false;
     canvas.classList.remove('dragging');
@@ -4225,23 +4202,6 @@ function stInitCanvas(){
     if(e.key==='ArrowUp'){ ST.panY += 45; e.preventDefault(); }
     if(e.key==='ArrowDown'){ ST.panY -= 45; e.preventDefault(); }
   });
-}
-
-function stTogglePin(n){
-  n.pinned = !n.pinned;
-  if(n.pinned){ n.homeX=n.x; n.homeY=n.y; stSavePin(n); }
-  else { stRemovePin(n); }
-  stShowNodePanel(n);
-}
-function stSavePin(n){
-  if(!DB.skillTree) DB.skillTree={customNodes:[],pinned:{}};
-  if(!DB.skillTree.pinned) DB.skillTree.pinned={};
-  DB.skillTree.pinned[n.id] = {x:n.x, y:n.y};
-  saveDB();
-}
-function stRemovePin(n){
-  if(DB.skillTree && DB.skillTree.pinned) delete DB.skillTree.pinned[n.id];
-  saveDB();
 }
 
 function stShowTooltip(n, x, y){
@@ -4283,13 +4243,8 @@ function stShowNodePanel(n){
     <div class="st-np-row"><span>Status</span><strong style="color:${n.unlocked?'#4ddb6e':'#e67e22'}">${n.unlocked?'Desbloqueado':'Bloqueado'}</strong></div>
     ${xpInfo}
     ${courses}
-    ${!n.isHub ? `<button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%" onclick="stTogglePinFromPanel('${n.id}')">${n.pinned?'📌 Desafixar':'📌 Fixar posição'}</button>` : ''}
   `;
   panel.style.display='block';
-}
-function stTogglePinFromPanel(id){
-  const n = ST.nodeById[id];
-  if(n) stTogglePin(n);
 }
 
 function stSetFilter(cat){
@@ -4299,7 +4254,7 @@ function stSetFilter(cat){
 
 function stResetView(){
   if(!ST) return;
-  ST.panX=0; ST.panY=0; ST.zoom=1;
+  ST.panX=0; ST.panY=0; ST.zoom=0.62;
 }
 
 function stPopulateFilter(){
@@ -4321,6 +4276,7 @@ function stRenderOverallBadges(){
   stAllCatMeta().forEach(c=>{ totalXP += stXPFor(c.name); });
   let lv=0; while((lv+1)*(lv+1)*ST_XP_PER_NODE <= totalXP) lv++;
   ob.innerHTML = `🌟 Nível geral <strong>${lv}</strong>`;
+  ob.dataset.lv = 'Nível '+lv;
   const dates = new Set((DB.history||[]).filter(h=>h.action==='watched').map(h=>h.date));
   let streak=0; let d=new Date();
   if(!dates.has(d.toLocaleDateString('pt-BR'))) d.setDate(d.getDate()-1);
@@ -4374,65 +4330,8 @@ function stRenderNextPanel(){
 
 function stLoop(){
   if(!ST) return;
-  // física — repulsão mais forte ENTRE categorias diferentes (separa as "ilhas")
-  // e mais fraca DENTRO da mesma categoria (deixa o cluster compacto e legível).
-  const nodes = ST.allNodes;
-  const REPEL_SAME = 650, REPEL_DIFF = 5200, SPRING = 0.035, HOME = 0.013, DAMP = 0.8;
-  for(let i=0;i<nodes.length;i++){
-    const a = nodes[i];
-    if(a.dragging || a.pinned) continue;
-    let fx=0, fy=0;
-    for(let j=0;j<nodes.length;j++){
-      if(i===j) continue;
-      const b = nodes[j];
-      let dx=a.x-b.x, dy=a.y-b.y;
-      let d2=dx*dx+dy*dy; if(d2<1) d2=1;
-      const d=Math.sqrt(d2);
-      const sameCluster = a.cat && a.cat===b.cat;
-      const REPEL = sameCluster ? REPEL_SAME : REPEL_DIFF;
-      const f = REPEL/d2;
-      fx += (dx/d)*f; fy += (dy/d)*f;
-    }
-    fx += (a.homeX-a.x)*HOME; fy += (a.homeY-a.y)*HOME;
-    a.vx = (a.vx+fx)*DAMP; a.vy = (a.vy+fy)*DAMP;
-  }
-  ST.edges.forEach(e=>{
-    // Pontes entre categorias (bridges) são só um desenho — não exercem força física,
-    // senão ficariam puxando uma área pra dentro da outra e misturando tudo de novo.
-    if(e[3]==='bridge') return;
-    const a = ST.nodeById[e[0]], b = ST.nodeById[e[1]];
-    if(!a||!b) return;
-    const dx=b.x-a.x, dy=b.y-a.y;
-    const d=Math.sqrt(dx*dx+dy*dy)||1;
-    const ideal = e[2]||70;
-    const f=(d-ideal)*SPRING;
-    const fx=(dx/d)*f, fy=(dy/d)*f;
-    if(!a.dragging && !a.pinned){ a.vx+=fx; a.vy+=fy; }
-    if(!b.dragging && !b.pinned){ b.vx-=fx; b.vy-=fy; }
-  });
-  nodes.forEach(n=>{
-    if(!n.dragging && !n.pinned){ n.x+=n.vx; n.y+=n.vy; }
-    if(n.pulse>0) n.pulse = Math.max(0, n.pulse-0.025);
-  });
-  // Resolução de colisão (evita círculos sobrepostos virando um emaranhado visual)
-  for(let i=0;i<nodes.length;i++){
-    const a = nodes[i];
-    const ra = a.isCore?22:(a.isHub?15:(a.isMystery?12:9));
-    for(let j=i+1;j<nodes.length;j++){
-      const b = nodes[j];
-      const rb = b.isCore?22:(b.isHub?15:(b.isMystery?12:9));
-      const minDist = ra+rb+6;
-      const dx=b.x-a.x, dy=b.y-a.y;
-      const d=Math.sqrt(dx*dx+dy*dy)||0.01;
-      if(d<minDist){
-        const overlap=(minDist-d)/2;
-        const ux=dx/d, uy=dy/d;
-        if(!a.dragging && !a.pinned){ a.x-=ux*overlap; a.y-=uy*overlap; }
-        if(!b.dragging && !b.pinned){ b.x+=ux*overlap; b.y+=uy*overlap; }
-      }
-    }
-  }
-
+  // Layout é fixo (sem física) — o loop só decai o brilho de "pulse" e redesenha.
+  ST.allNodes.forEach(n=>{ if(n.pulse>0) n.pulse = Math.max(0, n.pulse-0.02); });
   stRender();
   requestAnimationFrame(stLoop);
 }
@@ -4451,31 +4350,32 @@ function stRender(){
   const filter = ST.filter;
   function dim(n){ return filter && n.cat && n.cat!==filter && !n.isCore; }
 
-  // 0) setores de fundo por categoria — cada área fica visualmente óbvia à primeira vista
+  // 1) anel central dividido em fatias coloridas por categoria (visual Watch Dogs)
   (ST.wedges||[]).forEach(wd=>{
-    let alpha = wd.hasContent ? 0.09 : 0.035;
+    let alpha = wd.hasContent ? 0.95 : 0.4;
     if(filter && wd.name!==filter) alpha *= 0.3;
+    ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.beginPath();
-    ctx.moveTo(0,0);
-    ctx.arc(0, 0, wd.outerR, wd.angle-wd.half, wd.angle+wd.half);
+    ctx.arc(0, 0, ST_RING_OUTER, wd.angle-wd.half, wd.angle+wd.half);
+    ctx.arc(0, 0, ST_RING_INNER, wd.angle+wd.half, wd.angle-wd.half, true);
     ctx.closePath();
     ctx.fillStyle = wd.color;
-    ctx.globalAlpha = alpha;
     ctx.fill();
-    ctx.globalAlpha = 1;
+    ctx.restore();
   });
 
-  // edges
+  // edges (cadeias fixas saindo do anel + pontes finas entre categorias)
   ST.edges.forEach(e=>{
     const a = ST.nodeById[e[0]], b = ST.nodeById[e[1]];
     if(!a||!b) return;
     const isBridge = e[3]==='bridge';
     const bothLocked = !a.unlocked && !b.unlocked;
-    let alpha = isBridge ? 0.16 : (bothLocked ? 0.08 : (a.unlocked && b.unlocked ? 0.55 : 0.28));
+    let alpha = isBridge ? 0.18 : (bothLocked ? 0.12 : (a.unlocked && b.unlocked ? 0.75 : 0.32));
     if(dim(a)||dim(b)) alpha *= 0.15;
     ctx.beginPath();
     if(isBridge){
-      // Curva pro lado de fora do centro — evita cruzar o núcleo e as outras áreas
+      // Curva pro lado de fora do centro — evita cruzar o anel e as outras áreas
       const midX=(a.x+b.x)/2, midY=(a.y+b.y)/2;
       const dc = Math.hypot(midX,midY)||1;
       const cx = midX + (midX/dc)*70, cy = midY + (midY/dc)*70;
@@ -4485,22 +4385,38 @@ function stRender(){
     } else {
       ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
     }
-    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
-    ctx.lineWidth = isBridge ? 1 : 1.5;
+    ctx.strokeStyle = isBridge ? `rgba(255,255,255,${alpha})` : (a.unlocked&&b.unlocked ? `${a.color}cc` : `rgba(255,255,255,${alpha})`);
+    ctx.lineWidth = isBridge ? 1 : 2;
     ctx.stroke();
     ctx.setLineDash([]);
   });
 
-  // nodes
+  // 2) miolo do anel (centro)
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0,0,ST_RING_INNER-6,0,Math.PI*2);
+  ctx.fillStyle = '#0a0d12';
+  ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.stroke();
+  ctx.font = '700 11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#fff';
+  ctx.fillText('GRID DE', 0, -10);
+  ctx.fillText('HABILIDADES', 0, 4);
+  ctx.font = '700 13px sans-serif'; ctx.fillStyle = '#4ddb6e';
+  ctx.fillText(document.getElementById('st-overall-badge') ? (document.getElementById('st-overall-badge').dataset.lv||'') : '', 0, 20);
+  ctx.restore();
+
+  // 3) nós (hub na borda do anel + cadeia fixa de habilidades)
   ST.allNodes.forEach(n=>{
-    const r = n.isCore?22:(n.isHub?15:(n.isMystery?12:9));
+    if(n.isCore) return;
+    const r = n.isHub?17:(n.isMystery?12:9);
     let alpha = 1;
-    if(!n.isCore && !n.isHub && !n.unlocked) alpha = 0.14;
-    if(!n.isCore && n.isHub && !n.hasContent) alpha = 0.5;
+    if(!n.isHub && !n.unlocked) alpha = 0.16;
+    if(n.isHub && !n.hasContent) alpha = 0.55;
     if(dim(n)) alpha *= 0.2;
     ctx.save();
     ctx.globalAlpha = alpha;
-    const col = n.isCore ? '#ffffff' : (n.unlocked ? (n.color||'#4ddb6e') : '#2a2a3d');
+    const col = n.unlocked ? (n.color||'#4ddb6e') : '#2a2a3d';
     if(n.pulse>0){
       ctx.beginPath();
       ctx.arc(n.x,n.y, r + n.pulse*18, 0, Math.PI*2);
@@ -4508,35 +4424,35 @@ function stRender(){
       ctx.lineWidth = 2;
       ctx.stroke();
     }
-    if(n.unlocked){ ctx.shadowBlur = n.isCore?24:14; ctx.shadowColor = col; }
+    if(n.unlocked){ ctx.shadowBlur = 12; ctx.shadowColor = col; }
     ctx.beginPath();
     if(n.isMystery) ctx.setLineDash([3,3]);
     ctx.arc(n.x, n.y, r, 0, Math.PI*2);
-    ctx.fillStyle = col;
+    ctx.fillStyle = n.isHub ? n.color : col;
     ctx.fill();
-    ctx.lineWidth = n.pinned ? 2.5 : 1;
-    ctx.strokeStyle = n.pinned ? '#fff' : 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.shadowBlur = 0;
-    ctx.font = (n.isCore?'20px':(n.isHub?'16px':'11px'))+' sans-serif';
+    ctx.font = (n.isHub?'15px':'10px')+' sans-serif';
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillStyle = n.unlocked||n.isCore ? '#07140a' : '#555';
-    const icon = n.isCore?'🌱':(n.isHub?n.icon:(n.isMystery?'❓':''));
+    ctx.fillStyle = (n.unlocked||n.isHub) ? '#07140a' : '#555';
+    const icon = n.isHub?n.icon:(n.isMystery?'❓':'');
     if(icon) ctx.fillText(icon, n.x, n.y);
     ctx.restore();
 
-    // rótulo abaixo do nó (hub e núcleo sempre; demais só quando desbloqueado ou com hover)
-    if(n.isHub || n.isCore){
+    // rótulo só pro hub (nome da categoria) — os demais nós têm tooltip no hover
+    if(n.isHub){
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.font = n.isCore ? '700 13px sans-serif' : '700 12px sans-serif';
+      ctx.font = '700 12px sans-serif';
       ctx.textAlign='center'; ctx.textBaseline='middle';
-      const ly = n.y + r + 14;
+      const ly = n.y + Math.sign(n.y||1)*(r + 14);
       const tw = ctx.measureText(n.label).width;
       ctx.fillStyle = 'rgba(5,8,10,0.78)';
       ctx.fillRect(n.x-tw/2-5, ly-8, tw+10, 16);
-      ctx.fillStyle = n.isHub ? (n.hasContent?'#fff':'#999') : '#fff';
+      ctx.fillStyle = n.hasContent ? '#fff' : '#999';
       ctx.fillText(n.label, n.x, ly);
       ctx.restore();
     }
