@@ -4372,7 +4372,8 @@ function stBuildModel(){
     : {panX:0,panY:0,zoom:0.6,filter:'',targetPanX:0,targetPanY:0,targetZoom:0.6};
   const model = { categories:{}, allNodes:[], nodeById:{}, edges:[], wedges:[], zoneLabels:[], hoverId:null,
     panX:prev.panX, panY:prev.panY, zoom:prev.zoom, filter:prev.filter,
-    targetPanX:prev.targetPanX, targetPanY:prev.targetPanY, targetZoom:prev.targetZoom };
+    targetPanX:prev.targetPanX, targetPanY:prev.targetPanY, targetZoom:prev.targetZoom,
+    maxRadius:ZONE_HUB_R, zoneBoundaries:[] };
 
   // Núcleo central — miolo aberto (sem disco), só fica guardando a posição (0,0) pro
   // glow de pulso e pras linhas de hub->zona terem uma origem.
@@ -4401,6 +4402,9 @@ function stBuildModel(){
     const perZoneAngle = availableZoneAngle * zoneCatCounts[zi]/totalCatsForZones;
     const zoneCenterAngle = zoneAngleCursor + perZoneAngle/2;
     zoneAngleCursor += perZoneAngle + ZONE_GAP;
+    // Ângulo do meio do respiro entre esta zona e a próxima — usado só pra desenhar um raio
+    // bem fraco de fundo marcando a divisa entre zonas (puramente decorativo).
+    model.zoneBoundaries.push(zoneAngleCursor - ZONE_GAP/2);
     const catNames = zone.cats.filter(name=>stAllCatMeta().some(m=>m.name===name));
     const numCats = catNames.length || 1;
     const catSlot = (perZoneAngle*0.84) / numCats;
@@ -4485,6 +4489,7 @@ function stBuildModel(){
       const focusR = CAT_HUB_R + (maxR-CAT_HUB_R)*0.6;
       model.wedges.push({ name:meta.name, icon:meta.icon, color:zone.color, angle, half:wedgeHalf, hasContent,
         focusX: Math.cos(angle)*focusR, focusY: Math.sin(angle)*focusR });
+      model.maxRadius = Math.max(model.maxRadius, maxR);
     });
 
     // Cola visual entre categorias vizinhas da mesma zona (hub a hub) — reforça a leitura
@@ -4966,8 +4971,11 @@ function stRender(){
     // lados estejam desbloqueados. Caso especial: a aresta hub->1º nó usa o próprio
     // 1º nó como critério, já que o hub em si não "investe pontos".
     const lit = isChain ? (a.isHub ? b.unlocked : a.unlocked) : (a.unlocked && b.unlocked);
-    let alpha = isBridge ? 0.14 : (bothLocked ? 0.4 : (lit ? 0.85 : 0.55));
-    if(isLattice) alpha *= 0.55; // travessa em losango é um acento secundário, não o traço principal
+    // Trilhas bloqueadas mais apagadas que antes (0.4→0.25): mais contraste com a trilha
+    // aceso (0.85) e menos poluição visual nas categorias ainda não exploradas — o olho
+    // acha o "caminho" sem esforço, igual à referência (seção 4 do contexto).
+    let alpha = isBridge ? 0.14 : (bothLocked ? 0.25 : (lit ? 0.85 : 0.55));
+    if(isLattice) alpha *= 0.4; // travessa em losango é um acento secundário, não o traço principal
     if(dim(a)||dim(b)) alpha *= 0.15;
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -5017,6 +5025,29 @@ function stRender(){
     ctx.moveTo(-ZONE_HUB_R,0); ctx.lineTo(ZONE_HUB_R,0);
     ctx.moveTo(0,-ZONE_HUB_R); ctx.lineTo(0,ZONE_HUB_R);
     ctx.stroke();
+    ctx.restore();
+  }
+
+  // 2b) Grade de fundo ESTENDIDA (igual à referência ARC Raiders: um reticulado sutil que
+  // cobre todo o espaço ocupado pela árvore, não só o miolo) — anéis concêntricos bem fracos
+  // a partir do anel de categorias, mais um raio fraquíssimo marcando a divisa entre zonas.
+  // Puramente decorativo: não participa de nenhum cálculo de layout/desbloqueio.
+  {
+    ctx.save();
+    const outerR = (ST.maxRadius||CAT_HUB_R) + 40;
+    ctx.globalAlpha = 0.05;
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    for(let rr=CAT_HUB_R; rr<=outerR; rr+=ST_TIER_STEP*2){
+      ctx.beginPath(); ctx.arc(0,0,rr,0,Math.PI*2); ctx.stroke();
+    }
+    ctx.globalAlpha = 0.045;
+    (ST.zoneBoundaries||[]).forEach(a=>{
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a)*ZONE_HUB_R*0.5, Math.sin(a)*ZONE_HUB_R*0.5);
+      ctx.lineTo(Math.cos(a)*outerR, Math.sin(a)*outerR);
+      ctx.stroke();
+    });
     ctx.restore();
   }
 
