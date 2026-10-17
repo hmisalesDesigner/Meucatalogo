@@ -1176,10 +1176,10 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
       <div id="st-node-panel" style="display:none;"></div>
       <div id="st-legend">
         <span><i style="background:#f5c518"></i>Desbloqueado</span>
-        <span><i style="background:transparent;border:1px solid #f5c518;"></i>⭐ Disponível (gasta Energia)</span>
+        <span><i style="background:transparent;border:1px solid #f5c518;"></i>⏳ Aguardando aula compatível</span>
         <span><i style="background:transparent;border:1px solid rgba(255,255,255,0.3);"></i>Bloqueado</span>
         <span><i style="background:#4a9dff"></i>❓ Mistério</span>
-        <span style="color:var(--text2);font-size:10px;">scroll/pinça = zoom · arraste = navegar · clique no hub = foca a categoria · clique num nó ⭐ = aprende · clique direito = desaprende</span>
+        <span style="color:var(--text2);font-size:10px;">scroll/pinça = zoom · arraste = navegar · clique no hub = foca a categoria · clique num nó = ver detalhes · desbloqueia sozinho conforme você assiste aulas</span>
       </div>
     </div>
   </div>
@@ -3406,6 +3406,10 @@ function toggleEp(sid, idx){
     checkMetas();
     checkConsistencyLevelUp();
   }
+  // Progressão automática da árvore de Habilidades reage à aula assistida na hora, não só
+  // quando o usuário avalia com estrelas (stRecentTokensForCat lê DB.history, que já ganhou
+  // a entrada 'watched' acima) — só roda se a árvore já foi montada alguma vez nesta sessão.
+  if(ST) stRecomputeUnlocks();
 }
 
 function applyRateEp(sid, idx, stars, isCinema){
@@ -4023,7 +4027,11 @@ function stTokenize(str){
   return stNormalize(str).replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(w=>w.length>=4 && !PT_STOPWORDS.has(w));
 }
 
-function stAllCatMeta(){ return [...ST_CATS, ST_PERSONAL]; }
+// Vida Pessoal saiu da árvore — sem aulas de curso pra alimentar o match automático de
+// palavra-chave, ela vai virar (ou ser alimentada por) uma aba de hábitos separada mais
+// pra frente. ST_PERSONAL/stPersonalXP ficam definidos (dados ainda existem em
+// DB.personalHabits), só não entram mais na lista de categorias da árvore.
+function stAllCatMeta(){ return ST_CATS; }
 
 // Zonas temáticas: só reorganizam ONDE cada categoria senta no anel (mais espaço entre
 // temas diferentes, menos espaço dentro do mesmo tema) — as 17 categorias continuam sendo
@@ -4038,7 +4046,7 @@ const ST_ZONES = [
   { name:'Diretor de Mídia', color:'#b14cff', icon:'clapper',   cats:['Premiere Pro','After Effects','Som','Documentários'] },
   { name:'Mente Digital',    color:'#00e8d6', icon:'chip',      cats:['Programação','IA'] },
   { name:'Estrategista',     color:'#ffae1a', icon:'chart',     cats:['Marketing','Investimentos'] },
-  { name:'Templo Interior',  color:'#2fe06a', icon:'lotus',     cats:['Saúde e Bem-estar','Autoconhecimento','Gastronomia','Vida Pessoal'] }
+  { name:'Templo Interior',  color:'#2fe06a', icon:'lotus',     cats:['Saúde e Bem-estar','Autoconhecimento','Gastronomia'] }
 ];
 function stZoneOrderedCats(){
   const all = stAllCatMeta();
@@ -4104,7 +4112,7 @@ const ST_NODE_ICON_RULES = [
 const ST_ICON_POOL = ['photo','video','spark','pen','palette','type','cube','music','megaphone','chart','code','chip','pulse','mind','pan','clapper','lotus','star'];
 function stIconKeyForNode(n){
   if(n.isMystery) return null;
-  if(n.isHub || n.isZoneHub || n.baseOrder<2) return stIconKeyForCat(n.cat);
+  if(n.isHub || n.isZoneHub) return stIconKeyForCat(n.cat);
   const label = n.label||'';
   for(const [re,key] of ST_NODE_ICON_RULES) if(re.test(label)) return key;
   return ST_ICON_POOL[Math.floor(stHash01(n.id+'icon')*ST_ICON_POOL.length)];
@@ -4162,19 +4170,6 @@ function stHexToRgb(hex){
   if(hex.length===3) hex = hex.split('').map(c=>c+c).join('');
   const num = parseInt(hex,16)||0x4ddb6e;
   return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
-}
-
-function stDrawPillarBadge(ctx, rank, maxRank, cx, cy, r, filledColor, emptyColor){
-  const n = maxRank||3;
-  const dotR = Math.max(1.6, r*0.2);
-  const spacing = r*0.58;
-  const startX = -((n-1)/2)*spacing;
-  for(let i=0;i<n;i++){
-    const dx = startX + i*spacing;
-    ctx.beginPath(); ctx.arc(cx+dx, cy, dotR, 0, Math.PI*2);
-    if(i < rank){ ctx.fillStyle = filledColor; ctx.fill(); }
-    else { ctx.lineWidth = 1.1; ctx.strokeStyle = emptyColor; ctx.stroke(); }
-  }
 }
 
 function stCategoryXP(cat){
@@ -4240,31 +4235,64 @@ function stBuildCategoryNodes(cat){
   });
   const xp = stXPFor(cat);
   const real = ordered.filter(n=>!n.isMystery);
-  // O desbloqueio em si não é mais automático por limiar de XP — vira pontos de Energia
-  // que o usuário escolhe onde gastar (ver stRecomputeUnlocks/stSpendPoint).
+  // O desbloqueio é automático: vira pontos de Energia que o próprio sistema gasta sozinho
+  // (ver stRecomputeUnlocks/stAutoAssignPoints), no nó cujo rótulo bate com palavra-chave
+  // de alguma aula assistida recentemente.
   return { nodes, ordered, xp, real };
 }
 
-// ---------- Energia (pontos) e desbloqueio manual ----------
-const ST_PILLAR_RANKS = 3;
-const ST_PILLAR_ICONS = ['⭐','🌟','💫'];
-// Os 2 primeiros nós curados de cada categoria (baseOrder 0 e 1) são os "pilares":
-// em vez de liga/desliga único, têm 3 níveis, cada um com ícone próprio.
-function stNodeMaxRank(n){ return (!n.isMystery && n.baseOrder<2) ? ST_PILLAR_RANKS : 1; }
+// ---------- Energia (pontos) e desbloqueio automático ----------
+// Todo nó é liga/desliga único (sem níveis/pilares — removidos quando a progressão virou
+// automática; não fazia sentido pedir "3 aulas pra esse nó especificamente" quando quem
+// escolhe o nó é o match de palavra-chave, não o usuário).
 function stNodeRank(id){ return (DB.skillTree.ranks && DB.skillTree.ranks[id]) || 0; }
 function stNodeIcon(n){
   if(n.isMystery) return '❓';
-  if(n.baseOrder<2){ const r = stNodeRank(n.id); return ST_PILLAR_ICONS[Math.max(0,Math.min(r,ST_PILLAR_RANKS)-1)] || ST_PILLAR_ICONS[0]; }
   return null;
 }
 function stSpentPoints(cat){
   const built = stBuildCategoryNodes(cat);
-  return built.nodes.reduce((s,n)=> s + stNodeRank(n.id), 0);
+  // Conta no máximo 1 por nó (nunca o rank bruto) — contas salvas de antes da progressão
+  // virar liga/desliga único podem ter ranks de pilar (até 3) guardados; sem esse teto um
+  // nó assim "gastaria" pontos a mais pra sempre e travaria a categoria de novos desbloqueios.
+  return built.nodes.reduce((s,n)=> s + (stNodeRank(n.id)>=1 ? 1 : 0), 0);
 }
 function stPointsAvailable(cat){
   const spent = stSpentPoints(cat);
   const earned = Math.floor(stXPFor(cat)/ST_XP_PER_NODE);
   return Math.max(0, earned - spent);
+}
+
+// Progressão automática: gasta sozinho os pontos já ganhos na categoria (mesma conta de
+// sempre, XP/18) no nó disponível cujo rótulo bate com palavra-chave de alguma aula
+// assistida nos últimos 21 dias — reaproveita o mesmo cálculo de "recencyHit" que já
+// existia pra reordenar a lista curada (stBuildCategoryNodes/stRecentTokensForCat), só que
+// agora ele decide, não só prioriza. Sem nó com match disponível, o ponto fica guardado
+// ("Energia disponível") até uma aula futura bater com algum nó — nunca é gasto às cegas
+// na ordem curada, pra não "desperdiçar" um match que ainda vai aparecer.
+function stAutoAssignPoints(cat){
+  if(!DB.skillTree.ranks) DB.skillTree.ranks = {};
+  let assigned = false;
+  let guard = 0;
+  while(guard++ < 50){
+    const built = stBuildCategoryNodes(cat);
+    const spent = built.nodes.reduce((s,n)=> s + stNodeRank(n.id), 0);
+    const earned = Math.floor(stXPFor(cat)/ST_XP_PER_NODE);
+    if(earned - spent <= 0) break;
+    const target = built.ordered.find(n=>{
+      if(n.isMystery || stNodeRank(n.id)>=1 || !n.recencyHit) return false;
+      if(n.baseOrder<ST_BRANCHES) return true;
+      const prev = built.nodes[n.baseOrder-ST_BRANCHES];
+      return prev ? stNodeRank(prev.id)>=1 : true;
+    });
+    if(!target) break;
+    DB.skillTree.ranks[target.id] = 1;
+    assigned = true;
+    if(ST){ stPulseCategory(cat); const live = ST.nodeById[target.id]; if(live) live.pulse = 1; }
+    showToast('✨ '+target.label+' desbloqueado automaticamente!');
+  }
+  if(assigned) saveDB();
+  return assigned;
 }
 
 let ST = null;
@@ -4441,28 +4469,28 @@ function stBuildModel(){
 function stRecomputeUnlocks(){
   if(!ST) return;
   stAllCatMeta().forEach(meta=>{
+    stAutoAssignPoints(meta.name);
     const built = stBuildCategoryNodes(meta.name);
     const points = stPointsAvailable(meta.name);
-    const realMaxed = built.real.length>0 && built.real.every(n=>stNodeRank(n.id)>=stNodeMaxRank(n));
+    const realMaxed = built.real.length>0 && built.real.every(n=>stNodeRank(n.id)>=1);
     built.nodes.forEach(n=>{
       const rank = stNodeRank(n.id);
-      const maxRank = stNodeMaxRank(n);
       n.rank = rank;
-      n.maxRank = maxRank;
       n.unlocked = rank>=1;
-      n.maxed = rank>=maxRank;
       let prereqOk;
       if(n.isMystery) prereqOk = realMaxed;
       else if(n.baseOrder<ST_BRANCHES) prereqOk = true; // galho sai direto do hub
       else { const prev = built.nodes[n.baseOrder-ST_BRANCHES]; prereqOk = prev ? stNodeRank(prev.id)>=1 : true; }
-      n.available = prereqOk && !n.maxed && points>0;
+      // "Disponível" agora só indica que o pré-requisito foi cumprido e há energia
+      // guardada esperando um match — não é mais clicável pra gastar (ver stAutoAssignPoints).
+      n.available = prereqOk && !n.unlocked && points>0;
     });
     built.nodes.forEach(n=>{
       const old = ST.nodeById[n.id];
       if(old){
         if(!old.unlocked && n.unlocked){ old.pulse = 1; stPulseCategory(meta.name); }
-        old.rank = n.rank; old.maxRank = n.maxRank;
-        old.unlocked = n.unlocked; old.maxed = n.maxed; old.available = n.available;
+        old.rank = n.rank;
+        old.unlocked = n.unlocked; old.available = n.available;
       }
     });
     ST.categories[meta.name] = built;
@@ -4484,58 +4512,14 @@ function awardXP(cat, amount){
   stRecomputeUnlocks();
 }
 
-// Gasta 1 ponto de Energia pra avançar um nó disponível (⭐) um nível.
-function stSpendPoint(nodeId){
-  if(!ST) return;
-  const n = ST.nodeById[nodeId];
-  if(!n || !n.available) return;
-  if(!DB.skillTree.ranks) DB.skillTree.ranks = {};
-  DB.skillTree.ranks[nodeId] = (DB.skillTree.ranks[nodeId]||0) + 1;
-  saveDB();
-  stRecomputeUnlocks();
-  const live = ST.nodeById[nodeId];
-  if(live){ live.pulse = 1; }
-  stPulseCategory(n.cat);
-  stSfxSpend();
-  showToast('✨ '+ (n.isHub?n.label:n.label) + ' — nível '+ (DB.skillTree.ranks[nodeId]) +' desbloqueado!');
-  stShowNodePanel(ST.nodeById[nodeId]);
-}
-
-// Devolve 1 ponto de Energia de um nó já aprendido (clique direito — "desaprender",
-// igual ao builder do ARC Raiders). Bloqueado se o próximo nó do mesmo galho já foi
-// aprendido, pra nunca deixar um nó "desbloqueado" com o pré-requisito quebrado.
-function stUnspendPoint(nodeId){
-  if(!ST) return;
-  const n = ST.nodeById[nodeId];
-  if(!n || n.isHub || n.isCore) return;
-  const rank = stNodeRank(nodeId);
-  if(rank<=0) return;
-  const built = ST.categories[n.cat];
-  if(built){
-    const child = built.nodes[n.baseOrder + ST_BRANCHES];
-    if(child && stNodeRank(child.id)>0){
-      showToast('⚠️ Desaprenda "'+child.label+'" primeiro');
-      return;
-    }
-  }
-  DB.skillTree.ranks[nodeId] = rank - 1;
-  if(DB.skillTree.ranks[nodeId]<=0) delete DB.skillTree.ranks[nodeId];
-  saveDB();
-  stRecomputeUnlocks();
-  stPulseCategory(n.cat);
-  stSfxSelect(n);
-  showToast('↩️ '+n.label+' — 1 nível devolvido');
-  stShowNodePanel(ST.nodeById[nodeId]);
-}
-
-// Clique esquerdo (ou tap): hub foca/desfoca a categoria; nó disponível aprende na hora
-// (sem passo extra); os demais só mostram o painel de detalhes (não dá pra aprender ainda).
+// Clique esquerdo (ou tap): hub foca/desfoca a categoria; os demais nós só mostram o
+// painel de detalhes — não dá pra desbloquear por clique, a progressão é automática
+// (ver stAutoAssignPoints, chamada de dentro de stRecomputeUnlocks).
 function stHandleNodeClick(n){
   if(!n || n.isCore) return;
   stSfxSelect(n);
   if(n.isZoneHub) stFocusZone(n.label);
   else if(n.isHub) stSetFilter(ST.filter===n.cat ? '' : n.cat);
-  else if(n.available) stSpendPoint(n.id);
   else stShowNodePanel(n);
 }
 
@@ -4624,12 +4608,10 @@ function stInitCanvas(){
   });
   canvas.addEventListener('mouseleave', ()=>{ stShowTooltip(null); ST.hoverId = null; });
 
-  // Clique direito: desaprende (devolve 1 ponto) em vez do menu de contexto do navegador.
+  // Clique direito só suprime o menu de contexto do navegador — não existe mais
+  // "desaprender" manual, a progressão é toda automática agora.
   canvas.addEventListener('contextmenu', e=>{
     e.preventDefault();
-    const w = toWorld(e);
-    const n = nodeAt(w.x, w.y);
-    if(n && !n.isCore && !n.isHub) stUnspendPoint(n.id);
   });
 
   // ---------- Toque: 1 dedo arrasta (pan), 2 dedos belisca (zoom), toque curto = clique ----------
@@ -4681,9 +4663,8 @@ function stInitCanvas(){
 
 function stNodeStatusLabel(n){
   if(n.isHub) return n.hasContent ? '✅ Ativa' : '🔒 Sem cursos ainda';
-  if(n.maxed) return '✅ Nível máximo';
-  if(n.unlocked) return `✅ Nível ${n.rank}/${n.maxRank}`;
-  if(n.available) return '⭐ Disponível';
+  if(n.unlocked) return '✅ Desbloqueado';
+  if(n.available) return '⏳ Aguardando aula compatível';
   return '🔒 Bloqueado';
 }
 
@@ -4709,22 +4690,19 @@ function stShowNodePanel(n){
   if(!n || n.isCore){ panel.style.display='none'; return; }
   const meta = stCatMeta(n.cat);
   let energyInfo = '';
-  let spendBtn = '';
+  let autoInfo = '';
   if(!n.isHub){
     const points = stPointsAvailable(n.cat);
     energyInfo = `<div class="st-np-row"><span>⚡ Energia disponível</span><strong>${points}</strong></div>`;
-    if(n.maxRank>1){
-      energyInfo += `<div class="st-np-row"><span>Nível</span><strong>${n.rank}/${n.maxRank}</strong></div>`;
-    }
-    if(n.available){
-      spendBtn = `<button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px;" onclick="stSpendPoint('${n.id}')">⚡ Gastar 1 Energia e desbloquear</button>`;
-    } else if(!n.unlocked){
-      spendBtn = `<div style="margin-top:8px;font-size:11px;color:#9ab;">Precisa do nó anterior desbloqueado e energia suficiente nesta categoria.</div>`;
+    if(!n.unlocked){
+      autoInfo = n.available
+        ? `<div style="margin-top:8px;font-size:11px;color:#9ab;">Pronto pra desbloquear sozinho assim que uma aula assistida bater com o tema deste nó.</div>`
+        : `<div style="margin-top:8px;font-size:11px;color:#9ab;">Precisa do nó anterior desbloqueado primeiro.</div>`;
     }
   }
   // Cursos que contribuem (match por palavra-chave no nome)
   let courses = '';
-  if(!n.isHub && !n.isMystery && n.cat!==ST_PERSONAL.name){
+  if(!n.isHub && !n.isMystery){
     const labelTokens = new Set(stTokenize(n.label));
     const matches = DB.series.filter(s=>s.cat===n.cat && stTokenize(s.name).some(t=>labelTokens.has(t)));
     const list = matches.length ? matches : DB.series.filter(s=>s.cat===n.cat);
@@ -4737,7 +4715,7 @@ function stShowNodePanel(n){
     <div class="st-np-cat">${n.isHub?'Categoria':meta.name}</div>
     <div class="st-np-row"><span>Status</span><strong style="color:${n.unlocked?'#4ddb6e':(n.available?'#f5c518':'#e67e22')}">${stNodeStatusLabel(n)}</strong></div>
     ${energyInfo}
-    ${spendBtn}
+    ${autoInfo}
     ${courses}
   `;
   panel.style.display='block';
@@ -4812,11 +4790,10 @@ function stRenderNextPanel(){
     if(!built){ panel.innerHTML=''; return; }
     const meta = stCatMeta(filter);
     const rows = built.ordered.map((n,i)=>{
-      const icon = n.maxed ? '✅' : (n.available ? '⭐' : (n.unlocked?'✅':'🔒'));
-      const rankTxt = n.maxRank>1 ? ` (${n.rank}/${n.maxRank})` : '';
+      const icon = n.unlocked ? '✅' : (n.available ? '⏳' : '🔒');
       return `<div class="st-next-item">
         <span style="width:16px;text-align:center">${icon}</span>
-        <span style="flex:1;${n.unlocked?'':'opacity:0.5'}">${n.label}${rankTxt}</span>
+        <span style="flex:1;${n.unlocked?'':'opacity:0.5'}">${n.label}</span>
       </div>`;
     }).join('');
     const pts = stPointsAvailable(filter);
@@ -4824,14 +4801,16 @@ function stRenderNextPanel(){
       <div style="max-height:320px;overflow-y:auto;">${rows}</div>`;
     return;
   }
-  // Sem filtro: nós prontos pra gastar Energia agora (⭐) ou mais perto disso, entre categorias
+  // Sem filtro: nós na fronteira (pré-requisito já cumprido) de cada categoria — "pronto"
+  // aqui significa energia guardada esperando uma aula que bata com algum nó, não que ESTE
+  // nó específico vai ser o escolhido (quem decide isso é o match de palavra-chave).
   const candidates = [];
   stAllCatMeta().forEach(meta=>{
     const built = ST.categories[meta.name];
     if(!built) return;
     // próximo nó da fronteira: já disponível, ou o primeiro cujo pré-requisito já foi cumprido
     const frontier = built.nodes.find(n=>{
-      if(n.isMystery || n.maxed) return false;
+      if(n.isMystery || n.unlocked) return false;
       if(n.available) return true;
       if(n.baseOrder<ST_BRANCHES) return true;
       const prev = built.nodes[n.baseOrder-ST_BRANCHES];
@@ -4851,7 +4830,7 @@ function stRenderNextPanel(){
     <div class="st-next-item" style="flex-direction:column;align-items:stretch;gap:4px;">
       <div style="display:flex;justify-content:space-between;">
         <span>${c.meta.icon} ${c.node.label}</span>
-        <span style="color:${c.ready?'#f5c518':'#9ab'}">${c.ready?'⚡ pronto p/ gastar':'faltam '+Math.ceil(c.missing)+' XP'}</span>
+        <span style="color:${c.ready?'#f5c518':'#9ab'}">${c.ready?'⏳ aguardando aula':'faltam '+Math.ceil(c.missing)+' XP'}</span>
       </div>
       <div class="st-next-bar-bg"><div class="st-next-bar-fill" style="width:${c.havePct}%;background:${c.meta.color}"></div></div>
     </div>`).join('') : '<div style="color:#789;font-size:11px;">Tudo desbloqueado por aqui — hora de somar mais categorias!</div>');
@@ -5030,7 +5009,7 @@ function stRender(){
     ctx.setLineDash([]);
     ctx.shadowBlur = 0;
     // Ícone: vetorial próprio (não emoji), sempre na cor do próprio nó (não escuro-sobre-
-    // -claro como antes) — um por categoria no hub, "?" no mistério, rank nos pilares.
+    // -claro como antes) — um por categoria no hub, "?" no mistério.
     const iconCol = active ? col : (n.available ? `rgba(${rgb.r},${rgb.g},${rgb.b},0.85)` : 'rgba(255,255,255,0.4)');
     if(n.isZoneHub){
       stDrawIcon(ctx, n.icon||'star', n.x, n.y, r*0.56, col);
@@ -5040,19 +5019,8 @@ function stRender(){
       ctx.font = '700 12px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillStyle = iconCol;
       ctx.fillText('?', n.x, n.y);
-    } else if(n.baseOrder<2){
-      // Nó-pilar: ícone da categoria (igual ao hub, menor) + rank investido como
-      // texto pequeno logo abaixo ("1/5", "5/5") — substitui o antigo badge de pips.
-      stDrawIcon(ctx, stIconKeyForCat(n.cat), n.x, n.y, r*0.52, iconCol);
-      const maxR = n.maxRank||ST_PILLAR_RANKS;
-      ctx.font = '700 9px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = iconCol;
-      ctx.fillText((n.rank||0)+'/'+maxR, n.x, n.y + r + 9);
     } else {
-      // Nó comum: também ganha um ícone próprio (por palavra-chave do título, com
-      // fallback por hash) — antes só hub/pilar tinham ícone, o resto era um círculo vazio.
+      // Nó comum: ícone próprio por palavra-chave do título, com fallback por hash.
       const iconKey = stIconKeyForNode(n);
       if(iconKey) stDrawIcon(ctx, iconKey, n.x, n.y, r*0.62, iconCol);
     }
