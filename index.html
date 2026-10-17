@@ -4348,20 +4348,28 @@ let ST = null;
 // compacto — um hub de zona grande (rotulado) e as categorias daquela zona num pequeno
 // arco ao redor dele; os nós de cada categoria saem em galhos curtos e emaranhados,
 // bem mais perto do que antes (que espalhava tudo num anel único e compridos raios).
-const ZONE_HUB_R = 60;   // raio do hub da ZONA — pequeno, rente à borda entre zonas
-const CAT_HUB_R = 130;   // raio dos hubs de CATEGORIA (ao redor do hub da zona)
+// Raios recalculados pra garantir espaçamento mínimo real entre os círculos (não só "parecer
+// menor pra caber na tela" — isso só diminui o zoom, não afasta um círculo do outro). Com o
+// ângulo mínimo entre hubs de categoria vizinhos fixo (~14.7°), CAT_HUB_R precisa ser grande o
+// bastante pra que a distância em arco entre os centros (CAT_HUB_R * ângulo) passe da soma dos
+// dois raios desenhados (22+22) mais uma folga — por isso o raio subiu bastante em vez de descer.
+const ZONE_HUB_R = 90;   // raio do hub da ZONA
+const CAT_HUB_R = 250;   // raio dos hubs de CATEGORIA (ao redor do hub da zona)
 const ST_ZIGZAG_DEG = 16; // ângulo do zigue-zague de cada nó pro próximo
-const ST_MAX_REACH = 110; // alcance radial dos galhos — cada zona fica compacta (vira "cápsula"
+const ST_TIER_STEP = 45; // passo radial FIXO entre um andar de galho e o próximo (era uma
+  // curva decrescente que, em categorias com muitos nós, encolhia o passo até ficar menor
+  // que o próprio nó — dois nós do mesmo galho, andares seguidos, acabavam quase um em cima
+  // do outro. Passo fixo garante a mesma distância mínima não importa quantos andares existam.
                            // curta e larga, não espichada); o preenchimento da tela vem do zoom.
-function stChainRadius(rank){ return CAT_HUB_R + 24 + ST_MAX_REACH*(1 - 1/(1+rank*0.4)); }
-const ST_BRANCHES = 4; // quantos galhos saem de cada hub — mais largo e raso (menos andares
+function stChainRadius(rank){ return CAT_HUB_R + 45 + rank*ST_TIER_STEP; }
+const ST_BRANCHES = 2; // quantos galhos saem de cada hub — com 17 categorias disputando o
                         // empilhados), igual à referência (usado no layout E no "desaprender")
 
 function stBuildModel(){
   // Preserva pan/zoom/filtro entre reconstruções (ex: reabrir a aba, confirmar scan de nós)
   const prev = ST ? {panX:ST.panX, panY:ST.panY, zoom:ST.zoom, filter:ST.filter,
       targetPanX:ST.targetPanX, targetPanY:ST.targetPanY, targetZoom:ST.targetZoom}
-    : {panX:0,panY:0,zoom:1.3,filter:'',targetPanX:0,targetPanY:0,targetZoom:1.3};
+    : {panX:0,panY:0,zoom:0.6,filter:'',targetPanX:0,targetPanY:0,targetZoom:0.6};
   const model = { categories:{}, allNodes:[], nodeById:{}, edges:[], wedges:[], zoneLabels:[], hoverId:null,
     panX:prev.panX, panY:prev.panY, zoom:prev.zoom, filter:prev.filter,
     targetPanX:prev.targetPanX, targetPanY:prev.targetPanY, targetZoom:prev.targetZoom };
@@ -4426,27 +4434,36 @@ function stBuildModel(){
       const built = stBuildCategoryNodes(meta.name);
       model.categories[meta.name] = built;
 
-      // Ramificação orgânica saindo do hub — igual à lógica anterior, só que agora dentro
-      // de uma fatia bem menor (catSlot), o que já deixa o galho naturalmente mais curto
-      // e apertado (o "blob" da referência), sem precisar de física nenhuma.
+      // Ramificação orgânica saindo do hub. O ângulo de abertura entre galhos vizinhos NÃO
+      // é mais um valor arbitrário — é calculado pra garantir uma distância mínima real (em
+      // pixels) entre dois nós de galhos diferentes no andar mais apertado (o 1º, mais perto
+      // do hub), e só depois limitado pelo espaço da própria fatia da categoria. Antes o
+      // ângulo era fixo e pequeno demais pra 4 galhos, e os nós ficavam quase colados.
       const wedgeHalf = Math.max(0.02, catSlot/2 - catSlot*0.08);
-      const zigzagRad = Math.min(ST_ZIGZAG_DEG*Math.PI/180, wedgeHalf*0.55);
+      const firstTierR = CAT_HUB_R + 45; // raio do andar 0 (o mais apertado)
+      const minSafeArc = 30; // px mínimos entre nós vizinhos de galhos diferentes
+      const neededBranchSpread = minSafeArc / firstTierR;
+      const maxBranchFan = ST_BRANCHES>1 ? (wedgeHalf*1.5)/(ST_BRANCHES-1) : wedgeHalf;
+      const branchSpread = Math.min(neededBranchSpread, maxBranchFan);
+      const zigzagRad = Math.min(ST_ZIGZAG_DEG*Math.PI/180, wedgeHalf*0.35, branchSpread*0.4);
       let maxR = CAT_HUB_R;
-      const branchSpread = zigzagRad*0.65;
-      const wiggle = zigzagRad*0.3;
+      const wiggle = zigzagRad*0.5;
       built.nodes.forEach(n=>{
         const branch = n.baseOrder % ST_BRANCHES;
         const branchRank = Math.floor(n.baseOrder / ST_BRANCHES);
         const branchOffset = (branch - (ST_BRANCHES-1)/2) * branchSpread;
         const wig = (branchRank%2===0 ? 1 : -1) * wiggle;
         // Jitter orgânico determinístico (sempre o mesmo pro mesmo nó, não pula a cada
-        // render): desalinha o leque perfeitamente simétrico em algo mais assimétrico,
-        // parecido com os galhos tortos/desiguais da referência.
-        const jitterA = (stHash01(n.id+'a') - 0.5) * zigzagRad * 0.6;
-        const jitterR = 0.7 + stHash01(n.id+'b') * 0.65;
+        // render), mas bem mais contido que antes — agora é uma fração pequena do próprio
+        // espaçamento entre galhos, então nunca consome a distância mínima calculada acima.
+        const jitterA = (stHash01(n.id+'a') - 0.5) * branchSpread * 0.18;
+        // Desvio radial agora é um valor FIXO em pixels (±6px), não mais uma porcentagem do
+        // deslocamento acumulado — multiplicar por uma % crescia junto com a distância ao hub
+        // e em andares mais profundos passava a valer mais que o próprio passo entre andares.
+        const jitterRpx = (stHash01(n.id+'b') - 0.5) * 12;
         const curAngle = angle + branchOffset + wig + jitterA;
         const baseR = stChainRadius(branchRank);
-        const r = CAT_HUB_R + (baseR - CAT_HUB_R) * jitterR;
+        const r = baseR + jitterRpx;
         maxR = Math.max(maxR, r);
         n.color = zone.color;
         n.x = Math.cos(curAngle)*r; n.y = Math.sin(curAngle)*r;
@@ -4504,8 +4521,8 @@ function stRecomputeUnlocks(){
       n.maxed = rank>=maxRank;
       let prereqOk;
       if(n.isMystery) prereqOk = realMaxed;
-      else if(n.baseOrder<3) prereqOk = true; // galho sai direto do hub
-      else { const prev = built.nodes[n.baseOrder-3]; prereqOk = prev ? stNodeRank(prev.id)>=1 : true; }
+      else if(n.baseOrder<ST_BRANCHES) prereqOk = true; // galho sai direto do hub
+      else { const prev = built.nodes[n.baseOrder-ST_BRANCHES]; prereqOk = prev ? stNodeRank(prev.id)>=1 : true; }
       n.available = prereqOk && !n.maxed && points>0;
     });
     built.nodes.forEach(n=>{
@@ -4805,7 +4822,7 @@ function stSetFilter(cat){
     if(wd){ ST.targetPanX = -wd.focusX*2.0; ST.targetPanY = -wd.focusY*2.0; ST.targetZoom = 2.0; }
     stSfxFocus(true);
   } else {
-    ST.targetPanX = 0; ST.targetPanY = 0; ST.targetZoom = 1.3;
+    ST.targetPanX = 0; ST.targetPanY = 0; ST.targetZoom = 0.6;
     if(wasFiltered) stSfxFocus(false);
   }
   stRenderNextPanel();
@@ -4816,7 +4833,7 @@ function stResetView(){
   ST.filter = '';
   const sel = document.getElementById('st-cat-filter');
   if(sel) sel.value = '';
-  ST.targetPanX = 0; ST.targetPanY = 0; ST.targetZoom = 1.3;
+  ST.targetPanX = 0; ST.targetPanY = 0; ST.targetZoom = 0.6;
 }
 
 function stPopulateFilter(){
@@ -4878,8 +4895,8 @@ function stRenderNextPanel(){
     const frontier = built.nodes.find(n=>{
       if(n.isMystery || n.maxed) return false;
       if(n.available) return true;
-      if(n.baseOrder<3) return true;
-      const prev = built.nodes[n.baseOrder-3];
+      if(n.baseOrder<ST_BRANCHES) return true;
+      const prev = built.nodes[n.baseOrder-ST_BRANCHES];
       return prev ? prev.unlocked : true;
     });
     if(!frontier) return;
@@ -5093,23 +5110,19 @@ function stRender(){
     // Rótulo do hub de categoria: só aparece no hover, quando está em foco, ou logo após
     // interação (pulse) — mostrar os 17 nomes o tempo todo era a maior fonte de poluição visual.
     if(n.isHub && (ST.hoverId===n.id || ST.filter===n.cat || n.pulse>0.3)){
+      // Rótulo horizontal fixo, igual ao da zona — a versão antiga girava o texto radialmente
+      // (perpendicular na parte de cima da roda), o que deixava a palavra quase na vertical e
+      // ilegível pros hubs perto do topo. Texto sempre na horizontal é legível em qualquer posição.
       ctx.save();
       ctx.globalAlpha = alpha;
-      const hubAngle = Math.atan2(n.y, n.x);
-      let rot = hubAngle, flip = false;
-      if(rot > Math.PI/2 || rot < -Math.PI/2){ rot += Math.PI; flip = true; }
-      ctx.translate(n.x, n.y);
-      ctx.rotate(rot);
+      const lx = n.x, ly = n.y + r + 13;
       ctx.font = '700 12px sans-serif';
-      ctx.textBaseline = 'middle';
-      ctx.textAlign = flip ? 'right' : 'left';
-      const labelR = r + 14;
-      const tx = flip ? -labelR : labelR;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       const tw = ctx.measureText(n.label).width;
       ctx.fillStyle = 'rgba(5,8,10,0.78)';
-      ctx.fillRect(flip ? tx-tw-4 : tx-4, -9, tw+8, 18);
+      ctx.fillRect(lx-tw/2-4, ly-9, tw+8, 18);
       ctx.fillStyle = n.hasContent ? '#fff' : '#999';
-      ctx.fillText(n.label, tx, 0);
+      ctx.fillText(n.label, lx, ly);
       ctx.restore();
     }
   });
