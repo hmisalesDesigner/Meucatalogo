@@ -730,6 +730,61 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   .series-card { flex:0 0 calc(33% - 8px); }
 }
 
+/* ======= Habilidades: Roda de Habilidades (skill wheel) ======= */
+#skills-view .sw-sub{font-size:12px;color:var(--text2);padding:0 28px;margin:-6px 0 14px;}
+#skills-view .sw-board{display:grid;grid-template-columns:1fr 320px;gap:14px;padding:0 28px 28px;}
+@media (max-width:860px){ #skills-view .sw-board{grid-template-columns:1fr;} }
+#skills-view .sw-stage{
+  position:relative;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+  background:var(--card);
+  height:min(68vh,720px);min-height:420px;display:flex;align-items:center;justify-content:center;
+}
+#skills-view .sw-stage svg{display:block;width:100%;height:100%;min-height:0;min-width:0;}
+#skills-view .sw-hint{position:absolute;left:16px;bottom:12px;font-size:11px;color:var(--text2);pointer-events:none;}
+#skills-view .sw-back-btn{
+  position:absolute;left:14px;top:14px;display:flex;align-items:center;gap:6px;
+  padding:7px 13px 7px 10px;border-radius:999px;border:1px solid var(--border);
+  background:var(--bg);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;
+  opacity:0;transform:translateX(-6px);pointer-events:none;
+  transition:opacity .25s ease,transform .25s ease,border-color .15s ease;
+}
+#skills-view .sw-back-btn.show{opacity:1;transform:translateX(0);pointer-events:auto;}
+#skills-view .sw-back-btn:hover{border-color:var(--accent);}
+#skills-view .sw-back-btn svg{width:12px;height:12px;}
+#skills-view .sw-panel{
+  border:1px solid var(--border);border-radius:var(--radius);background:var(--card);
+  padding:16px;display:flex;flex-direction:column;height:min(68vh,720px);min-height:420px;overflow:hidden;
+}
+#skills-view .sw-eyebrow{font-size:10.5px;letter-spacing:.08em;color:var(--text2);text-transform:uppercase;margin-bottom:4px;}
+#skills-view .sw-panel h2{font-size:17px;margin:0 0 2px;font-weight:700;color:var(--text);}
+#skills-view .sw-sub2{font-size:12px;color:var(--text2);margin-bottom:14px;}
+#skills-view .sw-progress-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+#skills-view .sw-progress-track{flex:1;height:7px;border-radius:99px;background:var(--hover);overflow:hidden;}
+#skills-view .sw-progress-fill{height:100%;border-radius:99px;transition:width .5s ease;}
+#skills-view .sw-progress-pct{font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--text);}
+#skills-view .sw-overview-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;padding-right:2px;min-height:0;}
+#skills-view .sw-overview-item{display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:background .15s ease,border-color .15s ease;}
+#skills-view .sw-overview-item:hover{background:var(--hover);border-color:var(--border);}
+#skills-view .sw-overview-item .sw-sw{width:9px;height:9px;border-radius:3px;flex:none;}
+#skills-view .sw-overview-item .sw-name{flex:1;font-size:12.5px;font-weight:600;color:var(--text);}
+#skills-view .sw-overview-item .sw-frac{font-size:11px;color:var(--text2);font-variant-numeric:tabular-nums;}
+#skills-view .sw-node-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;padding-right:2px;flex:1;min-height:0;}
+#skills-view .sw-node-row{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:background .15s ease,border-color .15s ease;}
+#skills-view .sw-node-row:hover{background:var(--hover);}
+#skills-view .sw-node-row.sw-active{background:var(--hover);border-color:var(--border);}
+#skills-view .sw-node-row .sw-ico{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;border:1.5px solid var(--border);font-size:10.5px;}
+#skills-view .sw-node-row.sw-unlocked .sw-ico{border-color:transparent;}
+#skills-view .sw-node-row .sw-name{flex:1;font-size:12px;font-weight:500;color:var(--text);}
+#skills-view .sw-node-row.sw-locked .sw-name{color:var(--text2);}
+#skills-view .sw-node-row .sw-tag{font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--text2);font-weight:700;}
+#skills-view .sw-node-row.sw-next .sw-tag{color:var(--accent);}
+#skills-view .sw-empty-note{font-size:11.5px;color:var(--text2);margin-top:auto;padding-top:10px;border-top:1px dashed var(--border);}
+#skills-view .sw-ring-tooltip{position:absolute;z-index:5;pointer-events:none;transform:translate(-50%,calc(-100% - 10px));background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--text);box-shadow:var(--shadow);opacity:0;transition:opacity .12s ease;}
+#skills-view .sw-ring-tooltip.show{opacity:1;}
+#skills-view .sw-ring-tooltip .sw-status{font-weight:500;color:var(--text2);margin-left:6px;}
+#skills-view .sw-node-dot{transition:r .15s ease,opacity .15s ease;}
+#skills-view .sw-ring-node:hover .sw-node-dot{filter:url(#sw-glow);opacity:1;}
+
 </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -792,6 +847,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
     <div class="nav-item" onclick="goTo('progress-view')"><span class="icon">📈</span>Progresso</div>
     <div class="nav-item" onclick="goTo('history-view')"><span class="icon">🕐</span>Histórico</div>
     <div class="nav-item" onclick="goTo('notes-view')"><span class="icon">📝</span>Notas</div>
+    <div class="nav-item" onclick="goTo('skills-view')"><span class="icon">🎯</span>Habilidades</div>
   </div>
 
   <div class="nav-section">
@@ -924,6 +980,24 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   <div class="content-area" id="notes-view">
     <div class="section-title" style="padding-top:16px;">Notas e Avaliações</div>
     <div style="padding:0 28px;" id="notes-list"></div>
+  </div>
+
+  <!-- ======= HABILIDADES (Roda de Habilidades) ======= -->
+  <div class="content-area" id="skills-view">
+    <div class="section-title" style="padding-top:16px;">Roda de Habilidades</div>
+    <div class="sw-sub">Mecânicas reais extraídas das aulas de cada categoria — desbloqueiam conforme você assiste.</div>
+    <div class="sw-board">
+      <div class="sw-stage" id="sw-stage">
+        <button class="sw-back-btn" id="sw-backBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Todas as categorias
+        </button>
+        <svg id="sw-svg" viewBox="0 0 900 760" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="sw-ring-tooltip" id="sw-ringTooltip"></div>
+        <div class="sw-hint" id="sw-stageHint">Clique numa fatia pra ver as mecânicas dessa categoria</div>
+      </div>
+      <div class="sw-panel" id="sw-panel"></div>
+    </div>
   </div>
 
   <!-- ======= STATS ======= -->
@@ -1607,7 +1681,8 @@ function goTo(view){
     dashboard:'Dashboard', library:'Biblioteca', watching:'Assistindo',
     completed:'Concluídos', favorites:'Favoritos', 'progress-view':'Progresso',
     'history-view':'Histórico', 'notes-view':'Notas', 'stats-view':'Estatísticas',
-    'search-view':'Pesquisa', settings:'Configurações', 'cat-filter-view':'Categoria'
+    'search-view':'Pesquisa', settings:'Configurações', 'cat-filter-view':'Categoria',
+    'skills-view':'Habilidades'
   };
   document.getElementById('topbar-title').textContent = titles[view]||view;
 
@@ -1620,6 +1695,7 @@ function goTo(view){
   if(view==='history-view') renderHistory();
   if(view==='notes-view') renderNotes();
   if(view==='stats-view') renderStats();
+  if(view==='skills-view' && typeof renderSkillWheel==='function') renderSkillWheel();
     if(view==='settings') detectBase64Images();
   if(view==='search-view'){ document.getElementById('search-input').focus(); doSearch(); }
 }
@@ -5048,6 +5124,348 @@ async function prefillNewSeries(name, driveId){
 window.addEventListener('beforeunload', ()=>{ saveDB(); if(gistToken()&&gistId()) pushToGist(); });
 // Salva quando minimiza ou muda de aba
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveDB(); });
+</script>
+
+<!-- ======= Roda de Habilidades (skill wheel) — D3, mecânicas reais extraídas das aulas ======= -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // Curadoria real por curso (nomes reais das aulas, epNames do backup), por categoria.
+  // "Investimentos" inclui o curso de Matemática Básica; "Marketing" inclui os cursos de
+  // Redes Sociais e os de Design Freelancer — tudo dentro da mesma categoria real do app.
+  var SW_CATS_RAW = [
+    {name:"Photoshop", color:"#f28b2c", nodes:["Planejamento da Ideia","Criar Arquivo e Espaço","Tamanho e Resolução","Paleta de Cores","Recorte de Imagem","Criação de Background","Organizar Camadas","Textos em Imagem","Sombra e Ajuste","Degradê","Agrupar Camadas","Smart Object","Criar Artboard","Mockup","Liquify","Máscara de Camada","RGB para CMYK","Warp / Puppet","Dupla Exposição","Tratamento de Pele","Camera Raw","Recorte de Cabelo","Separação de Frequência","Render 3D Básico","Color Grading","Efeitos Atmosféricos","Pincéis e Texturas","Harmonia de Cores","Ajustes Finais"]},
+    {name:"Premiere Pro", color:"#b14cff", nodes:["Corte Mestre","Atalhos de Edição","Invisibilidade do Corte","Tipos de Corte","Corte no Movimento","Storytelling","Efeito Kuleshov","Montagem","Organização de Projeto","Edição em Blocos","Trilha Sonora","Ritmo na Edição","Atalhos Avançados (DaVinci)","Rabbit Mode","Shutter e Fake Shutter","Plugins de Edição","Blur / Desfoque","Visualizar LUTs","Remover Objetos","Transições Feitas à Mão","Ramps (velocidade)","Hyper Slow","Decupagem","Remix de Música","Sound FX","Estabilização de Imagem","Exportação para Redes Sociais","Bit Rate e Exportação"]},
+    {name:"After Effects", color:"#5ad1e6", nodes:["Interface do After Effects","Sólidos e Texto","Shapes","Animação Básica","Gráfico de Velocidade","Track Matte","Efeitos e Camada de Ajuste","Nulo e Expressões","Controladores","Precomp","Interface e Workspace","Configuração de Projeto","Criar Composição","Criar Shape","Camada Nula e Controladores","Animação de Texto","Presets de Animação","Criar Máscara","Criar Sombras","Efeito de Fumaça","Graph Editor e Motion Blur","Substituir Camadas","Flow Chart","Split Layer","Importar e Posicionar Imagens","Efeitos Sonoros e Áudio","Blend Mode","Transições","Time Remapping","Freeze Frame","Timewarp","Rotoscopia","Rotobrush","Estrutura de Shapes (Bezier)","Repetidores","Track Matte e Luma Matte","Camada 3D e Câmera 3D","Iluminação e Sombras 3D","Criar Partículas","Render com Cinema 4D","Texto Extrude","Parallax"]},
+    {name:"Illustrator", color:"#ff6f91", nodes:["Criar Documentos e Artboard","CMYK x RGB","Formas e Pen Tool","Camadas (Layers)","Selecionar e Agrupar Objetos","Alinhar Texto e Objetos","Fill e Stroke","Ferramenta de Gradiente","Pathfinder","Ferramenta Shape Builder","Blend Tool","Criar Logo","Vetorizar Imagens","Recolor Artwork","Criar Pattern","Texto em Path / 3D","Máscara entre Texto e Imagem","Integração Illustrator + Photoshop","Moodboard","Briefing com Cliente"]},
+    {name:"Investimentos", color:"#ffae1a", nodes:["Mercado de Capitais","Carteira Previdenciária","Critérios Qualitativos (Fisher)","Critérios Quantitativos (Graham)","Dividendo Inteligente","Análise de Empresas","Escolha de Corretora","Reserva de Emergência","Diversificação x Concentração","Bolsa Cara ou Barata","IPOs","Disciplina e Paciência","Mentalidade Financeira","Crenças Limitantes","Orçamento Pessoal","Gestão de Dívidas","Cartão de Crédito","Inflação","Tesouro Direto","CDB, RDB e LC","LCI e LCA","Debêntures","CRI e CRA","Fundos de Renda Fixa","Nomenclatura e Tipos de Ações","Análise Fundamentalista","Análise Gráfica","Preço Médio","Bonificação, Subscrição e Split","Imposto de Renda em Ações","Fundos Imobiliários (FIIs)","Fundos Multimercados","ETFs","Previdência Privada","Reserva de Valor","Criptomoedas","Imposto de Renda em Criptomoedas","Investir no Exterior","Impostos no Exterior","Criar um Negócio Próprio","Equity","Sucessão Patrimonial","Seguro de Vida","Opções (derivativos)","Declaração de Imposto de Renda","Classificação de Imóveis Urbanos","Princípios da Avaliação de Imóveis","Vistoria do Imóvel","Pesquisa de Mercado","Diagnóstico de Mercado","Método Comparativo Direto","Método da Quantificação do Custo","Método Evolutivo","Método Involutivo","Método da Capitalização da Renda","Tratamento de Dados e Fatores","Padrão do Imóvel (VEIU/IUP)","Saneamento da Amostra","Intervalo de Confiança","Custo Unitário Básico (CUB/CUPE)","Fator de Comercialização","Fator de Ajuste ao Mercado","Laudo de Avaliação","Valor de Liquidação Forçada","Conjuntos Numéricos","Sistema de Numeração Decimal","Adição e Subtração","Regra dos Sinais","Multiplicação e Tabuada","Divisão","Múltiplos e Divisores","Critérios de Divisibilidade","Expressões Numéricas (PEMDAS)","Números Primos","Fatoração em Fatores Primos","Potenciação","Propriedades da Potenciação","Notação Científica","Radiciação","Propriedades da Radiciação","MMC e MDC","Frações","Dízima Periódica e Fração Geratriz","Razão e Proporção","Regra de Três Simples e Composta","Porcentagem","Juros Simples","Juros Compostos","Expressões Algébricas","Monômios e Polinômios","Operações com Polinômios"]},
+    {name:"Marketing", color:"#ff5c8d", nodes:["Funil de Vendas","Tráfego, Conteúdo e Venda","Perfil de Instagram Atrativo","Criação de Conteúdo para Instagram","Ecossistema de Produtos","Narrativa que Vende","Jornada do Herói","Precificação de Serviços","Nicho de Mercado","Modelos de Faturamento","Perfil Corporativo no Pinterest","Confirmar Site no Pinterest","Palavras-chave e Objetivos","Criar Pins e Pastas","Vitrine Rotativa","Plugin e Widget do Pinterest","Links de Afiliados","Pinterest Analytics","Pins Avançados","Marketing de Afiliados","Neurovendas e Gatilhos Mentais","Copy Estratégica","Design de Pins","Perfil Comercial no Instagram","Hashtags e Horários","Persona do Público","Fluxo de Trabalho de Conteúdo","Tom de Voz e Propósito de Marca","Conteúdo: Relacionamento x Campanha","Cronograma de Conteúdo","Metas SMART","Produção com Celular","Briefing com Cliente","Painel Conceitual (moodboard)","Pesquisa de Concorrentes","Personalidade da Marca","Mapa Mental","Semiótica Aplicada","Gestalt Aplicada ao Logo","Vetorização de Logo","Grids de Construção de Logo","Gerenciamento de Cores","Harmonia de Cores","Shades e Tints","Classificação de Tipos","Composição Tipográfica","Criação de Tipo Customizado","Kerning","Criar Pattern no Illustrator","Papelaria (cartão, envelope...)","Mockup de Marca","Apresentação Persuasiva","Manual de Marca","Precificação de Serviço","Contrato para Designer","Jornada do Designer","Direção de Arte","Interpretação de Briefing","Key Visual","Organização de Referências","Estudos de Cor","Banco de Imagens","Storytelling Publicitário","Fórmula da Criatividade","Mídia Impressa x Digital","Escolha de Ferramenta","Desdobramento de Peças","Apresentação de Portfólio"]},
+    {name:"Programação", color:"#00e8d6", nodes:["Fórmula SE","Gráfico","Ferramenta Solver","Relatório (Dashboard)","PROCV","Formatação Condicional","Tabela Dinâmica","Validação de Dados","Formatação Numérica","CONT.SE / CONT.VALORES","UserForm / Formulário","Análise Rápida","Dashboard"]},
+    {name:"Tipografia", color:"#8fd3ff", nodes:["Interface e Workspace (InDesign)","Páginas e Layers","Grid (Margens e Colunas)","Baseline e Guias","Páginas Mestras","Kerning e Tracking","Colunas e Texto Encadeado","Glyphs","Criando Estilos","Paleta de Cores e Conta-gotas","Preenchimento e Contorno","Gradientes","Pathfinder","Objetos Ancorados e Wrap","Inserir e Transformar Imagens","Painel de Links","Narrativa Visual","Data Visualization x Infografia","História da Tipografia","Características da Letra","Famílias e Estilos Tipográficos","Hierarquia Tipográfica","Edição de Caracteres e Parágrafos","Caligrafia e Criação Tipográfica","FontForge"]},
+    {name:"Saúde e Bem-estar", color:"#2fe06a", nodes:["Reflexologia Podal","Prática de Reflexologia Podal"]}
+  ];
+
+  function swTotalsForCat(catName){
+    var tot=0, watched=0;
+    (DB.series||[]).forEach(function(s){
+      if(s.cat!==catName) return;
+      var seasons = Array.isArray(s.seasons) ? s.seasons : [];
+      var t = seasons.reduce(function(a,b){ return a+(b||0); },0);
+      var w = Array.isArray(s.watched) ? s.watched.filter(Boolean).length : (typeof s.watched==='number' ? s.watched : 0);
+      tot += t; watched += Math.min(w, t||w);
+    });
+    return {tot:tot, watched:watched};
+  }
+
+  function swBuildCats(){
+    return SW_CATS_RAW.map(function(raw){
+      var t = swTotalsForCat(raw.name);
+      var prog = t.tot>0 ? t.watched/t.tot : 0;
+      var nodes = raw.nodes;
+      var unlockedCount = Math.max(0, Math.min(nodes.length, Math.round(nodes.length*prog)));
+      return {
+        name: raw.name, color: raw.color, unlockedCount: unlockedCount,
+        nodes: nodes.map(function(nm,i){ return {name:nm, unlocked:i<unlockedCount}; })
+      };
+    }).filter(function(c){ return c.nodes.length>0; });
+  }
+
+  function deg2rad(d){ return (d-90)*Math.PI/180; }
+
+  var swCol = {};
+  function swReadThemeColors(){
+    var cs = getComputedStyle(document.documentElement);
+    function v(name, fallback){ var x=cs.getPropertyValue(name); return x && x.trim() ? x.trim() : fallback; }
+    swCol.card = v('--card','#1e1e2f'); swCol.border = v('--border','#2a2a3d');
+    swCol.text = v('--text','#e5e5e5'); swCol.text2 = v('--text2','#a0a0b0');
+    swCol.hover = v('--hover','#252538'); swCol.accent = v('--accent','#e50914');
+  }
+
+  window.renderSkillWheel = function(){
+    swReadThemeColors();
+    var CATS = swBuildCats();
+    var focused = null;
+    var W=900, H=760, CX=450, CY=390;
+
+    var svg = d3.select("#sw-svg");
+    svg.selectAll("*").remove();
+    svg.attr("viewBox","0 0 "+W+" "+H);
+
+    var panel = d3.select("#sw-panel");
+    var backBtn = document.getElementById("sw-backBtn");
+    var stageHint = document.getElementById("sw-stageHint");
+    var tipEl = document.getElementById("sw-ringTooltip");
+    var stageEl = document.getElementById("sw-stage");
+    if(backBtn){ backBtn.classList.remove("show"); backBtn.onclick = function(){ zoomOut(); }; }
+    if(stageHint) stageHint.textContent = "Clique numa fatia pra ver as mecânicas dessa categoria";
+
+    if(!CATS.length){
+      panel.html("");
+      panel.append("div").attr("class","sw-eyebrow").text("Roda de Habilidades");
+      panel.append("h2").text("Sem dados ainda");
+      panel.append("div").attr("class","sw-sub2").text("Cadastre cursos nas categorias pra a roda ganhar vida.");
+      return;
+    }
+
+    var defs = svg.append("defs");
+    var filt = defs.append("filter").attr("id","sw-glow").attr("x","-60%").attr("y","-60%").attr("width","220%").attr("height","220%");
+    filt.append("feGaussianBlur").attr("stdDeviation",5).attr("result","b");
+    var merge = filt.append("feMerge");
+    merge.append("feMergeNode").attr("in","b");
+    merge.append("feMergeNode").attr("in","SourceGraphic");
+
+    var gOverview = svg.append("g").attr("class","sw-g-overview");
+    var gDetail = svg.append("g").attr("class","sw-g-detail").style("opacity",0).style("pointer-events","none");
+
+    var n = CATS.length, gapDeg = 2.2, sliceDeg = 360/n;
+    var innerR = 86, outerR = 268;
+
+    var arcBg = d3.arc().innerRadius(innerR).outerRadius(outerR)
+      .startAngle(function(d){ return (d.a0+gapDeg/2)*Math.PI/180; })
+      .endAngle(function(d){ return (d.a1-gapDeg/2)*Math.PI/180; })
+      .cornerRadius(4);
+    var arcFill = d3.arc().innerRadius(innerR).outerRadius(function(d){ return innerR+(outerR-innerR)*(d.pct); })
+      .startAngle(function(d){ return (d.a0+gapDeg/2)*Math.PI/180; })
+      .endAngle(function(d){ return (d.a1-gapDeg/2)*Math.PI/180; })
+      .cornerRadius(4);
+
+    var overviewData = CATS.map(function(c,i){ return {cat:c, idx:i, a0:i*sliceDeg, a1:(i+1)*sliceDeg, pct: c.nodes.length ? c.unlockedCount/c.nodes.length : 0}; });
+
+    gOverview.attr("transform","translate("+CX+","+CY+")");
+    gOverview.append("circle").attr("r", outerR+18).attr("fill","none").attr("stroke", swCol.border).attr("stroke-width",1);
+    for(var i=0;i<n;i++){
+      var a0 = deg2rad(i*sliceDeg);
+      gOverview.append("line")
+        .attr("x1", Math.cos(a0)*(outerR+4)).attr("y1", Math.sin(a0)*(outerR+4))
+        .attr("x2", Math.cos(a0)*(outerR+18)).attr("y2", Math.sin(a0)*(outerR+18))
+        .attr("stroke", swCol.border).attr("stroke-width",1);
+    }
+
+    var slice = gOverview.selectAll(".sw-slice").data(overviewData).enter().append("g")
+      .attr("class","sw-slice").style("cursor","pointer");
+
+    slice.append("path").attr("class","sw-arc-bg").attr("d", arcBg)
+      .attr("fill", swCol.hover).attr("stroke", swCol.border).attr("stroke-width",1);
+    slice.append("path").attr("class","sw-arc-fill").attr("d", arcFill)
+      .attr("fill", function(d){ return d.cat.color; }).attr("fill-opacity",.85);
+
+    slice.each(function(d){
+      var mid=(d.a0+d.a1)/2, a=deg2rad(mid);
+      var lr = outerR+34, lx=Math.cos(a)*lr, ly=Math.sin(a)*lr;
+      d3.select(this).append("text")
+        .attr("x",lx).attr("y",ly).attr("text-anchor","middle").attr("dominant-baseline","middle")
+        .attr("font-size",12.5).attr("font-weight",700).attr("letter-spacing",".01em")
+        .attr("fill", d.cat.color).text(d.cat.name.toUpperCase());
+      d3.select(this).append("text")
+        .attr("x",lx).attr("y",ly+15).attr("text-anchor","middle")
+        .attr("font-size",10.5).attr("fill", swCol.text2)
+        .text(d.cat.unlockedCount+"/"+d.cat.nodes.length);
+    });
+
+    var hub = gOverview.append("g");
+    hub.append("circle").attr("r", innerR-10).attr("fill", swCol.card).attr("stroke", swCol.accent).attr("stroke-width",2).attr("stroke-opacity",.5);
+    hub.append("text").attr("y",-6).attr("text-anchor","middle").attr("font-size",11.5).attr("font-weight",700)
+      .attr("fill", swCol.accent).attr("letter-spacing",".03em").text("MEUCATÁLOGO");
+    hub.append("text").attr("y",11).attr("text-anchor","middle").attr("font-size",8.5).attr("fill", swCol.text2)
+      .attr("letter-spacing",".12em").text("HABILIDADES");
+
+    slice.on("click", function(ev,d){ zoomInto(d.idx); });
+    slice.on("mouseenter", function(ev,d){ d3.select(this).select("path.sw-arc-bg").attr("stroke", d.cat.color); })
+      .on("mouseleave", function(ev,d){ d3.select(this).select("path.sw-arc-bg").attr("stroke", swCol.border); });
+
+    function renderOverviewPanel(){
+      panel.html("");
+      panel.append("div").attr("class","sw-eyebrow").text("Visão geral");
+      panel.append("h2").text("Todas as categorias");
+      panel.append("div").attr("class","sw-sub2").text("Clique numa fatia da roda, ou numa linha abaixo, pra abrir a categoria.");
+      var list = panel.append("div").attr("class","sw-overview-list");
+      var rows = list.selectAll(".sw-overview-item").data(overviewData).enter().append("div")
+        .attr("class","sw-overview-item").on("click", function(ev,d){ zoomInto(d.idx); });
+      rows.append("div").attr("class","sw-sw").style("background", function(d){ return d.cat.color; });
+      rows.append("div").attr("class","sw-name").text(function(d){ return d.cat.name; });
+      rows.append("div").attr("class","sw-frac").text(function(d){ return d.cat.unlockedCount+"/"+d.cat.nodes.length; });
+    }
+
+    function drawRing(c, idx, r, node, ri, extraClass){
+      var g = gDetail.append("g").attr("class","sw-ring-node"+(extraClass?" "+extraClass:"")).style("cursor","pointer")
+        .attr("data-ri", ri)
+        .on("click", function(){ highlightNode(idx, ri); })
+        .on("mouseenter", function(ev){ showTip(ev,node); })
+        .on("mousemove", function(ev){ showTip(ev,node); })
+        .on("mouseleave", hideTip);
+      g.append("circle").attr("r",r).attr("fill","none")
+        .attr("stroke", node.unlocked ? c.color : swCol.border)
+        .attr("stroke-width", node._ringStep-5)
+        .attr("stroke-opacity", node.unlocked ? .85 : 1)
+        .attr("stroke-dasharray", node.unlocked ? null : "2,5")
+        .attr("data-ring", ri);
+      var iconY=-r;
+      g.append("circle").attr("class","sw-node-dot").attr("cx",0).attr("cy",iconY)
+        .attr("r", node.unlocked?4.5:3.5)
+        .attr("fill", node.unlocked ? c.color : swCol.text2)
+        .attr("stroke", swCol.card).attr("stroke-width",2.5)
+        .attr("opacity", node.unlocked?1:.8);
+      return g;
+    }
+
+    function renderDetail(idx){
+      var c = CATS[idx];
+      gDetail.selectAll("*").remove();
+      gDetail.attr("transform","translate("+CX+","+CY+")");
+
+      var nextIdx = c.nodes.findIndex(function(nd){ return !nd.unlocked; });
+      var hasNext = nextIdx>=0;
+      var restCount = hasNext ? (c.nodes.length-nextIdx-1) : 0;
+      var hasRestBand = restCount>0;
+      var visibleSlots = c.unlockedCount + (hasNext?1:0) + (hasRestBand?1:0);
+
+      var dInnerR=46, ringStep=Math.max(16, Math.min(30, 560/Math.max(1,visibleSlots)));
+      var dOuterR = dInnerR + ringStep*visibleSlots;
+      var pad=46, half=dOuterR+pad;
+      var detailViewBox = (CX-half)+" "+(CY-half-10)+" "+(half*2)+" "+(half*2+20);
+
+      for(var ri=0; ri<c.unlockedCount; ri++){
+        var node = c.nodes[ri]; node._ringStep = ringStep;
+        drawRing(c, idx, dInnerR+ri*ringStep+ringStep/2, node, ri);
+      }
+      var nextSlot = c.unlockedCount;
+      if(hasNext){
+        var rNext = dInnerR+nextSlot*ringStep+ringStep/2;
+        c.nodes[nextIdx]._ringStep = ringStep;
+        drawRing(c, idx, rNext, c.nodes[nextIdx], nextIdx);
+        gDetail.append("circle").attr("r",rNext).attr("fill","none")
+          .attr("stroke", c.color).attr("stroke-width", ringStep-5).attr("stroke-opacity",.28);
+      }
+      if(hasRestBand){
+        var bandSlot = nextSlot + (hasNext?1:0);
+        var rBand = dInnerR+bandSlot*ringStep+ringStep/2;
+        var bandNode = {name: restCount+" mecânicas bloqueadas", unlocked:false, collapsedCount:restCount, _ringStep:ringStep};
+        var gBand = gDetail.append("g").attr("class","sw-ring-node sw-ring-collapsed").style("cursor","pointer")
+          .attr("data-ri",-1)
+          .on("mouseenter", function(ev){ showTip(ev,bandNode); })
+          .on("mousemove", function(ev){ showTip(ev,bandNode); })
+          .on("mouseleave", hideTip);
+        gBand.append("circle").attr("r",rBand).attr("fill","none")
+          .attr("stroke", swCol.border).attr("stroke-width", ringStep-5).attr("stroke-dasharray","1,7");
+        var badgeY=-rBand;
+        gBand.append("circle").attr("cx",0).attr("cy",badgeY).attr("r",13)
+          .attr("fill", swCol.card).attr("stroke", swCol.border).attr("stroke-width",1.5);
+        gBand.append("text").attr("x",0).attr("y",badgeY+3.5).attr("text-anchor","middle")
+          .attr("font-size",9.5).attr("font-weight",700).attr("fill", swCol.text2).text("+"+restCount);
+      }
+
+      var dHub = gDetail.append("g").attr("class","sw-hub-back").style("cursor","pointer")
+        .on("click", function(){ zoomOut(); })
+        .on("mouseenter", function(){ d3.select(this).select("circle").attr("stroke-opacity",1); })
+        .on("mouseleave", function(){ d3.select(this).select("circle").attr("stroke-opacity",.6); });
+      dHub.append("circle").attr("r", dInnerR-8).attr("fill", swCol.card)
+        .attr("stroke", c.color).attr("stroke-width",2).attr("stroke-opacity",.6);
+      dHub.append("text").attr("y",-4).attr("text-anchor","middle").attr("font-size",11).attr("font-weight",700)
+        .attr("fill", c.color).text(c.unlockedCount+"/"+c.nodes.length);
+      dHub.append("text").attr("y",10).attr("text-anchor","middle").attr("font-size",7.5).attr("fill", swCol.text2)
+        .attr("letter-spacing",".08em").text("CONCLUÍDO");
+
+      return detailViewBox;
+    }
+
+    function showTip(ev,node){
+      var box = stageEl.getBoundingClientRect();
+      var x = ev.clientX-box.left, y=ev.clientY-box.top;
+      var statusTxt = node.collapsedCount ? "continue assistindo pra desbloquear" : (node.unlocked?"· desbloqueado":"· bloqueado");
+      tipEl.innerHTML = node.name+'<span class="sw-status">'+statusTxt+"</span>";
+      tipEl.style.left=x+"px"; tipEl.style.top=y+"px";
+      tipEl.classList.add("show");
+    }
+    function hideTip(){ tipEl.classList.remove("show"); }
+
+    function renderDetailPanel(idx){
+      var c = CATS[idx];
+      panel.html("");
+      panel.append("div").attr("class","sw-eyebrow").style("color", c.color).text("Categoria em foco");
+      panel.append("h2").text(c.name);
+      panel.append("div").attr("class","sw-sub2").text(c.nodes.length+" mecânicas identificadas nas aulas desta categoria.");
+
+      var pr = panel.append("div").attr("class","sw-progress-row");
+      var pct = c.nodes.length ? Math.round(100*c.unlockedCount/c.nodes.length) : 0;
+      pr.append("div").attr("class","sw-progress-track").append("div").attr("class","sw-progress-fill")
+        .style("width", pct+"%").style("background", c.color);
+      pr.append("div").attr("class","sw-progress-pct").text(pct+"%");
+
+      var list = panel.append("div").attr("class","sw-node-list");
+      var nextIdx = c.nodes.findIndex(function(nd){ return !nd.unlocked; });
+      var rows = list.selectAll(".sw-node-row").data(c.nodes).enter().append("div")
+        .attr("class", function(d,i){ return "sw-node-row "+(d.unlocked?"sw-unlocked":"sw-locked")+(i===nextIdx?" sw-next":""); })
+        .attr("data-idx", function(d,i){ return i; })
+        .on("click", function(ev,d){ var ii=d3.select(this).attr("data-idx"); highlightNode(idx, +ii); });
+      rows.append("div").attr("class","sw-ico")
+        .style("background", function(d){ return d.unlocked ? c.color : "transparent"; })
+        .style("color", function(d){ return d.unlocked ? swCol.card : swCol.text2; })
+        .text(function(d){ return d.unlocked ? "✓" : "–"; });
+      rows.append("div").attr("class","sw-name").text(function(d){ return d.name; });
+      rows.append("div").attr("class","sw-tag").text(function(d,i){ return i===nextIdx ? "Próximo" : ""; });
+
+      panel.append("div").attr("class","sw-empty-note").html(
+        nextIdx>=0
+          ? "Próxima mecânica: <b style='color:"+c.color+"'>"+c.nodes[nextIdx].name+"</b> — desbloqueia assistindo mais aulas desta categoria."
+          : "Categoria concluída. 🎉"
+      );
+    }
+
+    function highlightNode(idx, ri){
+      gDetail.selectAll(".sw-ring-node").classed("sw-active", function(){
+        return +d3.select(this).attr("data-ri")===ri;
+      });
+      gDetail.selectAll(".sw-ring-node circle:first-child")
+        .attr("filter", function(){ return +d3.select(this.parentNode).attr("data-ri")===ri ? "url(#sw-glow)" : null; });
+      panel.selectAll(".sw-node-row").classed("sw-active", function(d,i){ return i===ri; });
+      var el = panel.select('.sw-node-row[data-idx="'+ri+'"]').node();
+      if(el && el.scrollIntoView) el.scrollIntoView({block:"nearest", behavior:"smooth"});
+    }
+
+    function punchViewBox(idx){
+      var d = overviewData[idx];
+      var mid=(d.a0+d.a1)/2, a=deg2rad(mid);
+      var zw=W*0.52, zh=H*0.52;
+      var cx=CX+Math.cos(a)*110, cy=CY+Math.sin(a)*110;
+      return (cx-zw/2)+" "+(cy-zh/2)+" "+zw+" "+zh;
+    }
+
+    function zoomInto(idx){
+      if(focused===idx) return;
+      hideTip();
+      focused = idx;
+      var finalViewBox = renderDetail(idx);
+      renderDetailPanel(idx);
+      backBtn.classList.add("show");
+      stageHint.textContent = "Clique num anel, ou na lista ao lado, pra ver detalhes da mecânica";
+      svg.transition("sw-cam").duration(300).ease(d3.easeCubicIn).attr("viewBox", punchViewBox(idx))
+        .on("end", function(){
+          gOverview.transition().duration(300).style("opacity",0).style("pointer-events","none");
+          gDetail.style("pointer-events","auto").transition().duration(320).style("opacity",1);
+          svg.transition("sw-cam").duration(360).ease(d3.easeCubicOut).attr("viewBox", finalViewBox);
+        });
+    }
+    function zoomOut(){
+      if(focused===null) return;
+      hideTip();
+      var idx = focused;
+      focused = null;
+      backBtn.classList.remove("show");
+      stageHint.textContent = "Clique numa fatia pra ver as mecânicas dessa categoria";
+      renderOverviewPanel();
+      svg.transition("sw-cam").duration(300).ease(d3.easeCubicIn).attr("viewBox", punchViewBox(idx))
+        .on("end", function(){
+          gDetail.transition().duration(300).style("opacity",0).style("pointer-events","none");
+          gOverview.style("pointer-events","auto").transition().duration(320).style("opacity",1);
+          svg.transition("sw-cam").duration(360).ease(d3.easeCubicOut).attr("viewBox","0 0 "+W+" "+H);
+        });
+    }
+
+    renderOverviewPanel();
+  };
+})();
 </script>
 </body>
 </html>
