@@ -542,7 +542,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 .ep-time-wrap { display:flex; align-items:center; gap:5px; flex-shrink:0; }
 .ep-time-toggle { width:24px; height:24px; border-radius:5px; border:1px solid var(--border); background:var(--bg); color:var(--text2); cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:var(--transition); padding:0; }
 .ep-time-toggle:hover { border-color:var(--accent); color:var(--accent); }
-.ep-time-toggle.has-value { border-color:var(--accent); color:var(--accent); background:rgba(var(--accent-rgb,229,9,20),0.1); }
+.ep-time-toggle.has-value { border-color:var(--gold); color:var(--gold); background:rgba(245,197,24,0.12); }
 .ep-time-fields { display:none; align-items:center; gap:4px; }
 .ep-time-fields.open { display:flex; }
 .ep-time-field { width:54px; padding:4px 6px; border-radius:5px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:11px; outline:none; text-align:center; transition:border-color 0.2s; }
@@ -550,7 +550,7 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 .ep-time-field::placeholder { color:var(--text2); opacity:0.7; }
 .ep-time-sep { color:var(--text2); font-size:11px; flex-shrink:0; }
 .ep-time-bar { width:28px; height:4px; border-radius:2px; background:var(--border); overflow:hidden; flex-shrink:0; }
-.ep-time-bar-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.2s; }
+.ep-time-bar-fill { height:100%; background:var(--gold); border-radius:2px; transition:width 0.2s; }
 .ep-link-input { flex:1 1 110px; min-width:70px; max-width:170px; padding:4px 8px; border-radius:5px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:11px; outline:none; transition:border-color 0.2s; }
 .ep-link-input:focus { border-color:var(--accent); }
 .ep-link-btn { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:4px; background:var(--accent); color:#fff; font-size:11px; text-decoration:none; flex-shrink:0; transition:opacity 0.2s; }
@@ -3532,6 +3532,8 @@ function toggleEp(sid, idx){
   if(!s) return;
   if(!s.watched) s.watched=new Array(getTotalEps(s)).fill(false);
   s.watched[idx]=!s.watched[idx];
+  // Aula concluída: limpa o tempo assistido/duração marcado (não faz mais sentido pra uma aula 100% vista)
+  if(s.watched[idx] && s.epTime && s.epTime[idx]) s.epTime[idx]='';
   const now=new Date();
   const dateStr=now.toLocaleDateString('pt-BR');
 
