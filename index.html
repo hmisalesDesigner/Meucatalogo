@@ -730,58 +730,78 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
   .series-card { flex:0 0 calc(33% - 8px); }
 }
 
-/* ======= Habilidades: Roda de Habilidades (skill wheel) ======= */
-#skills-view .sw-sub{font-size:12px;color:var(--text2);padding:0 28px;margin:-6px 0 14px;}
+/* ======= Habilidades: Roda de Habilidades (skill wheel) =======
+   Paleta fixa igual ao protótipo original (não segue o tema claro/escuro do
+   app de propósito — o usuário pediu pra manter essas cores específicas). */
+#skills-view{
+  --sw-bg:#05060a; --sw-panel:#0d1017; --sw-stage:#0b0e13;
+  --sw-fg:#f2f4f8; --sw-muted:rgba(242,244,248,.55); --sw-muted2:rgba(242,244,248,.35);
+  --sw-border:rgba(255,255,255,.08); --sw-border2:rgba(255,255,255,.14);
+  --sw-accent:#f5c518;
+}
+#skills-view .sw-topbar{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  margin:16px 28px 14px;padding:13px 20px;border:1px solid var(--sw-border);border-radius:var(--radius);
+  background:linear-gradient(180deg, rgba(255,255,255,.03), transparent), var(--sw-bg);
+}
+#skills-view .sw-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;color:var(--sw-fg);}
+#skills-view .sw-dot{width:9px;height:9px;border-radius:50%;background:var(--sw-accent);box-shadow:0 0 10px var(--sw-accent);flex:none;}
+#skills-view .sw-stats{display:flex;gap:10px;flex-wrap:wrap;}
+#skills-view .sw-stat{display:flex;flex-direction:column;gap:1px;padding:7px 14px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid var(--sw-border);min-width:92px;}
+#skills-view .sw-stat b{font-size:14px;font-weight:700;color:var(--sw-fg);}
+#skills-view .sw-stat span{font-size:10.5px;color:var(--sw-muted);letter-spacing:.02em;}
 #skills-view .sw-board{display:grid;grid-template-columns:1fr 320px;gap:14px;padding:0 28px 28px;}
 @media (max-width:860px){ #skills-view .sw-board{grid-template-columns:1fr;} }
 #skills-view .sw-stage{
-  position:relative;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
-  background:var(--card);
-  height:min(68vh,720px);min-height:420px;display:flex;align-items:center;justify-content:center;
+  position:relative;border:1px solid var(--sw-border);border-radius:var(--radius);overflow:hidden;
+  background:
+    radial-gradient(90% 70% at 38% 30%, rgba(245,197,24,.05), transparent 60%),
+    radial-gradient(120% 100% at 50% 50%, #12161e 0%, var(--sw-stage) 55%, #05060a 100%);
+  height:min(80vh,840px);min-height:480px;display:flex;align-items:center;justify-content:center;
 }
 #skills-view .sw-stage svg{display:block;width:100%;height:100%;min-height:0;min-width:0;}
-#skills-view .sw-hint{position:absolute;left:16px;bottom:12px;font-size:11px;color:var(--text2);pointer-events:none;}
+#skills-view .sw-hint{position:absolute;left:16px;bottom:12px;font-size:11px;color:var(--sw-muted2);pointer-events:none;}
 #skills-view .sw-back-btn{
   position:absolute;left:14px;top:14px;display:flex;align-items:center;gap:6px;
-  padding:7px 13px 7px 10px;border-radius:999px;border:1px solid var(--border);
-  background:var(--bg);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;
+  padding:7px 13px 7px 10px;border-radius:999px;border:1px solid var(--sw-border2);
+  background:rgba(10,12,17,.75);color:var(--sw-fg);font-size:12px;font-weight:600;cursor:pointer;
   opacity:0;transform:translateX(-6px);pointer-events:none;
   transition:opacity .25s ease,transform .25s ease,border-color .15s ease;
 }
 #skills-view .sw-back-btn.show{opacity:1;transform:translateX(0);pointer-events:auto;}
-#skills-view .sw-back-btn:hover{border-color:var(--accent);}
+#skills-view .sw-back-btn:hover{border-color:var(--sw-accent);}
 #skills-view .sw-back-btn svg{width:12px;height:12px;}
 #skills-view .sw-panel{
-  border:1px solid var(--border);border-radius:var(--radius);background:var(--card);
-  padding:16px;display:flex;flex-direction:column;height:min(68vh,720px);min-height:420px;overflow:hidden;
+  border:1px solid var(--sw-border);border-radius:var(--radius);background:var(--sw-panel);
+  padding:16px;display:flex;flex-direction:column;height:min(80vh,840px);min-height:480px;overflow:hidden;
 }
-#skills-view .sw-eyebrow{font-size:10.5px;letter-spacing:.08em;color:var(--text2);text-transform:uppercase;margin-bottom:4px;}
-#skills-view .sw-panel h2{font-size:17px;margin:0 0 2px;font-weight:700;color:var(--text);}
-#skills-view .sw-sub2{font-size:12px;color:var(--text2);margin-bottom:14px;}
+#skills-view .sw-eyebrow{font-size:10.5px;letter-spacing:.08em;color:var(--sw-muted);text-transform:uppercase;margin-bottom:4px;}
+#skills-view .sw-panel h2{font-size:17px;margin:0 0 2px;font-weight:700;color:var(--sw-fg);}
+#skills-view .sw-sub2{font-size:12px;color:var(--sw-muted);margin-bottom:14px;}
 #skills-view .sw-progress-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
-#skills-view .sw-progress-track{flex:1;height:7px;border-radius:99px;background:var(--hover);overflow:hidden;}
+#skills-view .sw-progress-track{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;}
 #skills-view .sw-progress-fill{height:100%;border-radius:99px;transition:width .5s ease;}
-#skills-view .sw-progress-pct{font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--text);}
+#skills-view .sw-progress-pct{font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--sw-fg);}
 #skills-view .sw-overview-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;padding-right:2px;min-height:0;}
 #skills-view .sw-overview-item{display:flex;align-items:center;gap:10px;padding:8px 9px;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:background .15s ease,border-color .15s ease;}
-#skills-view .sw-overview-item:hover{background:var(--hover);border-color:var(--border);}
+#skills-view .sw-overview-item:hover{background:rgba(255,255,255,.04);border-color:var(--sw-border);}
 #skills-view .sw-overview-item .sw-sw{width:9px;height:9px;border-radius:3px;flex:none;}
-#skills-view .sw-overview-item .sw-name{flex:1;font-size:12.5px;font-weight:600;color:var(--text);}
-#skills-view .sw-overview-item .sw-frac{font-size:11px;color:var(--text2);font-variant-numeric:tabular-nums;}
+#skills-view .sw-overview-item .sw-name{flex:1;font-size:12.5px;font-weight:600;color:var(--sw-fg);}
+#skills-view .sw-overview-item .sw-frac{font-size:11px;color:var(--sw-muted);font-variant-numeric:tabular-nums;}
 #skills-view .sw-node-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;padding-right:2px;flex:1;min-height:0;}
 #skills-view .sw-node-row{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:background .15s ease,border-color .15s ease;}
-#skills-view .sw-node-row:hover{background:var(--hover);}
-#skills-view .sw-node-row.sw-active{background:var(--hover);border-color:var(--border);}
-#skills-view .sw-node-row .sw-ico{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;border:1.5px solid var(--border);font-size:10.5px;}
+#skills-view .sw-node-row:hover{background:rgba(255,255,255,.045);}
+#skills-view .sw-node-row.sw-active{background:rgba(255,255,255,.07);border-color:var(--sw-border2);}
+#skills-view .sw-node-row .sw-ico{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;border:1.5px solid var(--sw-border2);font-size:10.5px;}
 #skills-view .sw-node-row.sw-unlocked .sw-ico{border-color:transparent;}
-#skills-view .sw-node-row .sw-name{flex:1;font-size:12px;font-weight:500;color:var(--text);}
-#skills-view .sw-node-row.sw-locked .sw-name{color:var(--text2);}
-#skills-view .sw-node-row .sw-tag{font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--text2);font-weight:700;}
-#skills-view .sw-node-row.sw-next .sw-tag{color:var(--accent);}
-#skills-view .sw-empty-note{font-size:11.5px;color:var(--text2);margin-top:auto;padding-top:10px;border-top:1px dashed var(--border);}
-#skills-view .sw-ring-tooltip{position:absolute;z-index:5;pointer-events:none;transform:translate(-50%,calc(-100% - 10px));background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--text);box-shadow:var(--shadow);opacity:0;transition:opacity .12s ease;}
+#skills-view .sw-node-row .sw-name{flex:1;font-size:12px;font-weight:500;color:var(--sw-fg);}
+#skills-view .sw-node-row.sw-locked .sw-name{color:var(--sw-muted);}
+#skills-view .sw-node-row .sw-tag{font-size:9.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--sw-muted2);font-weight:700;}
+#skills-view .sw-node-row.sw-next .sw-tag{color:var(--sw-accent);}
+#skills-view .sw-empty-note{font-size:11.5px;color:var(--sw-muted2);margin-top:auto;padding-top:10px;border-top:1px dashed var(--sw-border);}
+#skills-view .sw-ring-tooltip{position:absolute;z-index:5;pointer-events:none;transform:translate(-50%,calc(-100% - 10px));background:rgba(13,16,23,.95);border:1px solid var(--sw-border2);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--sw-fg);box-shadow:0 6px 18px rgba(0,0,0,.4);opacity:0;transition:opacity .12s ease;}
 #skills-view .sw-ring-tooltip.show{opacity:1;}
-#skills-view .sw-ring-tooltip .sw-status{font-weight:500;color:var(--text2);margin-left:6px;}
+#skills-view .sw-ring-tooltip .sw-status{font-weight:500;color:var(--sw-muted);margin-left:6px;}
 #skills-view .sw-node-dot{transition:r .15s ease,opacity .15s ease;}
 #skills-view .sw-ring-node:hover .sw-node-dot{filter:url(#sw-glow);opacity:1;}
 
@@ -984,15 +1004,21 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 
   <!-- ======= HABILIDADES (Roda de Habilidades) ======= -->
   <div class="content-area" id="skills-view">
-    <div class="section-title" style="padding-top:16px;">Roda de Habilidades</div>
-    <div class="sw-sub">Mecânicas reais extraídas das aulas de cada categoria — desbloqueiam conforme você assiste.</div>
+    <div class="sw-topbar">
+      <div class="sw-brand"><span class="sw-dot"></span>Roda de Habilidades</div>
+      <div class="sw-stats">
+        <div class="sw-stat"><b id="sw-stat-lv">Lv 0</b><span>Nível geral</span></div>
+        <div class="sw-stat"><b id="sw-stat-xp">0</b><span>XP total</span></div>
+        <div class="sw-stat"><b id="sw-stat-streak">0 dias</b><span>Sequência</span></div>
+      </div>
+    </div>
     <div class="sw-board">
       <div class="sw-stage" id="sw-stage">
         <button class="sw-back-btn" id="sw-backBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
           Todas as categorias
         </button>
-        <svg id="sw-svg" viewBox="0 0 900 760" preserveAspectRatio="xMidYMid meet"></svg>
+        <svg id="sw-svg" viewBox="0 0 900 840" preserveAspectRatio="xMidYMid meet"></svg>
         <div class="sw-ring-tooltip" id="sw-ringTooltip"></div>
         <div class="sw-hint" id="sw-stageHint">Clique numa fatia pra ver as mecânicas dessa categoria</div>
       </div>
@@ -2941,7 +2967,6 @@ function renderDetailMeta(s){
   if(s.seasons) meta.push(`<span>📺 ${s.seasons.length} temporada${s.seasons.length>1?'s':''}</span>`);
   const avg=getAvgRating(s);
   if(avg) meta.push(`<span>${starsHTML(avg,15)} ${avg.toFixed(1)}</span>`);
-  if(s.label) meta.push(labelChipHTML(s.label));
   document.getElementById('detail-meta').innerHTML=meta.join('');
 }
 
@@ -5183,11 +5208,40 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveDB()
     swCol.hover = v('--hover','#252538'); swCol.accent = v('--accent','#e50914');
   }
 
+  // XP total = aulas assistidas em todo o catálogo; Nível geral usa a mesma escala
+  // progressiva do widget de habilidades do dashboard (lv^2 eps); Sequência = mesmo
+  // cálculo de dias seguidos do widget de consistência (DB.history).
+  function swGlobalStats(){
+    var xp = 0;
+    (DB.series||[]).forEach(function(s){
+      xp += Array.isArray(s.watched) ? s.watched.filter(Boolean).length : (typeof s.watched==='number'?s.watched:0);
+    });
+    var lv = 0;
+    while((lv+1)*(lv+1) <= xp) lv++;
+
+    var streak = 0, today = new Date();
+    for(var i=0;i<365;i++){
+      var d = new Date(today); d.setDate(d.getDate()-i);
+      var ds = d.toLocaleDateString('pt-BR');
+      var count = (DB.history||[]).filter(function(h){ return h.action==='watched' && h.date===ds; }).length;
+      if(count>0) streak++; else if(i>0) break;
+    }
+    return {xp:xp, lv:lv, streak:streak};
+  }
+
   window.renderSkillWheel = function(){
     swReadThemeColors();
+    var gstats = swGlobalStats();
+    var lvEl = document.getElementById('sw-stat-lv');
+    var xpEl = document.getElementById('sw-stat-xp');
+    var stEl = document.getElementById('sw-stat-streak');
+    if(lvEl) lvEl.textContent = 'Lv '+gstats.lv;
+    if(xpEl) xpEl.textContent = gstats.xp.toLocaleString('pt-BR');
+    if(stEl) stEl.textContent = gstats.streak+' dia'+(gstats.streak!==1?'s':'');
+
     var CATS = swBuildCats();
     var focused = null;
-    var W=900, H=760, CX=450, CY=390;
+    var W=900, H=840, CX=450, CY=420;
 
     var svg = d3.select("#sw-svg");
     svg.selectAll("*").remove();
@@ -5220,7 +5274,7 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveDB()
     var gDetail = svg.append("g").attr("class","sw-g-detail").style("opacity",0).style("pointer-events","none");
 
     var n = CATS.length, gapDeg = 2.2, sliceDeg = 360/n;
-    var innerR = 86, outerR = 268;
+    var innerR = 94, outerR = 300;
 
     var arcBg = d3.arc().innerRadius(innerR).outerRadius(outerR)
       .startAngle(function(d){ return (d.a0+gapDeg/2)*Math.PI/180; })
