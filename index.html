@@ -325,6 +325,13 @@ body.sidebar-collapsed #wallpaper-bg { left:0; }
 .card-badge.novo { background:#e50914; color:#fff; }
 .card-badge.continuar { background:#f39c12; color:#000; }
 .card-badge.concluido { background:#27ae60; color:#fff; }
+.card-pause-badge {
+  position:absolute; top:8px; right:8px; z-index:3;
+  width:22px; height:22px; border-radius:50%;
+  background:rgba(0,0,0,0.65); border:1px solid var(--gold);
+  color:var(--gold); font-size:11px;
+  display:flex; align-items:center; justify-content:center;
+}
 
 /* PLACEHOLDER CARD */
 .placeholder-card {
@@ -2591,6 +2598,12 @@ function renderCatRows(){
   });
 }
 
+// Verifica se a série tem alguma aula com tempo assistido parcial marcado (ainda não concluída)
+function hasPausedEpTime(s){
+  if(!s.epTime) return false;
+  return s.epTime.some(t=>t && t.trim());
+}
+
 function cardHTML(s){
   const p = getProgress(s);
   const pc = progressColor(p);
@@ -2598,9 +2611,11 @@ function cardHTML(s){
   if(p===0) badge = '<span class="card-badge novo">Novo</span>';
   else if(p===100) badge = '<span class="card-badge concluido">✓ Concluído</span>';
   else badge = '<span class="card-badge continuar">▶ Continuar</span>';
+  const pauseBadge = hasPausedEpTime(s) ? '<span class="card-pause-badge" title="Tem aula com tempo assistido parcial">⏱</span>' : '';
   return `<div class="series-card" onclick="openDetail('${s.id}')">
     ${s.cover ? `<img src="${s.cover}" alt="${s.name}" loading="lazy">` : `<div style="width:100%;aspect-ratio:2/3;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:32px;">🎬</div>`}
     ${badge}
+    ${pauseBadge}
     <div class="card-overlay">
       <div class="card-name">${s.name}</div>
       <div class="card-meta">${s.cat} • ${s.year||''}</div>
