@@ -3457,9 +3457,20 @@ function updateEpTimeUI(idx, epTimeVal){
 }
 
 function saveEpTimeFields(sid, idx){
-  const curInput = document.getElementById('eptimecur-'+idx);
-  const totInput = document.getElementById('eptimetot-'+idx);
-  if(!curInput || !totInput) return;
+  // Espera o próximo tick: se o foco só pulou do campo "assistido" pro campo
+  // "total" (ou vice-versa) dentro do mesmo par, ainda não terminou de editar —
+  // não valida nem mostra erro nesse meio tempo.
+  setTimeout(()=>{
+    const curInput = document.getElementById('eptimecur-'+idx);
+    const totInput = document.getElementById('eptimetot-'+idx);
+    if(!curInput || !totInput) return;
+    const active = document.activeElement;
+    if(active===curInput || active===totInput) return;
+    commitEpTimeFields(sid, idx, curInput, totInput);
+  }, 0);
+}
+
+function commitEpTimeFields(sid, idx, curInput, totInput){
   const curRaw = curInput.value.trim();
   const totRaw = totInput.value.trim();
 
