@@ -3516,19 +3516,19 @@ function commitEpTimeFields(sid, idx, curInput, totInput){
 
   const normalized = `${secToClock(cur)}/${secToClock(tot0)}`;
   const alreadyWatched = !!(s.watched && s.watched[idx]);
-  const hadTimeBefore = !!s.epTime[idx];
-  if(s.epTime[idx]!==normalized){
+  const valueChanged = s.epTime[idx]!==normalized;
+  if(valueChanged){
     s.epTime[idx]=normalized;
     saveDB();
   }
 
   // Registrar tempo NÃO marca a aula como feita sozinho — isso fica só por conta do
   // checkbox "marcar como assistido", clicado manualmente pelo usuário, porque é isso
-  // que confirma que ele realmente terminou aquela aula/vídeo. Mas o tempo registrado
-  // conta como atividade no controle geral (streak, metas, contagem semanal/diária),
-  // já que ele de fato assistiu uma parte daquele conteúdo. Só loga uma vez por aula
-  // (na primeira vez que um tempo é salvo) pra não inflar as métricas a cada edição.
-  if(cur>0 && !hadTimeBefore && !alreadyWatched){
+  // que confirma que ele realmente terminou aquela aula/vídeo. Mas cada vez que o tempo
+  // é atualizado (mesmo que seja a 2ª ou 3ª vez no mesmo dia, em acessos diferentes à
+  // mesma aula) conta como uma atividade a mais no controle geral (streak, metas,
+  // contagem semanal/diária) — cada edição real de tempo é uma sessão de estudo.
+  if(cur>0 && valueChanged && !alreadyWatched){
     logEpTimeActivity(sid, idx);
   }
   updateEpTimeUI(idx, normalized);
