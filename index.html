@@ -3515,11 +3515,46 @@ function commitEpTimeFields(sid, idx, curInput, totInput){
   const cur = Math.min(cur0, tot0);
 
   const normalized = `${secToClock(cur)}/${secToClock(tot0)}`;
+  const alreadyWatched = !!(s.watched && s.watched[idx]);
   if(s.epTime[idx]!==normalized){
     s.epTime[idx]=normalized;
     saveDB();
   }
+
+  // Qualquer tempo assistido registrado já marca a aula como feita — o usuário não vai
+  // voltar pra rever um conteúdo longo do zero só porque não terminou tudo de uma vez.
+  // O tempo continua salvo mesmo depois (não é apagado), pra manter o registro de até onde foi assistido.
+  if(cur>0 && !alreadyWatched){
+    markEpWatchedFromTime(sid, idx);
+    return; // já re-renderiza tudo
+  }
   updateEpTimeUI(idx, normalized);
+}
+
+function markEpWatchedFromTime(sid, idx){
+  const s=DB.series.find(x=>x.id===sid); if(!s) return;
+  if(!s.watched) s.watched=new Array(getTotalEps(s)).fill(false);
+  if(s.watched[idx]) return;
+  s.watched[idx]=true;
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('pt-BR');
+
+  let sIdx=0, offset=0;
+  for(let i=0;i<s.seasons.length;i++){
+    offset+=(parseInt(s.seasons[i])||0);
+    if(idx<offset){ sIdx=i; break; }
+  }
+  let epOffset=0; for(let i=0;i<sIdx;i++) epOffset+=(parseInt(s.seasons[i])||0);
+
+  DB.history=DB.history||[];
+  DB.history.push({ seriesName:s.name, season:sIdx+1, ep:idx-epOffset, date:dateStr, action:'watched' });
+  if(DB.history.length>200) DB.history=DB.history.slice(-200);
+
+  saveDB();
+  openDetail(sid);
+  updateBadges();
+  checkMetas();
+  checkConsistencyLevelUp();
 }
 
 function epStarsHTML(idx, rating, isCinema){
