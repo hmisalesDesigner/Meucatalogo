@@ -1774,7 +1774,7 @@ function renderContribGraph(){
   // Contar eps por dia via history
   const dayCounts = {};
   (DB.history||[]).forEach(h=>{
-    if(h.action==='watched' && h.date){
+    if((h.action==='watched'||h.action==='tempo') && h.date){
       // h.date está em dd/mm/yyyy
       const parts = h.date.split('/');
       if(parts.length===3){
@@ -1854,14 +1854,14 @@ function checkMetas(){
 
   const today=new Date();
   const todayStr=today.toLocaleDateString('pt-BR');
-  const epsToday=(DB.history||[]).filter(h=>h.action==='watched'&&h.date===todayStr).length;
+  const epsToday=(DB.history||[]).filter(h=>(h.action==='watched'||h.action==='tempo')&&h.date===todayStr).length;
 
   // Eps esta semana
   let epsWeek=0;
   for(let i=0;i<7;i++){
     const d=new Date(today); d.setDate(d.getDate()-i);
     const ds=d.toLocaleDateString('pt-BR');
-    epsWeek+=(DB.history||[]).filter(h=>h.action==='watched'&&h.date===ds).length;
+    epsWeek+=(DB.history||[]).filter(h=>(h.action==='watched'||h.action==='tempo')&&h.date===ds).length;
   }
 
   const lastNotif=localStorage.getItem('mc_last_notif_day');
@@ -1911,7 +1911,7 @@ function renderWeatherWidget(){
   for(let i=6;i>=0;i--){
     const d = new Date(today); d.setDate(d.getDate()-i);
     const ds = d.toLocaleDateString('pt-BR');
-    const count = (DB.history||[]).filter(h=>h.action==='watched'&&h.date===ds).length;
+    const count = (DB.history||[]).filter(h=>(h.action==='watched'||h.action==='tempo')&&h.date===ds).length;
     days.push({label:DAYS_PT[d.getDay()], count, isToday:i===0});
   }
   const total = days.reduce((a,b)=>a+b.count,0);
@@ -2196,7 +2196,7 @@ function renderConsistencyWidget(){
   for(let i=0;i<365;i++){
     const d = new Date(today); d.setDate(d.getDate()-i);
     const ds = d.toLocaleDateString('pt-BR');
-    const count = (DB.history||[]).filter(h=>h.action==='watched'&&h.date===ds).length;
+    const count = (DB.history||[]).filter(h=>(h.action==='watched'||h.action==='tempo')&&h.date===ds).length;
     if(count>0) streak++;
     else if(i>0) break;
   }
@@ -2737,7 +2737,7 @@ function renderHistory(){
     <div class="history-item">
       <span class="history-date">${h.date}</span>
       <span style="flex:1">${h.seriesName} — T${h.season}E${String(h.ep+1).padStart(2,'0')}</span>
-      <span style="font-size:11px;color:var(--text2)">${h.action==='watched'?'✅ Assistido':'❌ Desmarcado'}</span>
+      <span style="font-size:11px;color:var(--text2)">${h.action==='watched'?'✅ Assistido':(h.action==='tempo'?'⏳ Tempo registrado':'❌ Desmarcado')}</span>
     </div>`).join('');
 }
 
@@ -3516,26 +3516,26 @@ function commitEpTimeFields(sid, idx, curInput, totInput){
 
   const normalized = `${secToClock(cur)}/${secToClock(tot0)}`;
   const alreadyWatched = !!(s.watched && s.watched[idx]);
+  const hadTimeBefore = !!s.epTime[idx];
   if(s.epTime[idx]!==normalized){
     s.epTime[idx]=normalized;
     saveDB();
   }
 
-  // Qualquer tempo assistido registrado já marca a aula como feita — o usuário não vai
-  // voltar pra rever um conteúdo longo do zero só porque não terminou tudo de uma vez.
-  // O tempo continua salvo mesmo depois (não é apagado), pra manter o registro de até onde foi assistido.
-  if(cur>0 && !alreadyWatched){
-    markEpWatchedFromTime(sid, idx);
-    return; // já re-renderiza tudo
+  // Registrar tempo NÃO marca a aula como feita sozinho — isso fica só por conta do
+  // checkbox "marcar como assistido", clicado manualmente pelo usuário, porque é isso
+  // que confirma que ele realmente terminou aquela aula/vídeo. Mas o tempo registrado
+  // conta como atividade no controle geral (streak, metas, contagem semanal/diária),
+  // já que ele de fato assistiu uma parte daquele conteúdo. Só loga uma vez por aula
+  // (na primeira vez que um tempo é salvo) pra não inflar as métricas a cada edição.
+  if(cur>0 && !hadTimeBefore && !alreadyWatched){
+    logEpTimeActivity(sid, idx);
   }
   updateEpTimeUI(idx, normalized);
 }
 
-function markEpWatchedFromTime(sid, idx){
+function logEpTimeActivity(sid, idx){
   const s=DB.series.find(x=>x.id===sid); if(!s) return;
-  if(!s.watched) s.watched=new Array(getTotalEps(s)).fill(false);
-  if(s.watched[idx]) return;
-  s.watched[idx]=true;
   const now=new Date();
   const dateStr=now.toLocaleDateString('pt-BR');
 
@@ -3547,11 +3547,10 @@ function markEpWatchedFromTime(sid, idx){
   let epOffset=0; for(let i=0;i<sIdx;i++) epOffset+=(parseInt(s.seasons[i])||0);
 
   DB.history=DB.history||[];
-  DB.history.push({ seriesName:s.name, season:sIdx+1, ep:idx-epOffset, date:dateStr, action:'watched' });
+  DB.history.push({ seriesName:s.name, season:sIdx+1, ep:idx-epOffset, date:dateStr, action:'tempo' });
   if(DB.history.length>200) DB.history=DB.history.slice(-200);
 
   saveDB();
-  openDetail(sid);
   updateBadges();
   checkMetas();
   checkConsistencyLevelUp();
@@ -4328,7 +4327,7 @@ function checkConsistencyLevelUp(){
   for(let i=0;i<365;i++){
     const d=new Date(today); d.setDate(d.getDate()-i);
     const ds=d.toLocaleDateString('pt-BR');
-    const count=(DB.history||[]).filter(h=>h.action==='watched'&&h.date===ds).length;
+    const count=(DB.history||[]).filter(h=>(h.action==='watched'||h.action==='tempo')&&h.date===ds).length;
     if(count>0) streak++;
     else if(i>0) break;
   }
@@ -5430,7 +5429,7 @@ document.addEventListener('visibilitychange', ()=>{ if(document.hidden) saveDB()
     for(var i=0;i<365;i++){
       var d = new Date(today); d.setDate(d.getDate()-i);
       var ds = d.toLocaleDateString('pt-BR');
-      var count = (DB.history||[]).filter(function(h){ return h.action==='watched' && h.date===ds; }).length;
+      var count = (DB.history||[]).filter(function(h){ return (h.action==='watched'||h.action==='tempo') && h.date===ds; }).length;
       if(count>0) streak++; else if(i>0) break;
     }
     return {xp:xp, lv:lv, streak:streak};
